@@ -1,8 +1,4 @@
-#include <iostream>
-#include <string.h>
-#include <unistd.h>
-#include <arpa/inet.h>
-
+#include "Request.hpp"
 int main()
 {
      int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
@@ -36,22 +32,24 @@ int main()
          "Content-Length: 20\r\n"
          "\r\n"
          "<h1>Hello world</h1>";
-
-     while (true)
-     {
+          Request request;
           int clientSocket = accept(serverSocket, NULL, NULL);
           if (clientSocket < 0)
           {
                std::cerr << "Accept failed\n";
-               continue;
+
           }
-          char buffer[1024];
-          recv(clientSocket, buffer, sizeof(buffer), 0);
-          std::cout << "Reaquest : \n"
-                    << buffer << std::endl;
-          send(clientSocket, httpResponse, strlen(httpResponse), 0);
-          close(clientSocket);
-     }
+          else
+          {
+
+               char buffer[1024];
+               recv(clientSocket, buffer, sizeof(buffer), 0);
+               ParseRequest(buffer, request);
+               // std::cout << "Request : \n"
+               //           << buffer << std::endl;
+               send(clientSocket, httpResponse, strlen(httpResponse), 0);
+          }
+               close(clientSocket);
 
      return 0;
 }
