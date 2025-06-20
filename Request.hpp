@@ -10,6 +10,9 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <map>
+
+# define LIMIT 1024
 using namespace std;
 
 class Request
@@ -38,5 +41,5 @@ private:
     int _Vserver;
     size_t ContentLength;
 };
-void ParseRequest(string buffer, Request &request);
+void ParseRequest(int clientSocket, Request &request);
 #endif
