@@ -11,10 +11,15 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <sstream>
 
 # define LIMIT 1024
 using namespace std;
-
+enum File
+{
+    File,
+    STR,
+};
 class Request
 {
 public:
@@ -30,7 +35,8 @@ public:
     void setHost(string Host);
     void setPort(string Port);
     void setPath(string Path);
-    void setVServer(int val);
+    // void setVServer(int val);
+    void ParseRequest(int clientSocket);
     void setContentLength(size_t content);
 
 private:
@@ -38,8 +44,11 @@ private:
     string _host;
     string _port;
     string _path;
-    int _Vserver;
-    size_t ContentLength;
+    size_t _ContentLength;
+    enum File flag;
+    string _body;
+
+    map<string, string> _head;
 };
-void ParseRequest(int clientSocket, Request &request);
+// void ParseRequest(int clientSocket, Request &request);
 #endif

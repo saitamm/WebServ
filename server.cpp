@@ -26,15 +26,20 @@ int main()
      listen(serverSocket, 5);
      std::cout << "Server is running on http://localhost:8080/\n";
      Request request;
-     int clientSocket = accept(serverSocket, NULL, NULL);
-     if (clientSocket < 0)
+     int clientSocket;
+     try
      {
-          std::cerr << "Accept failed\n";
+          clientSocket = accept(serverSocket, NULL, NULL);
+          cout << "-------------------------------------------------------------\n";
+          Request req;
+          req.ParseRequest(clientSocket);
+          // cout << req.getPort() << endl;
      }
-     else
+     catch (const std::exception &e)
      {
-          ParseRequest(clientSocket, request);  
+          std::cerr << "::::::::" << e.what() << '\n';
      }
+
      close(clientSocket);
 
      return 0;
