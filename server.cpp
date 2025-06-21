@@ -32,7 +32,14 @@ int main()
           clientSocket = accept(serverSocket, NULL, NULL);
           cout << "-------------------------------------------------------------\n";
           Request req;
-          req.ParseRequest(clientSocket);
+          try
+          {
+               req.ParseRequest(clientSocket);
+          }
+          catch (const std::exception &e)
+          {
+               std::cerr << e.what() << '\n';
+          }
           // cout << req.getPort() << endl;
      }
      catch (const std::exception &e)
