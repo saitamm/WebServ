@@ -35,6 +35,13 @@ int main()
           try
           {
                req.ParseRequest(clientSocket);
+               cout << ":::::::::::::::::::::::::::::::::::::::::::;\n";
+               cout << "******" << req.getMethod() << endl;
+               cout << "******" << req.getUri() << endl;
+               if (req.getQuery().empty())
+                    cout << "******" << req.getQuery() << endl;
+               cout << "******" << req.getHost() << endl;
+               cout << "******" << req.getCtype() << endl;
           }
           catch (const std::exception &e)
           {
