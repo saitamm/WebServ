@@ -41,7 +41,7 @@ void Request::ParseRequest(int clientSocket)
     stringstream line(Header);
     line >> this->_method;
     if (_method != "GET" && _method != "DELETE" && _method != "POST")
-        throw MethodNotAllowedException();
+        throw BadRequestException();
     string path;
     vector<string> res;
     line >> path;
@@ -50,18 +50,12 @@ void Request::ParseRequest(int clientSocket)
     line >> Httpv;
     trim(Httpv, "\n\t\r ");
     if (Httpv != "HTTP/1.1")
-        throw ErrorHttpVersionException();
+        throw BadRequestException();
     string tmp;
-    line >> tmp;
-    line >> this->_host;
-    if (this->_host.empty() || tmp.find(':') == string::npos)
-        throw HostIssueException();
-    if (this->_host.find(':') != string::npos)
-        this->_host = this->_host.substr(0, this->_host.find(':'));
-    this->_port = 8080;
+    string tmp1;
     while (line >> tmp && tmp.find("boundary") == string::npos)
     {
-        if (tmp != "Content-Length:")
+        if (tmp != "Content-Length:" && tmp != "Host:")
         {
 
             trim(tmp, ":");
@@ -69,40 +63,61 @@ void Request::ParseRequest(int clientSocket)
             line >> value;
             trim(value, "\n\t\r ");
             this->_head[tmp] = value;
-
         }
-        else
+        else if (tmp == "Content-Length:")
         {
-            line >> this->_ContentLength;
+            line >> tmp1;
+        }
+        else if (tmp == "Host:")
+        {
+            line >> this->_host;
+            if (tmp.find(':') == string::npos)
+                throw BadRequestException();
+            if (this->_host.find(':') != string::npos)
+                this->_host = this->_host.substr(0, this->_host.find(':'));
         }
     }
+    if (this->_host.empty())
+        throw BadRequestException();
+
+    stringstream ss(tmp1);
+    ss >> this->_ContentLength;
+    if ((tmp1.empty() && _head["Transfer-Encoding"].empty()) || tmp1[0] == '-' || ss.fail())
+        throw BadRequestException();
     if (_method == "GET" || _method == "DELETE")
     {
         cout << "soumaaaaaya\n";
         return;
     }
-    // while ((bytesRead = recv(clientSocket, buf, sizeof(buf), 0)) > 0)
-    // {
-    //     Header.append(buf, bytesRead);
-    //     if (Header.find("\r\n\r\n") != std::string::npos)
-    //         break;
-    // }
+    int pos = tmp.find('-');
+    tmp.erase(0, pos);
+    string Body;
+    unsigned long long byte = 0;
+    cout << "tmp = " << tmp <<endl;
+    ofstream file;
+    while ((bytesRead = recv(clientSocket, buf, sizeof(buf), 0)) > 0)
+    {
+        Body.append(buf, bytesRead);
+        file.write(buf, bytesRead);
+        byte+=bytesRead;
+        if (byte >= this->_ContentLength || Body.find("\r\n") != string::npos)
+        break;
+    }
+    cout << "Body = \n"
+    << Body << endl;
 }
 
 // setters
 
-string Request::getHost(void) const { return (_host); }
-string Request::getMethod(void) const { return (_method); }
-// string Request::getPath(void) const { return (_path); }
-int Request::getPort(void) const { return (_port); }
-// int Request::getVServer(void) const { return (_Vserver); }
-size_t Request::getContentLength(void) const { return (_ContentLength); }
+string &Request::getHost(void) { return (_host); }
+string &Request::getMethod(void) { return (_method); }
+string &Request::getUri(void) { return (_url[0]); }
+string &Request::getQuery(void) { return (_url[1]); }
+string &Request::getCtype(void) { return (_head["Content-Type"]); }
+unsigned long long &Request::getContentLength(void) { return (_ContentLength); }
 
 // getters
 
 void Request::setHost(string host) { _host = host; }
 void Request::setMethod(string meth) { _method = meth; }
-// void Request::setPath(string path) { _path = path; }
-// void Request::setPort(string port) { _port = port; }
-// void Request::setVServer(int val) { _Vserver = val; }
-void Request::setContentLength(size_t Content) { _ContentLength = Content; }
+void Request::setContentLength(unsigned long long Content) { _ContentLength = Content; }
