@@ -12,7 +12,7 @@
 #include <vector>
 #include <map>
 #include <sstream>
-#include "Configfile.hpp"
+#include "ConfigFile.hpp"
 #include <algorithm>
 #include <cctype>
 
