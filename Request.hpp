@@ -26,6 +26,14 @@ public:
         return ("Bad Request\n");
     }
 };
+class SocketErrorException : public std::exception
+{
+public:
+    const char *what() const throw()
+    {
+        return ("Bad Socket\n");
+    }
+};
 
 using namespace std;
 class Request
@@ -38,14 +46,9 @@ public:
     string &getUri(void);
     string &getQuery(void);
     string &getCtype(void);
+    string &getFilename(void);
     unsigned long long &getContentLength(void);
-    void setMethod(string method);
-    void setHost(string Host);
-    // void setPort(string Port);
-    // void setPath(string Path);
-    // void setVServer(int val);
     void ParseRequest(int clientSocket);
-    void setContentLength(unsigned long long content);
 
 private:
     string _method;
@@ -53,7 +56,7 @@ private:
     vector<string> _url;
     unsigned long long _ContentLength;
     string _body;
-
+    string filename;
     map<string, string> _head;
 };
 void trim(string &str, string tr);

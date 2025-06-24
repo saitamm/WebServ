@@ -1,4 +1,5 @@
-#include "Request.hpp"
+dc8
+lfgkdfmlkfghgfnhgfhnkgjhngkhnjfgjhkghkjhngjh#include "Request.hpp"
 
 Request::Request()
 {
@@ -47,7 +48,6 @@ void Request::ParseRequest(int clientSocket)
     split(path, '?', this->_url);
     string Httpv;
     line >> Httpv;
-    Httpv.trim(" ")
     trim(Httpv, "\n\t\r ");
     if (Httpv != "HTTP/1.1")
         throw BadRequestException();
@@ -87,7 +87,11 @@ void Request::ParseRequest(int clientSocket)
     stringstream ss(tmp1);
     ss >> this->_ContentLength;
     if ((tmp1.empty() && _head["Transfer-Encoding"].empty()) || tmp1[0] == '-' || ss.fail())
+    {
+            cout << "oooooooooooooooooooooooooo\n";
+
         throw BadRequestException();
+    }
     int pos = tmp.find('-');
     tmp.erase(0, pos);
     string Body;
@@ -95,9 +99,9 @@ void Request::ParseRequest(int clientSocket)
     srand(time(0));
     stringstream ll;
     ll << rand();
-    this->filename = "Body/body_" + ll.str() + ".txt";
+    this->filename = "body_" + ll.str() + ".txt";
     ofstream file(filename.c_str());
-    while (totalReceived < this->_ContentLength+10)
+    while (totalReceived < this->_ContentLength)
     {
         bytesRead = recv(clientSocket, buf, sizeof(buf), 0);
         if (bytesRead < 0)
@@ -113,7 +117,7 @@ void Request::ParseRequest(int clientSocket)
     file.close();
 }
 
-// getters
+
 
 string &Request::getHost(void) { return (_host); }
 string &Request::getMethod(void) { return (_method); }
@@ -124,3 +128,5 @@ string &Request::getCtype(void) { return (_head["Content-Type"]); }
 unsigned long long &Request::getContentLength(void) { return (_ContentLength); }
 
 
+
+0
