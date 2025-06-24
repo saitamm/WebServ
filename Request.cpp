@@ -47,7 +47,6 @@ void Request::ParseRequest(int clientSocket)
     split(path, '?', this->_url);
     string Httpv;
     line >> Httpv;
-    Httpv.trim(" ")
     trim(Httpv, "\n\t\r ");
     if (Httpv != "HTTP/1.1")
         throw BadRequestException();
