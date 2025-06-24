@@ -42,12 +42,16 @@ int main()
                     cout << "******" << req.getQuery() << endl;
                cout << "******" << req.getHost() << endl;
                cout << "******" << req.getCtype() << endl;
+               string filename = req.getFilename();
+               ifstream file(filename.c_str());
+               std::string buffer((std::istreambuf_iterator<char>(file)),
+                                  std::istreambuf_iterator<char>());
+               cout << buffer <<endl;
           }
           catch (const std::exception &e)
           {
                std::cerr << e.what() << '\n';
           }
-          // cout << req.getPort() << endl;
      }
      catch (const std::exception &e)
      {
