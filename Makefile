@@ -1,5 +1,8 @@
 SRC =  server.cpp \
-		Request.cpp
+		Request.cpp \
+		ConfigFile.cpp \
+		ParseConfigFile.cpp 
+
 NAME = WebServ
 
 all: $(NAME)

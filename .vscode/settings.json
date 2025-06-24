@@ -1,7 +1,10 @@
 {
     "files.associations": {
+<<<<<<< HEAD
         "iostream": "cpp",
         "vector": "cpp",
+=======
+>>>>>>> origin/keltoum
         "iosfwd": "cpp"
     }
 }

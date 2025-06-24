@@ -1,6 +1,14 @@
 #include "Request.hpp"
-int main()
+int main(int ac, char **av)
 {
+     if (ac != 2)
+     {
+          cout << "Error: ./Webserv <file.conf> \n";
+          return 1;
+     }
+     ConfigFile config;
+     if (config.ParseConfigFile(av[1]) == 1)
+          cout << "Config File is incorrect! \n";
      int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
      if (serverSocket == -1)
      {
@@ -46,7 +54,7 @@ int main()
                ifstream file(filename.c_str());
                std::string buffer((std::istreambuf_iterator<char>(file)),
                                   std::istreambuf_iterator<char>());
-               cout << buffer <<endl;
+               cout << buffer << endl;
           }
           catch (const std::exception &e)
           {
