@@ -9,7 +9,7 @@ string ConfigFile::trim_line(const string& line)
     return line.substr(start, end - start + 1);
 }
 
-int ConfigFile::ParseConfigFile(string confFile)
+vector<ConfigFile>* ConfigFile::ParseConfigFile(string confFile)
 {
     string line, key, value;
     string new_line;
@@ -17,14 +17,11 @@ int ConfigFile::ParseConfigFile(string confFile)
     Location curr_loc;
     ConfigFile curr_server;
     int is_location = 0, is_server = 0;
-    vector<ConfigFile> servers;
+    vector<ConfigFile> *servers = new vector<ConfigFile>();
 
     fstream file(confFile.c_str());
     if (!file.is_open())
-    {
-        cout << "Error opening file!" << endl;
-        return 1;
-    }
+        throw ErrorConfigFileException();
     while(getline(file, line))
     {
         new_line = trim_line(line);
@@ -39,7 +36,7 @@ int ConfigFile::ParseConfigFile(string confFile)
                 bloc = SERVER;
             }
             if (bloc == SERVER)
-                servers.push_back(curr_server);
+                servers->push_back(curr_server);
             curr_server = ConfigFile();
             bloc = SERVER;
             continue;
@@ -64,9 +61,9 @@ int ConfigFile::ParseConfigFile(string confFile)
             {
                 size_t colon = value.find(":");
                 if (!(curr_server.setHost(value.substr(0, colon))))
-                    return 1;
+                throw ErrorConfigFileException();
                 if (!curr_server.setPort(value.substr(colon + 1)))
-                    return 1;
+                throw ErrorConfigFileException();
             }
             else if (key == "server_name")
                 curr_server.setName(value);
@@ -85,7 +82,7 @@ int ConfigFile::ParseConfigFile(string confFile)
             else if (key == "client_max_body_size")
             {
                 if (!curr_server.setMax_size(value))
-                    return 1; 
+                    throw ErrorConfigFileException();
             }
         }
         else if(bloc == LOCATION)
@@ -116,45 +113,45 @@ int ConfigFile::ParseConfigFile(string confFile)
         }
     }
     if (!is_server || !is_location)
-        return 1;
+    throw ErrorConfigFileException();
     if (bloc == LOCATION)
         curr_server.locations.push_back(curr_loc);
-    servers.push_back(curr_server);
+    servers->push_back(curr_server);
 
 
-    for (size_t i = 0; i < servers.size(); ++i)
-{
-    cout << "===== Server " << i + 1 << " =====" << endl;
-    cout << "Host: " << servers[i].getHost() << endl;
-    cout << "Port: " << servers[i].getPort() << endl;
-    cout << "Server Name: " << servers[i].getName() << endl;
-    cout << "Root: " << servers[i].getRoot() << endl;
-    cout << "Index: " << servers[i].getIndex() << endl;
-    cout << "Max Body Size: " << servers[i].getMax_size() << endl;
+//     for (size_t i = 0; i < servers->size(); ++i)
+// {
+//     cout << "===== Server " << i + 1 << " =====" << endl;
+//     cout << "Host: " << servers[i].getHost() << endl;
+//     cout << "Port: " << servers[i].getPort() << endl;
+//     cout << "Server Name: " << servers[i].getName() << endl;
+//     cout << "Root: " << servers[i].getRoot() << endl;
+//     cout << "Index: " << servers[i].getIndex() << endl;
+//     cout << "Max Body Size: " << servers[i].getMax_size() << endl;
 
-    // Print error pages
-    map<int, string> errs = servers[i].getError_page();
-    for (map<int, string>::iterator it = errs.begin(); it != errs.end(); ++it)
-    {
-        cout << "Error Page [" << it->first << "] => " << it->second << endl;
-    }
+//     // Print error pages
+//     map<int, string> errs = servers[i].getError_page();
+//     for (map<int, string>::iterator it = errs.begin(); it != errs.end(); ++it)
+//     {
+//         cout << "Error Page [" << it->first << "] => " << it->second << endl;
+//     }
 
-    // Print locations
-    vector<Location> locs = servers[i].getLocations();
-    for (size_t j = 0; j < locs.size(); ++j)
-    {
-        cout << "--- Location " << j + 1 << " ---" << endl;
-        cout << "Path: " << locs[j].getPath() << endl;
-        cout << "AutoIndex: " << locs[j].getAuto_idx() << endl;
-        cout << "Upload Store: " << locs[j].getUp_store() << endl;
-        cout << "CGI Pass: " << locs[j].getCgi_pass() << endl;
+//     // Print locations
+//     vector<Location> locs = servers[i].getLocations();
+//     for (size_t j = 0; j < locs.size(); ++j)
+//     {
+//         cout << "--- Location " << j + 1 << " ---" << endl;
+//         cout << "Path: " << locs[j].getPath() << endl;
+//         cout << "AutoIndex: " << locs[j].getAuto_idx() << endl;
+//         cout << "Upload Store: " << locs[j].getUp_store() << endl;
+//         cout << "CGI Pass: " << locs[j].getCgi_pass() << endl;
 
-        vector<string> methods = locs[j].getMethods();
-        cout << "Methods: ";
-        for (size_t k = 0; k < methods.size(); ++k)
-            cout << methods[k] << " ";
-        cout << endl;
-    }
-}
-return 0;
+//         vector<string> methods = locs[j].getMethods();
+//         cout << "Methods: ";
+//         for (size_t k = 0; k < methods.size(); ++k)
+//             cout << methods[k] << " ";
+//         cout << endl;
+//     }
+// }
+return servers;
 }
