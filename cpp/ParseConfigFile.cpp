@@ -1,4 +1,4 @@
-#include"ConfigFile.hpp"
+#include"../hpp/ConfigFile.hpp"
 
 string ConfigFile::trim_line(const string& line)
 {
