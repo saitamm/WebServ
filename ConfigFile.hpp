@@ -62,13 +62,19 @@ class ConfigFile
         vector<Location> getLocations() const;
         void add_locations(const Location& loc);
         vector<ConfigFile>* ParseConfigFile(string confFile);
-        string trim_line(const string& line);
 };
 
 class ErrorConfigFileException : public exception{
     public:
         const char* what() const throw(){
-            return "Error, ConfigFile is incorrect!";
+            return "Error, ConfigFile Is Incorrect!";
+        }
+};
+
+class DuplicateDirectionException : public exception{
+    public:
+        const char* what() const throw(){
+            return "Error, Duplicate Direction";
         }
 };
 
