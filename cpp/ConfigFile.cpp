@@ -1,4 +1,4 @@
-#include"ConfigFile.hpp"
+#include "../hpp/ConfigFile.hpp"
 
 string ConfigFile::getName() const
 {
