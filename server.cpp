@@ -1,4 +1,4 @@
-#include "Request.hpp"
+#include "hpp/Request.hpp"
 int main(int ac, char **av)
 {
      if (ac != 2)
@@ -38,28 +38,8 @@ int main(int ac, char **av)
      try
      {
           clientSocket = accept(serverSocket, NULL, NULL);
-          cout << "-------------------------------------------------------------\n";
           Request req;
-          try
-          {
-               req.ParseRequest(clientSocket);
-               cout << ":::::::::::::::::::::::::::::::::::::::::::;\n";
-               cout << "******" << req.getMethod() << endl;
-               cout << "******" << req.getUri() << endl;
-               if (req.getQuery().empty())
-                    cout << "******" << req.getQuery() << endl;
-               cout << "******" << req.getHost() << endl;
-               cout << "******" << req.getCtype() << endl;
-               string filename = req.getFilename();
-               ifstream file(filename.c_str());
-               std::string buffer((std::istreambuf_iterator<char>(file)),
-                                  std::istreambuf_iterator<char>());
-               cout << buffer << endl;
-          }
-          catch (const std::exception &e)
-          {
-               std::cerr << e.what() << '\n';
-          }
+          req.ParseRequest(clientSocket);
      }
      catch (const std::exception &e)
      {
