@@ -61,8 +61,15 @@ class ConfigFile
         void add_error(int err, string path);
         vector<Location> getLocations() const;
         void add_locations(const Location& loc);
-        int ParseConfigFile(string confFile);
+        vector<ConfigFile>* ParseConfigFile(string confFile);
         string trim_line(const string& line);
+};
+
+class ErrorConfigFileException : public exception{
+    public:
+        const char* what() const throw(){
+            return "Error, ConfigFile is incorrect!";
+        }
 };
 
 #endif
