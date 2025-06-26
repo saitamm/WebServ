@@ -3,7 +3,12 @@
 #include "Request.hpp"
 class Response
 {
-    public :
-        Request _req;
+public:
+    Response();
+    ~Response();
+    void MakeResponce(Request &req);
+
+private:
+    Request _req;
 };
 #endif

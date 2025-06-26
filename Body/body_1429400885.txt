@@ -1,5 +1,4 @@
-#include "../hpp/Request.hpp"
-
+d84
 Request::Request()
 {
 }
@@ -24,21 +23,7 @@ void split(string str, char c, vector<string> &resul)
     str.erase(0, str.find(c) + 1);
     resul.push_back(str);
 }
-Location* matchLocation(const std::string& uri, const std::vector<Location>& locations) {
-    Location* bestMatch = NULL;
-    size_t maxMatchLength = 0;
-
-    for (size_t i = 0; i < locations.size(); ++i) {
-        const std::string& path = locations[i].getPath();
-        if (uri.find(path) == 0 && path.length() > maxMatchLength) {
-            bestMatch = const_cast<Location*>(&locations[i]);
-            maxMatchLength = path.length();
-        }
-    }
-    return bestMatch;
-}
-
-void Request::ParseRequest(int clientSocket , ConfigFile &serv)
+void Request::ParseRequest(int clientSocket)
 {
     std::string Header;
     char buf[1];
@@ -50,6 +35,7 @@ void Request::ParseRequest(int clientSocket , ConfigFile &serv)
         if (Header.find("\r\n\r\n") != std::string::npos)
             break;
     }
+    cout << Header << endl;
     stringstream line(Header);
     line >> this->_method;
     if (_method != "GET" && _method != "DELETE" && _method != "POST")
@@ -91,9 +77,6 @@ void Request::ParseRequest(int clientSocket , ConfigFile &serv)
     }
     if (this->_host.empty())
         throw BadRequestException();
-    this->_serv = serv;
-    this->_locat = matchLocation(this->_url[0], serv.getLocations());
-    cout << "best match is  = " << this->_locat->getPath()<<endl;
     if (_method == "GET" || _method == "DELETE")
     {
         cout << "soumaaaaaya\n";
@@ -102,7 +85,11 @@ void Request::ParseRequest(int clientSocket , ConfigFile &serv)
     stringstream ss(tmp1);
     ss >> this->_ContentLength;
     if ((tmp1.empty() && _head["Transfer-Encoding"].empty()) || tmp1[0] == '-' || ss.fail())
+    {
+            cout << "oooooooooooooooooooooooooo\n";
+
         throw BadRequestException();
+    }
     int pos = tmp.find('-');
     tmp.erase(0, pos);
     string Body;
@@ -110,9 +97,9 @@ void Request::ParseRequest(int clientSocket , ConfigFile &serv)
     srand(time(0));
     stringstream ll;
     ll << rand();
-    this->filename = "Body/body_" + ll.str() + ".txt";
+    this->filename = "body_" + ll.str() + ".txt";
     ofstream file(filename.c_str());
-    while (totalReceived < this->_ContentLength+10)
+    while (totalReceived < this->_ContentLength)
     {
         bytesRead = recv(clientSocket, buf, sizeof(buf), 0);
         if (bytesRead < 0)
@@ -128,7 +115,7 @@ void Request::ParseRequest(int clientSocket , ConfigFile &serv)
     file.close();
 }
 
-// getters
+
 
 string &Request::getHost(void) { return (_host); }
 string &Request::getMethod(void) { return (_method); }
@@ -137,6 +124,7 @@ string &Request::getQuery(void) { return (_url[1]); }
 string &Request::getFilename(void) { return (filename); }
 string &Request::getCtype(void) { return (_head["Content-Type"]); }
 unsigned long long &Request::getContentLength(void) { return (_ContentLength); }
-ConfigFile &Request::getConfigFile(void){return (_serv);}
 
 
+
+0
