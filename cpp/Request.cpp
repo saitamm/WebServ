@@ -24,21 +24,23 @@ void split(string str, char c, vector<string> &resul)
     str.erase(0, str.find(c) + 1);
     resul.push_back(str);
 }
-Location* matchLocation(const std::string& uri, const std::vector<Location>& locations) {
-    Location* bestMatch = NULL;
+Location *matchLocation(const std::string &uri, const std::vector<Location> &locations)
+{
+    Location *bestMatch = NULL;
     size_t maxMatchLength = 0;
-
-    for (size_t i = 0; i < locations.size(); ++i) {
-        const std::string& path = locations[i].getPath();
-        if (uri.find(path) == 0 && path.length() > maxMatchLength) {
-            bestMatch = const_cast<Location*>(&locations[i]);
+    for (size_t i = 0; i < locations.size(); ++i)
+    {
+        std::string path = locations[i].getPath();
+        if (uri.find(path) != string::npos && path.length() > maxMatchLength)
+        {
+            bestMatch = new Location(locations[i]);
             maxMatchLength = path.length();
         }
     }
     return bestMatch;
 }
 
-void Request::ParseRequest(int clientSocket , ConfigFile &serv)
+void Request::ParseRequest(int clientSocket, ConfigFile &serv)
 {
     std::string Header;
     char buf[1];
@@ -50,6 +52,7 @@ void Request::ParseRequest(int clientSocket , ConfigFile &serv)
         if (Header.find("\r\n\r\n") != std::string::npos)
             break;
     }
+    cout << Header << endl;
     stringstream line(Header);
     line >> this->_method;
     if (_method != "GET" && _method != "DELETE" && _method != "POST")
@@ -93,10 +96,14 @@ void Request::ParseRequest(int clientSocket , ConfigFile &serv)
         throw BadRequestException();
     this->_serv = serv;
     this->_locat = matchLocation(this->_url[0], serv.getLocations());
-    cout << "best match is  = " << this->_locat->getPath()<<endl;
+    if (this->_locat)
+        cout << "location path " << this->_locat->getPath() << endl;
+    else
+        cout << "No matching location found for URI: " << this->_url[0] << endl;
+
     if (_method == "GET" || _method == "DELETE")
     {
-        cout << "soumaaaaaya\n";
+        cout << "i am Get or Delete \n";
         return;
     }
     stringstream ss(tmp1);
@@ -112,7 +119,7 @@ void Request::ParseRequest(int clientSocket , ConfigFile &serv)
     ll << rand();
     this->filename = "Body/body_" + ll.str() + ".txt";
     ofstream file(filename.c_str());
-    while (totalReceived < this->_ContentLength+10)
+    while (totalReceived < this->_ContentLength + 10)
     {
         bytesRead = recv(clientSocket, buf, sizeof(buf), 0);
         if (bytesRead < 0)
@@ -136,7 +143,6 @@ string &Request::getUri(void) { return (_url[0]); }
 string &Request::getQuery(void) { return (_url[1]); }
 string &Request::getFilename(void) { return (filename); }
 string &Request::getCtype(void) { return (_head["Content-Type"]); }
+Location *Request::getLocation(void) { return (_locat); }
 unsigned long long &Request::getContentLength(void) { return (_ContentLength); }
-ConfigFile &Request::getConfigFile(void){return (_serv);}
-
-
+ConfigFile &Request::getConfigFile(void) { return (_serv); }

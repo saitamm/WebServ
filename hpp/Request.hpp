@@ -47,6 +47,7 @@ public:
     string &getQuery(void);
     string &getCtype(void);
     string &getFilename(void);
+    Location *getLocation(void);
     unsigned long long &getContentLength(void);
     void ParseRequest(int clientSocket, ConfigFile &serv);
     ConfigFile &getConfigFile(void);

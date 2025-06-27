@@ -1,5 +1,15 @@
 #include "../hpp/ConfigFile.hpp"
 
+Location::Location(){}
+Location::Location(const Location &loc)
+{
+    this->path = loc.path;
+    this->methods = loc.methods;
+    this->auto_idx = loc.auto_idx;
+    this->up_store = loc.up_store;
+    this->cgi_pass = loc.cgi_pass;
+}
+
 string ConfigFile::getName() const
 {
     return name;
