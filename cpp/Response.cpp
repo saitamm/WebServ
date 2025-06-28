@@ -1,14 +1,13 @@
 #include "../hpp/Response.hpp"
 #include <sys/stat.h>
 
-
-Response::Response(){}
-Response::~Response(){}
+Response::Response() {}
+Response::~Response() {}
 int allowMethod(Location loc, string method)
 {
     vector<string> vec = loc.getMethods();
     cout << "***********\n";
-    for(size_t idx = 0;idx < vec.size();idx++)
+    for (size_t idx = 0; idx < vec.size(); idx++)
     {
         if (vec[idx] == method)
             return (1);
@@ -18,36 +17,61 @@ int allowMethod(Location loc, string method)
 
 void handleDelete(Response &resp)
 {
-    string     file = resp.getRequest().getUri();
-    cout << "file is  = "<< file <<endl;
-    struct stat Buff;
-    cout << stat(file.c_str(), &Buff) << endl;
-    if (access(file.c_str(), F_OK))
-        resp.setStatus("404");
+    struct stat path;
+    string file = resp.getRequest().getUri();
+    cout << "file is  = " << file << endl;
+    if (file[0] == '/')
+        file.erase(0, 1);
+    cout << "file is after   = " << file << endl;
+    if (stat(file.c_str(), &path) == -1)
+    {
+        cerr << "error with stat\n";
+    }
+    if (S_ISREG(path.st_mode))
+    {
+        if (unlink(file.c_str()) == -1)
+        {
+            resp.setStatus("403");
+            return ;
+        }
+        else
+            cout << "file deleted\n";
+    }
+    else if (S_ISDIR(path.st_mode))
+    {
+        cout << "is directory " << endl;
+    }
+    else
+    {
+        cout << "no one \n";
+    }
+    // string     file = resp.getRequest().getUri();
+    // cout << "file is  = "<< file <<endl;
+    // struct stat Buff;
+    // cout << stat(file.c_str(), &Buff) << endl;
+    // if (access(file.c_str(), F_OK))
+    //     resp.setStatus("404");
 }
 
 void MakeResponce(Request &req, Response &resp)
 {
     resp.setRequest(req);
     if (!allowMethod(*req.getLocation(), req.getMethod()))
-    {
-        cout << "=="<<endl;
         resp.setStatus("405");
-    }
     if (req.getMethod() == "DELETE")
+    {
         handleDelete(resp);
+        return ;
+    }
 }
 
+string Response::getStatus(void) const{ return (_status); }
+size_t &Response::getContentLength(void) { return (_ContentLength); }
+string &Response::getContenttype(void) { return (_ContentType); }
+Request &Response::getRequest(void) { return (_req); }
 
-string &Response::getStatus(void){return (_status);}
-size_t &Response::getContentLength(void){return(_ContentLength);}
-string &Response::getContenttype(void){return (_ContentType);}
-Request &Response::getRequest(void){return (_req);}
-
-//setters
-void Response::setContentLength(size_t size){_ContentLength = size;}
-void Response::setContentType(string content){_ContentType = content;}
-void Response::setRequest(Request &req){_req = req;}
-void Response::setStatus(string stat){_status = stat;}
-
-
+// setters
+void Response::setContentLength(size_t size) { _ContentLength = size; }
+void Response::setContentType(string content) { _ContentType = content; }
+void Response::setRequest(Request &req) { _req = req; }
+void Response::setStatus(string stat) { _status = stat; }

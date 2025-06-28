@@ -7,7 +7,7 @@ public:
     Response();
     ~Response();
     //getters
-    string &getStatus(void);
+    string getStatus(void) const;
     size_t &getContentLength(void);
     string &getContenttype(void);
     Request &getRequest(void);
@@ -16,7 +16,7 @@ public:
     void setContentLength(size_t size);
     void setContentType(string type);
     void setRequest(Request &req);
-    void MakeResponce(Request &req);
+    // void MakeResponce(Request &req);
 
 private:
     string _status;

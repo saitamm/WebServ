@@ -7,19 +7,19 @@
 // }
 void printServ(ConfigFile serv)
 {
-     cout << " name  = " << serv.getName() <<endl;
-     cout << " host  = " << serv.getHost() <<endl;
-     cout << " port  = " << serv.getPort() <<endl;
-     cout << " root  = " << serv.getRoot() <<endl;
-     cout << " index  = " << serv.getIndex() <<endl;
+     cout << " name  = " << serv.getName() << endl;
+     cout << " host  = " << serv.getHost() << endl;
+     cout << " port  = " << serv.getPort() << endl;
+     cout << " root  = " << serv.getRoot() << endl;
+     cout << " index  = " << serv.getIndex() << endl;
      vector<Location> loc = serv.getLocations();
-     for(size_t i = 0;i< loc.size();i++)
+     for (size_t i = 0; i < loc.size(); i++)
      {
-          cout << "location path = "<< loc[i].getPath() <<endl;
-          vector<string> meth  = loc[i].getMethods();
-          for(size_t id = 0;id< meth.size();id++)
+          cout << "location path = " << loc[i].getPath() << endl;
+          vector<string> meth = loc[i].getMethods();
+          for (size_t id = 0; id < meth.size(); id++)
           {
-               cout << "method  = "<< meth[id] <<endl;
+               cout << "method  = " << meth[id] << endl;
           }
           cout << "======\n";
      }
@@ -47,7 +47,7 @@ int main(int ac, char **av)
                std::cerr << "Socket creation failed!\n";
                return 1;
           }
-          
+
           sockaddr_in serverAddr;
           serverAddr.sin_family = AF_INET;
           stringstream ss(servers->at(0).getPort());
@@ -57,7 +57,7 @@ int main(int ac, char **av)
           serverAddr.sin_addr.s_addr = INADDR_ANY;
           int opt = 1;
           setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-          
+
           if (bind(serverSocket, (sockaddr *)&serverAddr, sizeof(serverAddr)) < 0)
           {
                std::cerr << "Bind failed! Maybe port is busy.\n";
@@ -77,21 +77,41 @@ int main(int ac, char **av)
                cout << "method = ******" << req.getMethod() << endl;
                cout << "uri = ******" << req.getUri() << endl;
                if (req.getQuery().empty())
-               cout << "query = ******" << req.getQuery() << endl;
+                    cout << "query = ******" << req.getQuery() << endl;
                cout << "host = ******" << req.getHost() << endl;
                cout << "type = ******" << req.getCtype() << endl;
                string filename = req.getFilename();
                ifstream file(filename.c_str());
                std::string buffer((std::istreambuf_iterator<char>(file)),
-               std::istreambuf_iterator<char>());
+                                  std::istreambuf_iterator<char>());
                cout << buffer << endl;
                cout << "--------------------Request-----------------\n";
-               Response resp;
+               // Response resp;
+               // cout << "--------------------Response-----------------\n";
+               // MakeResponce(req, resp);
+               // string buff = "HTTP/1.1 " + resp.getStatus() + "Not found\r\n" + "Content-Type: text/plain\r\n"
+               //                                                                  "Content-Length: 19\r\n"
+               //                                                                  "\r\n"
+               //                                                                  "Permissioin denied.\n";
+               const char *response =
+                   "HTTP/1.1 200 OK\r\n"
+                   "Content-Type: text/plain\r\n"
+                   "Content-Length: 27\r\n"
+                   "Connection: close\r\n"
+                   "\r\n"
+                   "File deleted successfully.\n";
+               cout << " Res = " << response << endl;
+               ssize_t bytes_sent = send(clientSocket, response, strlen(response), 0);
+               if (bytes_sent == -1)
+               {
+                    perror("send failed");
+               }
+               else
+               {
+                    std::cout << "Sent " << bytes_sent << " bytes to client." << std::endl;
+               }
                cout << "--------------------Response-----------------\n";
-               MakeResponce(req, resp);
-               cout << " status = " << resp.getStatus() <<endl; 
-               cout << "--------------------Response-----------------\n";
-
+               close(clientSocket);
           }
           catch (const std::exception &e)
           {
