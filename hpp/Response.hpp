@@ -1,6 +1,8 @@
 #ifndef RESPONSE_HPP
 #define RESPONSE_HPP
 #include "Request.hpp"
+#include <sys/stat.h>
+
 class Response
 {
 public:
@@ -26,4 +28,5 @@ private:
 };
 
 void MakeResponce(Request &req, Response &resp);
+void handleDelete(Response &resp);
 #endif
