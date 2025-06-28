@@ -2,7 +2,8 @@ SRC =  server.cpp \
 		cpp/Request.cpp \
 		cpp/ConfigFile.cpp \
 		cpp/ParseConfigFile.cpp \
-		cpp/Response.cpp
+		cpp/Response.cpp \
+		Methods/Delete.cpp
 
 NAME = WebServ
 
