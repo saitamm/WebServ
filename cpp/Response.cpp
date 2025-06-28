@@ -3,15 +3,16 @@
 
 Response::Response() {}
 Response::~Response() {}
+
 int allowMethod(Location loc, string method)
 {
-    vector<string> vec = loc.getMethods();
-    cout << "***********\n";
-    for (size_t idx = 0; idx < vec.size(); idx++)
+    for (std::set<std::string>::const_iterator it = loc.getMethods().begin(); it != loc.getMethods().end(); ++it)
     {
-        if (vec[idx] == method)
+        if (*it == method)
             return (1);
+        std::cout << "method = " << *it << std::endl;
     }
+
     return (0);
 }
 
@@ -32,7 +33,7 @@ void handleDelete(Response &resp)
         if (unlink(file.c_str()) == -1)
         {
             resp.setStatus("403");
-            return ;
+            return;
         }
         else
             cout << "file deleted\n";
@@ -61,11 +62,11 @@ void MakeResponce(Request &req, Response &resp)
     if (req.getMethod() == "DELETE")
     {
         handleDelete(resp);
-        return ;
+        return;
     }
 }
 
-string Response::getStatus(void) const{ return (_status); }
+string Response::getStatus(void) const { return (_status); }
 size_t &Response::getContentLength(void) { return (_ContentLength); }
 string &Response::getContenttype(void) { return (_ContentType); }
 Request &Response::getRequest(void) { return (_req); }

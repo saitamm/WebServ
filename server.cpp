@@ -16,11 +16,9 @@ void printServ(ConfigFile serv)
      for (size_t i = 0; i < loc.size(); i++)
      {
           cout << "location path = " << loc[i].getPath() << endl;
-          vector<string> meth = loc[i].getMethods();
-          for (size_t id = 0; id < meth.size(); id++)
-          {
-               cout << "method  = " << meth[id] << endl;
-          }
+          for (std::set<std::string>::const_iterator it = loc[i].getMethods().begin(); it != loc[i].getMethods().end(); ++it) {
+    std::cout << "method = " << *it << std::endl;
+}
           cout << "======\n";
      }
 }
@@ -50,10 +48,10 @@ int main(int ac, char **av)
 
           sockaddr_in serverAddr;
           serverAddr.sin_family = AF_INET;
-          stringstream ss(servers->at(0).getPort());
-          int value;
-          ss >> value;
-          serverAddr.sin_port = htons(value);
+          // stringstream ss(servers->at(0).getPort());
+          // int value;
+          // ss >> value;
+          serverAddr.sin_port = htons(servers->at(0).getPort());
           serverAddr.sin_addr.s_addr = INADDR_ANY;
           int opt = 1;
           setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));

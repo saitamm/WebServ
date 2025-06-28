@@ -9,10 +9,10 @@ NAME = WebServ
 all: $(NAME)
 
 CXX = c++
-CXXFLAGS = -Wall -Werror -Wextra -std=c++98 -g3  #-fsanitize=address
-
-$(NAME): $(SRC)
-	@$(CXX) $(CXXFLAGS) $(SRC) -o $(NAME)
+OBJ = $(SRC:.cpp=.o)
+CXXFLAGS = -Wall -Werror -Wextra --std=c++98 -g3 
+$(NAME): $(OBJ)
+	@$(CXX) $(CXXFLAGS) $(OBJ) -o $(NAME)
 	@echo "\033[32mCompilation complete ✅\033[0m"
 
 %.o: %.cpp

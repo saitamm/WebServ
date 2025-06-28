@@ -1,16 +1,10 @@
 #include "../hpp/ConfigFile.hpp"
 
-Location::Location(){}
-Location::Location(const Location &loc)
-{
-    this->path = loc.path;
-    this->methods = loc.methods;
-    this->auto_idx = loc.auto_idx;
-    this->up_store = loc.up_store;
-    this->cgi_pass = loc.cgi_pass;
-}
+ConfigFile::ConfigFile(){}
 
-string ConfigFile::getName() const
+ConfigFile::~ConfigFile(){}
+
+const string& ConfigFile::getName() const
 {
     return name;
 }
@@ -20,7 +14,7 @@ void ConfigFile::setName(const string& n)
     name = n;
 }
 
-string ConfigFile::getHost() const
+const string& ConfigFile::getHost() const
 {
     return host;
 }
@@ -53,7 +47,7 @@ int ConfigFile::setHost(const string& localhost)
     return 1;
 }
 
-string ConfigFile::getPort() const
+int ConfigFile::getPort() const
 {
     return port;
 }
@@ -70,11 +64,11 @@ int ConfigFile::setPort(const string& p)
     pp >> iport;
     if (iport < 1 || iport > 65535)
         return 0;
-    port = p;
+    port = iport;
     return 1;  
 }
 
-string ConfigFile::getRoot() const
+const string& ConfigFile::getRoot() const
 {
     return root;
 }
@@ -84,13 +78,16 @@ void ConfigFile::setRoot(const string& r)
     root = r;
 }
 
-string ConfigFile::getIndex() const
+const string& ConfigFile::getIndex() const
 {
     return index;
 }
 
 void ConfigFile::setIndex(const string& idx)
 {
+    string file = idx.substr(idx.size() - 5, idx.size() -1);
+    if (file != ".html")
+        throw ErrorConfigFileException();
     index = idx;
 }
 
@@ -127,17 +124,24 @@ int ConfigFile::setMax_size(const string& size)
     return 1;
 }
 
-map<int, string> ConfigFile::getError_page() const
+const map<int, string>& ConfigFile::getError_page() const
 {
     return error_page;
 }
 
 void ConfigFile::add_error(int err, string path)
 {
+    if (err < 300 || err >= 600)
+    throw InvalidErrorPageException();
+    if (path.empty())
+        throw ErrorConfigFileException();
+    string file = path.substr(path.size() - 5, path.size() -1);
+    if (file != ".html")
+        throw InvalidErrorPageException();
     error_page[err] = path;
 }
 
-vector<Location> ConfigFile::getLocations() const
+const vector<Location>& ConfigFile::getLocations() const
 {
     return locations;
 }
@@ -147,27 +151,29 @@ void ConfigFile::add_locations(const Location& loc)
     locations.push_back(loc);
 }
 
-vector<string> Location::getMethods() const
+const set<string>& Location::getMethods() const
 {
     return methods;
 }
 
 void Location::add_method(const string& func)
 {
-    methods.push_back(func);
+    methods.insert(func);
 }
 
-string Location::getAuto_idx() const
+const string& Location::getAuto_idx() const
 {
     return auto_idx;
 }
 
 void Location::setAuto_idx(const string& index)
 {
+    if (index != "on" && index != "off")
+        throw ErrorConfigFileException();
     auto_idx = index;
 }
 
-string Location::getUp_store() const
+const string& Location::getUp_store() const
 {
     return up_store;
 }
@@ -177,7 +183,7 @@ void Location::setUp_store(const string& path)
     up_store = path;
 }
 
-string Location::getCgi_pass() const
+const string& Location::getCgi_pass() const
 {
     return cgi_pass;
 }
@@ -187,7 +193,7 @@ void Location::setCgi_pass(const string& path)
     cgi_pass = path;
 }
 
-string Location::getPath() const
+const string& Location::getPath() const
 {
     return path;
 }
