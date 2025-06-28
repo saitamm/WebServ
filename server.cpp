@@ -1,4 +1,9 @@
 #include "hpp/Request.hpp"
+
+// void printRequest9(Request req)
+// {
+//      cout <<
+// }
 int main(int ac, char **av)
 {
      if (ac != 2)
