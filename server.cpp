@@ -75,6 +75,19 @@ int main(int ac, char **av)
           Response resp;
           cout << "--------------------Response-----------------\n";
           MakeResponce(req, resp);
+          stringstream ss;
+          ss << resp.getBody().size();
+          std::string response =
+              "HTTP/1.1 " + resp.getStatus() + " " + resp.getValue(resp.getStatus()) + "\r\n"
+                                                                                       "Content-Type: text/html\r\n"
+                                                                                       "Content-Length: " +
+              ss.str() +
+              "\r\n"
+              "Connection: close\r\n"
+              "\r\n" +
+              resp.getBody();
+          if (send(clientSocket, response.c_str(), response.size(), 0) == -1)
+               cerr << "error Send \n";
           close(clientSocket);
           close(clientSocket);
      }
