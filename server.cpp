@@ -77,8 +77,11 @@ int main(int ac, char **av)
           MakeResponce(req, resp);
           stringstream ss;
           ss << resp.getBody().size();
+          stringstream ll;
+          ss << resp.getStatus();
+          cout << ss.str() <<endl;
           std::string response =
-              "HTTP/1.1 " + resp.getStatus() + " " + resp.getValue(resp.getStatus()) + "\r\n"
+              "HTTP/1.1 " + ll.str() + " " + resp.getValue(ll.str()) + "\r\n"
                                                                                        "Content-Type: text/html\r\n"
                                                                                        "Content-Length: " +
               ss.str() +

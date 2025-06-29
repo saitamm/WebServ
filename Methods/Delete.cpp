@@ -1,4 +1,21 @@
 #include "../hpp/Response.hpp"
+void setErrorBodyStatus(Response &resp, int error)
+{
+    resp.setStatus(error);
+    map<int, string> body = resp.getRequest().getConfigFile().getError_page();
+    if (body[error][0] == '/')
+        body[error].erase(0, 1);
+    fstream file(body[error].c_str());
+    cout << "error page = " << body[error] << endl;
+    if (!file.is_open())
+    {
+        std::cerr << "❌ Failed to open file: " << body[error] << std::endl;
+        return;
+    }
+    std::string buffer((std::istreambuf_iterator<char>(file)),
+                       std::istreambuf_iterator<char>());
+    resp.setBody(buffer);
+}
 void handleDelete(Response &resp)
 {
     struct stat path;
@@ -7,56 +24,43 @@ void handleDelete(Response &resp)
         file.erase(0, 1);
     if (stat(file.c_str(), &path) == -1)
     {
-        cerr << "error with stat\n";
-        resp.setStatus("403");
-        std::string body = "<!DOCTYPE html>"
-                   "<html>"
-                   "<head>"
-                   "<title>"+resp.getStatus()+resp.getValue(resp.getStatus()) +"</title>"
-                   "</head>"
-                   "<body style=\"margin: 0; height: 100vh; display: flex; justify-content: center; align-items: center; background-color: white;\">"
-                   "<h1 style=\"color: red; font-size: 3em;\">403 Forbidden</h1>"
-                   "</body>"
-                   "</html>";
-
-        resp.setBody(body);
+        setErrorBodyStatus(resp, 403);
         return;
     }
     if (S_ISREG(path.st_mode))
     {
         if (unlink(file.c_str()) == -1)
         {
-            resp.setStatus("403");
-            std::string body = "<!DOCTYPE html>"
-                   "<html>"
-                   "<head>"
-                   "<title>"+resp.getStatus()+resp.getValue(resp.getStatus()) +"</title>"
-                   "</head>"
-                   "<body style=\"margin: 0; height: 100vh; display: flex; justify-content: center; align-items: center; background-color: white;\">"
-                   "<h1 style=\"color: green; font-size: 3em;\">"+resp.getStatus()+" "+resp.getValue(resp.getStatus()) +"</h1>"
-                   "</body>"
-                   "</html>";
+            setErrorBodyStatus(resp, 403);
             return;
         }
         else
         {
-            resp.setStatus("200");
-            std::string body = "<!DOCTYPE html>"
-                   "<html>"
-                   "<head>"
-                   "<title>"+resp.getStatus()+resp.getValue(resp.getStatus()) +"</title>"
-                   "</head>"
-                   "<body style=\"margin: 0; height: 100vh; display: flex; justify-content: center; align-items: center; background-color: white;\">"
-                   "<h1 style=\"color: green; font-size: 3em;\">"+resp.getStatus()+resp.getValue(resp.getStatus()) +"</h1>"
-                   "</body>"
-                   "</html>";
-            resp.setBody(body);
+            resp.setStatus(200);
+            fstream file("errors/200.html");
+            if (!file.is_open())
+            {
+                std::cerr << "❌ Failed to open file: " << std::endl;
+                return;
+            }
+            std::string buffer((std::istreambuf_iterator<char>(file)),
+                               std::istreambuf_iterator<char>());
+            resp.setBody(buffer);
             cout << "file deleted\n";
         }
     }
     else if (S_ISDIR(path.st_mode))
     {
-        cout << "is directory " << endl;
+        if (file[file.size() - 1] == '/')
+        {
+            cout << "i am to recurson\n";
+            return;
+        }
+        else
+        {
+            setErrorBodyStatus(resp, 409);
+            return;
+        }
     }
     else
     {
