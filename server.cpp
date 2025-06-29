@@ -33,6 +33,27 @@ void printServ(ConfigFile serv)
           cout << "======\n";
      }
 }
+
+void SendResponse(Response &resp, int clientSocket)
+{
+     stringstream ss;
+     ss << resp.getBody().size();
+     stringstream ll;
+     ll << resp.getStatus();
+     std::string response =
+         "HTTP/1.1 " + ll.str() + " " + resp.getValue(ll.str()) + "\r\n"
+                                                                  "Content-Type: text/html\r\n"
+                                                                  "Content-Length: " +
+         ss.str() +
+         "\r\n"
+         "Connection: close\r\n"
+         "\r\n" +
+         resp.getBody();
+     if (send(clientSocket, response.c_str(), response.size(), 0) == -1)
+          cerr << "error Send \n";
+     else
+          cout<< "response sended ✅ \n";
+}
 int main(int ac, char **av)
 {
      if (ac != 2)
@@ -46,8 +67,7 @@ int main(int ac, char **av)
      {
 
           servers = config.ParseConfigFile(av[1]);
-          cout << "--------------------Server-----------------\n";
-          printServ(servers->at(0));
+          // cout << "--------------------Server-----------------\n";
           int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
           if (serverSocket == -1)
           {
@@ -68,29 +88,13 @@ int main(int ac, char **av)
           listen(serverSocket, 5);
           int clientSocket;
           clientSocket = accept(serverSocket, NULL, NULL);
-          cout << "--------------------Request-----------------\n\n";
+          // cout << "--------------------Request-----------------\n\n";
           Request req;
           req.ParseRequest(clientSocket, servers->at(0));
-          printRequest(req);
           Response resp;
-          cout << "--------------------Response-----------------\n";
+          // cout << "--------------------Response-----------------\n";
           MakeResponce(req, resp);
-          stringstream ss;
-          ss << resp.getBody().size();
-          stringstream ll;
-          ss << resp.getStatus();
-          cout << ss.str() <<endl;
-          std::string response =
-              "HTTP/1.1 " + ll.str() + " " + resp.getValue(ll.str()) + "\r\n"
-                                                                                       "Content-Type: text/html\r\n"
-                                                                                       "Content-Length: " +
-              ss.str() +
-              "\r\n"
-              "Connection: close\r\n"
-              "\r\n" +
-              resp.getBody();
-          if (send(clientSocket, response.c_str(), response.size(), 0) == -1)
-               cerr << "error Send \n";
+          SendResponse(resp, clientSocket);
           close(clientSocket);
           close(clientSocket);
      }

@@ -6,7 +6,22 @@ void setErrorBodyStatus(Response &resp, int error)
     if (body[error][0] == '/')
         body[error].erase(0, 1);
     fstream file(body[error].c_str());
-    cout << "error page = " << body[error] << endl;
+    if (!file.is_open())
+    {
+        std::cerr << "❌ Failed to open file: " << body[error] << std::endl;
+        return;
+    }
+    std::string buffer((std::istreambuf_iterator<char>(file)),
+                       std::istreambuf_iterator<char>());
+    resp.setBody(buffer);
+}
+void setSuccessBodyStatus(Response &resp, int error)
+{
+    resp.setStatus(error);
+    map<int, string> body = resp.getRequest().getConfigFile().getError_page();
+    if (body[error][0] == '/')
+        body[error].erase(0, 1);
+    fstream file(body[error].c_str());
     if (!file.is_open())
     {
         std::cerr << "❌ Failed to open file: " << body[error] << std::endl;
@@ -24,7 +39,7 @@ void handleDelete(Response &resp)
         file.erase(0, 1);
     if (stat(file.c_str(), &path) == -1)
     {
-        setErrorBodyStatus(resp, 403);
+        setErrorBodyStatus(resp, 404);
         return;
     }
     if (S_ISREG(path.st_mode))
@@ -64,7 +79,7 @@ void handleDelete(Response &resp)
     }
     else
     {
-        cout << "no one \n";
+        setErrorBodyStatus(resp, 404);
     }
     // string     file = resp.getRequest().getUri();
     // cout << "file is  = "<< file <<endl;
