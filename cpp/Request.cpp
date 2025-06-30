@@ -52,7 +52,6 @@ void Request::ParseRequest(int clientSocket, ConfigFile &serv)
         if (Header.find("\r\n\r\n") != std::string::npos)
             break;
     }
-    cout << Header << endl;
     stringstream line(Header);
     line >> this->_method;
     if (_method != "GET" && _method != "DELETE" && _method != "POST")
@@ -96,14 +95,15 @@ void Request::ParseRequest(int clientSocket, ConfigFile &serv)
         throw BadRequestException();
     this->_serv = serv;
     this->_locat = matchLocation(this->_url[0], serv.getLocations());
-    if (this->_locat)
-        cout << "location path " << this->_locat->getPath() << endl;
-    else
+    if (!this->_locat)
+    {
         cout << "No matching location found for URI: " << this->_url[0] << endl;
+        throw BadRequestException();
+    }
 
     if (_method == "GET" || _method == "DELETE")
     {
-        cout << "i am Get or Delete \n";
+        // cout << "i am Get or Delete \n";
         return;
     }
     stringstream ss(tmp1);

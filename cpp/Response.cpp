@@ -18,9 +18,8 @@ void MakeResponce(Request &req, Response &resp)
     resp.setRequest(req);
     if (!allowMethod(*req.getLocation(), req.getMethod()))
     {
-        resp.setStatus("405");
-        cout << "::::::::::::::::::::;;\n";
-        return ;
+        setErrorBodyStatus(resp, 405);
+        return;
     }
     if (req.getMethod() == "DELETE")
     {
@@ -34,13 +33,17 @@ void MakeResponce(Request &req, Response &resp)
     }
 }
 
-string Response::getStatus(void) const { return (_status); }
-size_t &Response::getContentLength(void) { return (_ContentLength); }
+int Response::getStatus(void) const { return (_status); }
 string &Response::getContenttype(void) { return (_ContentType); }
 Request &Response::getRequest(void) { return (_req); }
+string &Response::getValue(string key) { return (_Error[key]); }
+string &Response::getBody(void) { return (_body); }
+string &Response::getType(){return _type;}
 
 // setters
-void Response::setContentLength(size_t size) { _ContentLength = size; }
 void Response::setContentType(string content) { _ContentType = content; }
 void Response::setRequest(Request &req) { _req = req; }
-void Response::setStatus(string stat) { _status = stat; }
+void Response::setStatus(int stat) { _status = stat; }
+void Response::setBody(string &body) { _body = body; }
+void Response::setError(string key, string value) { _Error[key] = value; }
+void Response::setType(string &type) {_type = type;}

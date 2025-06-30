@@ -2,6 +2,8 @@
 #define RESPONSE_HPP
 #include "Request.hpp"
 #include <sys/stat.h>
+#include <unistd.h> 
+#include <dirent.h>
 
 class Response
 {
@@ -9,25 +11,32 @@ public:
     Response();
     ~Response();
     //getters
-    string getStatus(void) const;
-    size_t &getContentLength(void);
+    int getStatus(void) const;
     string &getContenttype(void);
     Request &getRequest(void);
+    string &getValue(string key);
+    string &getBody(void);
+    string & getType();
     //setters
-    void setStatus(string stat);
-    void setContentLength(size_t size);
-    void setContentType(string type);
+    void setStatus(int stat);
     void setRequest(Request &req);
+    void setContentType(string content) ;
+    void setBody(string &body);
+    void setError(string key, string value);
+    void setType(string &type);
     // void MakeResponce(Request &req);
 
 private:
-    string _status;
-    size_t _ContentLength;
+    int _status;
     string _ContentType;
+    map<string, string> _Error;
+    string _body;
     Request _req;
+    string _type;
 };
 
 void MakeResponce(Request &req, Response &resp);
 void handleDelete(Response &resp);
 void handleGet(Response &resp);
+void setErrorBodyStatus(Response &resp, int error);
 #endif
