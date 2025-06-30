@@ -12,7 +12,7 @@ void getContentType(string &real_path, Response &resp)
     }
     if ((".jpeg" == five || ".jpg" == four))
     {
-        resp.setType("image/jpeg");
+        resp.setType("image/jpg");
         return ;
     }
     if (".png" == four)

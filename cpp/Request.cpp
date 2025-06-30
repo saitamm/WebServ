@@ -42,10 +42,11 @@ Location *matchLocation(const std::string &uri, const std::vector<Location> &loc
 
 void Request::ParseRequest(int clientSocket, ConfigFile &serv)
 {
+    this->_serv = serv;
     std::string Header;
     char buf[1];
     ssize_t bytesRead;
-
+    map<int , string > body = this->getConfigFile().getError_page();
     while ((bytesRead = recv(clientSocket, buf, sizeof(buf), 0)) > 0)
     {
         Header.append(buf, bytesRead);
@@ -55,7 +56,7 @@ void Request::ParseRequest(int clientSocket, ConfigFile &serv)
     stringstream line(Header);
     line >> this->_method;
     if (_method != "GET" && _method != "DELETE" && _method != "POST")
-        throw BadRequestException();
+    throw BadRequestException();
     string path;
     vector<string> res;
     line >> path;
@@ -64,14 +65,14 @@ void Request::ParseRequest(int clientSocket, ConfigFile &serv)
     line >> Httpv;
     trim(Httpv, "\n\t\r ");
     if (Httpv != "HTTP/1.1")
-        throw BadRequestException();
+    throw BadRequestException();
     string tmp;
     string tmp1;
     while (line >> tmp && tmp.find("boundary") == string::npos)
     {
         if (tmp != "Content-Length:" && tmp != "Host:")
         {
-
+            
             trim(tmp, ":");
             string value;
             line >> value;
@@ -86,14 +87,13 @@ void Request::ParseRequest(int clientSocket, ConfigFile &serv)
         {
             line >> this->_host;
             if (tmp.find(':') == string::npos)
-                throw BadRequestException();
+            throw BadRequestException();
             if (this->_host.find(':') != string::npos)
-                this->_host = this->_host.substr(0, this->_host.find(':'));
+            this->_host = this->_host.substr(0, this->_host.find(':'));
         }
     }
     if (this->_host.empty())
         throw BadRequestException();
-    this->_serv = serv;
     this->_locat = matchLocation(this->_url[0], serv.getLocations());
     if (!this->_locat)
     {

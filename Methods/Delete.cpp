@@ -2,11 +2,10 @@
 void setErrorBodyStatus(Response &resp, int error)
 {
     resp.setStatus(error);
-    string f = ".html";
-    getContentType(f, resp);
     map<int, string> body = resp.getRequest().getConfigFile().getError_page();
     if (body[error][0] == '/')
-        body[error].erase(0, 1);
+    body[error].erase(0, 1);
+    getContentType(body[error], resp);
     fstream file(body[error].c_str());
     if (!file.is_open())
     {
@@ -16,6 +15,7 @@ void setErrorBodyStatus(Response &resp, int error)
     std::string buffer((std::istreambuf_iterator<char>(file)),
                        std::istreambuf_iterator<char>());
     resp.setBody(buffer);
+
 }
 void deleteRecursively(const std::string &path)
 {
@@ -85,7 +85,6 @@ void handleDelete(Response &resp)
             std::string buffer((std::istreambuf_iterator<char>(file)),
                                std::istreambuf_iterator<char>());
             resp.setBody(buffer);
-            cout << "file deleted\n";
         }
     }
     // directory
@@ -102,7 +101,6 @@ void handleDelete(Response &resp)
             {
                 deleteRecursively(file);
                 setErrorBodyStatus(resp, 204);
-                cout << "folder deleted\n";
             }
             catch (const std::exception &e)
             {

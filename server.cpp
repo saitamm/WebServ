@@ -32,6 +32,9 @@ void printServ(ConfigFile serv)
           }
           cout << "======\n";
      }
+     map<int, string> body = serv.getError_page();
+     for (map<int, string>::iterator it = body.begin(); it != body.end(); it++)
+          cout << "key =" << it->first << "  value = " << it->second << endl;
 }
 
 void SendResponse(Response &resp, int clientSocket)
@@ -61,7 +64,6 @@ int main(int ac, char **av)
      {
 
           servers = config.ParseConfigFile(av[1]);
-          // cout << "--------------------Server-----------------\n";
           int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
           if (serverSocket == -1)
           {
@@ -100,25 +102,13 @@ int main(int ac, char **av)
                }
                catch (const std::exception &e)
                {
-                    cout << "---------------\n";
-                    resp.setStatus(400);
-                    map<int, string> body = servers->at(0).getError_page();
-                    if (body[400][0] == '/')
-                         body[400].erase(0, 1);
-                    fstream file(body[400].c_str());
-                    if (!file.is_open())
-                    {
-                         std::cerr << "❌ Failed to open file: " << body[400] << std::endl;
-                    }
-                    std::string buffer((std::istreambuf_iterator<char>(file)),
-                                       std::istreambuf_iterator<char>());
-                    resp.setBody(buffer);
+                    resp.setRequest(req);
+                    setErrorBodyStatus(resp, 400);
                }
                SendResponse(resp, clientSocket);
           }
           close(clientSocket);
           close(serverSocket);
-          // close(clientSocket);
      }
      catch (exception &e)
      {
