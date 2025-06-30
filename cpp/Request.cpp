@@ -96,7 +96,10 @@ void Request::ParseRequest(int clientSocket, ConfigFile &serv)
     this->_serv = serv;
     this->_locat = matchLocation(this->_url[0], serv.getLocations());
     if (!this->_locat)
+    {
         cout << "No matching location found for URI: " << this->_url[0] << endl;
+        throw BadRequestException();
+    }
 
     if (_method == "GET" || _method == "DELETE")
     {

@@ -41,18 +41,19 @@ void SendResponse(Response &resp, int clientSocket)
      stringstream ll;
      ll << resp.getStatus();
      std::string response =
-         "HTTP/1.1 " + ll.str() + " " + resp.getValue(ll.str()) + "\r\n"
-                                                                  "Content-Type: text/html\r\n"
+         "HTTP/1.1 " + ll.str() + " " + resp.getValue(ll.str()) +"\r\n"
+                                                                  "Content-Type: "+resp.getContenttype()+ "charset=UTF-8\r\n"
                                                                   "Content-Length: " +
          ss.str() +
          "\r\n"
-         "Connection: close\r\n"
+         "Connection: close\r\n""Cache-Control: no-cache\r\n"
          "\r\n" +
          resp.getBody();
+         cout << response <<endl;
      if (send(clientSocket, response.c_str(), response.size(), 0) == -1)
           cerr << "error Send \n";
      else
-          cout<< "response sended ✅ \n";
+          cout << "response sended ✅ \n";
 }
 int main(int ac, char **av)
 {
@@ -88,15 +89,41 @@ int main(int ac, char **av)
           listen(serverSocket, 5);
           int clientSocket;
           clientSocket = accept(serverSocket, NULL, NULL);
-          // cout << "--------------------Request-----------------\n\n";
+          cout << "--------------------Request-----------------\n\n";
           Request req;
-          req.ParseRequest(clientSocket, servers->at(0));
           Response resp;
-          // cout << "--------------------Response-----------------\n";
-          MakeResponce(req, resp);
+          try
+          {
+               resp.setError("200", "OK");
+               resp.setError("204", "No Content");
+               resp.setError("403", "Forbidden");
+               resp.setError("404", "Not Found");
+               resp.setError("405", "Method Not Allowed");
+               resp.setError("409", "Conflict");
+               req.ParseRequest(clientSocket, servers->at(0));
+               MakeResponce(req, resp);
+          }
+          catch (const std::exception &e)
+          {
+               cout << "---------------\n";
+               resp.setStatus(400);
+               map<int, string> body = servers->at(0).getError_page();
+               if (body[400][0] == '/')
+                    body[400].erase(0, 1);
+               fstream file(body[400].c_str());
+               if (!file.is_open())
+               {
+                    std::cerr << "❌ Failed to open file: " << body[400] << std::endl;
+               }
+               std::string buffer((std::istreambuf_iterator<char>(file)),
+                                  std::istreambuf_iterator<char>());
+               resp.setBody(buffer);
+               
+          }
           SendResponse(resp, clientSocket);
           close(clientSocket);
-          close(clientSocket);
+          close(serverSocket);
+          // close(clientSocket);
      }
      catch (exception &e)
      {
