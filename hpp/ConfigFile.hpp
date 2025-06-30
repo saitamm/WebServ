@@ -1,16 +1,21 @@
 #ifndef CONFIGFILE_HPP
 #define CONFIGFILE_HPP
 
-#include<iostream>
-#include<map>
-#include<vector>
-#include<fstream>
+#include <iostream>
+#include <map>
+#include <vector>
+#include <fstream>
 #include <string>
 #include <bits/stdc++.h>
 
 using namespace std;
 
-enum Context {NONE, SERVER, LOCATION};
+enum Context
+{
+    NONE,
+    SERVER,
+    LOCATION
+};
 
 class Location
 {  
@@ -66,18 +71,22 @@ class ConfigFile
         vector<ConfigFile>* ParseConfigFile(string confFile);
 };
 
-class ErrorConfigFileException : public exception{
-    public:
-        const char* what() const throw(){
-            return "Error, ConfigFile Is Incorrect!";
-        }
+class ErrorConfigFileException : public exception
+{
+public:
+    const char *what() const throw()
+    {
+        return "Error, ConfigFile Is Incorrect!";
+    }
 };
 
-class DuplicateDirectionException : public exception{
-    public:
-        const char* what() const throw(){
-            return "Error, Duplicate Direction";
-        }
+class DuplicateDirectionException : public exception
+{
+public:
+    const char *what() const throw()
+    {
+        return "Error, Duplicate Direction";
+    }
 };
 
 class DuplicateMethodsException : public exception{

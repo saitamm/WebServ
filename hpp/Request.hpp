@@ -47,8 +47,10 @@ public:
     string &getQuery(void);
     string &getCtype(void);
     string &getFilename(void);
+    Location *getLocation(void);
     unsigned long long &getContentLength(void);
-    void ParseRequest(int clientSocket);
+    void ParseRequest(int clientSocket, ConfigFile &serv);
+    ConfigFile &getConfigFile(void);
 
 private:
     string _method;
@@ -58,6 +60,8 @@ private:
     string _body;
     string filename;
     map<string, string> _head;
+    ConfigFile _serv;
+    Location *_locat;
 };
 void trim(string &str, string tr);
 // void ParseRequest(int clientSocket, Request &request);

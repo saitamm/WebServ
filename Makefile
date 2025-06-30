@@ -1,7 +1,10 @@
 SRC =  server.cpp \
 		cpp/Request.cpp \
 		cpp/ConfigFile.cpp \
-		cpp/ParseConfigFile.cpp 
+		cpp/ParseConfigFile.cpp \
+		cpp/Response.cpp \
+		Methods/Delete.cpp \
+		Methods/Get.cpp
 
 NAME = WebServ
 
@@ -9,7 +12,7 @@ all: $(NAME)
 
 CXX = c++
 OBJ = $(SRC:.cpp=.o)
-CXXFLAGS = -Wall -Werror -Wextra --std=c++98 -g3 
+CXXFLAGS = -Wall -Werror -Wextra -std=c++98 -g3  #-fsanitize=address
 $(NAME): $(OBJ)
 	@$(CXX) $(CXXFLAGS) $(OBJ) -o $(NAME)
 	@echo "\033[32mCompilation complete ✅\033[0m"

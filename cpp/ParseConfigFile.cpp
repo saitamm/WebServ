@@ -1,6 +1,6 @@
-#include"../hpp/ConfigFile.hpp"
+#include "../hpp/ConfigFile.hpp"
 
-string trimLine(const string& line)
+string trimLine(const string &line)
 {
     size_t start = line.find_first_not_of(" \t\n\r\f\v");
     if (start == string::npos)
@@ -9,7 +9,7 @@ string trimLine(const string& line)
     return line.substr(start, end - start + 1);
 }
 
-void ParseServer(string &key, string &value, ConfigFile &curr_server, string &new_line, map<string, bool>&alreadySeen)
+void ParseServer(string &key, string &value, ConfigFile &curr_server, string &new_line, map<string, bool> &alreadySeen)
 {
     stringstream ss(new_line);
     ss >> key;
@@ -33,16 +33,16 @@ void ParseServer(string &key, string &value, ConfigFile &curr_server, string &ne
     {
         size_t colon = value.find(":");
         if (!(curr_server.setHost(value.substr(0, colon))))
-        throw ErrorConfigFileException();
+            throw ErrorConfigFileException();
         if (!curr_server.setPort(value.substr(colon + 1)))
-        throw ErrorConfigFileException();
+            throw ErrorConfigFileException();
     }
     else if (key == "server_name")
-    curr_server.setName(value);
+        curr_server.setName(value);
     else if (key == "root")
-    curr_server.setRoot(value);
+        curr_server.setRoot(value);
     else if (key == "index")
-    curr_server.setIndex(value);
+        curr_server.setIndex(value);
     else if (key == "error_page")
     {
         stringstream err(value);
@@ -55,7 +55,7 @@ void ParseServer(string &key, string &value, ConfigFile &curr_server, string &ne
     else if (key == "client_max_body_size")
     {
         if (!curr_server.setMax_size(value))
-        throw ErrorConfigFileException();
+            throw ErrorConfigFileException();
     }
 }
 
@@ -81,13 +81,13 @@ void ParseLocation(string &key, string &value, string &new_line, Location &curr_
         }
     }
     else if (key == "autoindex")
-    curr_loc.setAuto_idx(value);
+        curr_loc.setAuto_idx(value);
     else if (key == "upload_store")
     {
         curr_loc.setUp_store(value);
     }
     else if (key == "cgi_pass")
-    curr_loc.setCgi_pass(value);
+        curr_loc.setCgi_pass(value);
 }
 
 void CheckDupLoc(ConfigFile& curr_server, Location& curr_loc)
@@ -121,12 +121,12 @@ vector<ConfigFile>* ConfigFile::ParseConfigFile(string confFile)
     
     fstream file(confFile.c_str());
     if (!file.is_open())
-    throw ErrorConfigFileException();
-    while(getline(file, line))
+        throw ErrorConfigFileException();
+    while (getline(file, line))
     {
         new_line = trimLine(line);
         if (new_line.empty() || new_line[0] == '#')
-        continue;
+            continue;
         if (new_line == "server")
         {
             is_server = 1;
@@ -151,7 +151,7 @@ vector<ConfigFile>* ConfigFile::ParseConfigFile(string confFile)
             bloc = SERVER;
             continue;
         }
-        else if(new_line.substr(0, 8) == "location")
+        else if (new_line.substr(0, 8) == "location")
         {
             SeenInLocation.clear();
             is_location = 1;
@@ -171,7 +171,7 @@ vector<ConfigFile>* ConfigFile::ParseConfigFile(string confFile)
             ParseLocation(key, value, new_line, curr_loc, SeenInLocation);
     }
     if (!is_server || !is_location)
-    throw ErrorConfigFileException();
+        throw ErrorConfigFileException();
     if (bloc == LOCATION)
     {
         CheckDupLoc(curr_server, curr_loc);
@@ -182,6 +182,15 @@ vector<ConfigFile>* ConfigFile::ParseConfigFile(string confFile)
     CheckDupServ(servers, curr_server);
     servers->push_back(curr_server);
 
+    //     for (size_t i = 0; i < servers->size(); ++i)
+    // {
+    //     cout << "===== Server " << i + 1 << " =====" << endl;
+    //     cout << "Host: " << servers[i].getHost() << endl;
+    //     cout << "Port: " << servers[i].getPort() << endl;
+    //     cout << "Server Name: " << servers[i].getName() << endl;
+    //     cout << "Root: " << servers[i].getRoot() << endl;
+    //     cout << "Index: " << servers[i].getIndex() << endl;
+    //     cout << "Max Body Size: " << servers[i].getMax_size() << endl;
 
 //     for (size_t i = 0; i < servers->size(); ++i)
 // {
@@ -193,12 +202,15 @@ vector<ConfigFile>* ConfigFile::ParseConfigFile(string confFile)
 //     cout << "Index: " << servers[i].getIndex() << endl;
 //     cout << "Max Body Size: " << servers[i].getMax_size() << endl;
 
-//     // Print error pages
-//     map<int, string> errs = servers[i].getError_page();
-//     for (map<int, string>::iterator it = errs.begin(); it != errs.end(); ++it)
-//     {
-//         cout << "Error Page [" << it->first << "] => " << it->second << endl;
-//     }
+    //     // Print locations
+    //     vector<Location> locs = servers[i].getLocations();
+    //     for (size_t j = 0; j < locs.size(); ++j)
+    //     {
+    //         cout << "--- Location " << j + 1 << " ---" << endl;
+    //         cout << "Path: " << locs[j].getPath() << endl;
+    //         cout << "AutoIndex: " << locs[j].getAuto_idx() << endl;
+    //         cout << "Upload Store: " << locs[j].getUp_store() << endl;
+    //         cout << "CGI Pass: " << locs[j].getCgi_pass() << endl;
 
 //     // Print locations
 //     vector<Location> locs = servers[i].getLocations();
