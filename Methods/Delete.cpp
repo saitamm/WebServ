@@ -2,22 +2,8 @@
 void setErrorBodyStatus(Response &resp, int error)
 {
     resp.setStatus(error);
-    map<int, string> body = resp.getRequest().getConfigFile().getError_page();
-    if (body[error][0] == '/')
-        body[error].erase(0, 1);
-    fstream file(body[error].c_str());
-    if (!file.is_open())
-    {
-        std::cerr << "❌ Failed to open file: " << body[error] << std::endl;
-        return;
-    }
-    std::string buffer((std::istreambuf_iterator<char>(file)),
-                       std::istreambuf_iterator<char>());
-    resp.setBody(buffer);
-}
-void setSuccessBodyStatus(Response &resp, int error)
-{
-    resp.setStatus(error);
+    string f = ".html";
+    getContentType(f, resp);
     map<int, string> body = resp.getRequest().getConfigFile().getError_page();
     if (body[error][0] == '/')
         body[error].erase(0, 1);
@@ -35,10 +21,7 @@ void deleteRecursively(const std::string &path)
 {
     DIR *dir = opendir(path.c_str());
     if (!dir)
-    {
-        std::cerr << "Failed to open directory: " << path << std::endl;
-        return;
-    }
+        throw BadDirectoryException();
 
     struct dirent *entry;
     while ((entry = readdir(dir)) != NULL)
@@ -54,7 +37,7 @@ void deleteRecursively(const std::string &path)
         if (stat(fullPath.c_str(), &st) == -1)
         {
             std::cerr << "Failed to stat: " << fullPath << std::endl;
-            continue;
+            throw BadDirectoryException();
         }
 
         if (S_ISDIR(st.st_mode))
@@ -64,19 +47,12 @@ void deleteRecursively(const std::string &path)
         else
         {
             if (unlink(fullPath.c_str()) != 0)
-            {
-                std::cerr << "Failed to delete file: " << fullPath << std::endl;
-            }
+                throw BadDirectoryException();
         }
     }
-
     closedir(dir);
-
-    // Delete the empty directory
     if (rmdir(path.c_str()) != 0)
-    {
-        std::cerr << "Failed to remove directory: " << path << std::endl;
-    }
+        throw BadDirectoryException();
 }
 void handleDelete(Response &resp)
 {
@@ -89,6 +65,7 @@ void handleDelete(Response &resp)
         setErrorBodyStatus(resp, 404);
         return;
     }
+    // file
     if (S_ISREG(path.st_mode))
     {
         if (unlink(file.c_str()) == -1)
@@ -106,11 +83,12 @@ void handleDelete(Response &resp)
                 return;
             }
             std::string buffer((std::istreambuf_iterator<char>(file)),
-            std::istreambuf_iterator<char>());
+                               std::istreambuf_iterator<char>());
             resp.setBody(buffer);
             cout << "file deleted\n";
         }
     }
+    // directory
     else if (S_ISDIR(path.st_mode))
     {
         if (file[file.size() - 1] == '/')
@@ -123,29 +101,18 @@ void handleDelete(Response &resp)
             try
             {
                 deleteRecursively(file);
+                setErrorBodyStatus(resp, 204);
+                cout << "folder deleted\n";
             }
-            catch(const std::exception& e)
+            catch (const std::exception &e)
             {
-                std::cerr << e.what() << '\n';
+                setErrorBodyStatus(resp, 403);
             }
-            
-            resp.setStatus(200);
-            fstream file("errors/200.html");
-            if (!file.is_open())
-            {
-                std::cerr << "❌ Failed to open file: " << std::endl;
-                return;
-            }
-            std::string buffer((std::istreambuf_iterator<char>(file)),
-                               std::istreambuf_iterator<char>());
-            resp.setBody(buffer);
-            cout << "file deleted\n";
+
             return;
         }
         else
         {
-            cout << "=======\n"
-                 << endl;
             setErrorBodyStatus(resp, 409);
             return;
         }
@@ -154,10 +121,4 @@ void handleDelete(Response &resp)
     {
         setErrorBodyStatus(resp, 404);
     }
-    // string     file = resp.getRequest().getUri();
-    // cout << "file is  = "<< file <<endl;
-    // struct stat Buff;
-    // cout << stat(file.c_str(), &Buff) << endl;
-    // if (access(file.c_str(), F_OK))
-    //     resp.setStatus("404");
 }

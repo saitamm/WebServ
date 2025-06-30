@@ -26,6 +26,7 @@ public:
         return ("Bad Request\n");
     }
 };
+
 class SocketErrorException : public std::exception
 {
 public:
@@ -64,5 +65,4 @@ private:
     Location *_locat;
 };
 void trim(string &str, string tr);
-// void ParseRequest(int clientSocket, Request &request);
 #endif

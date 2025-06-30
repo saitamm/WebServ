@@ -36,15 +36,13 @@ void printServ(ConfigFile serv)
 
 void SendResponse(Response &resp, int clientSocket)
 {
-      ostringstream response;
-    response << "HTTP/1.1 "<< resp.getStatus() << " " << resp.getValue(resp.getStatus()) <<"\r\n";
-    response << "Content-type: " << resp.getType() << "\r\n";
-    response << "Content-Length: " << resp.getBody().size() << "\r\n";
-    response << "Connection: close\r\n\r\n";
-    response << resp.getBody();
-    string final_resp = response.str();
-    cout << final_resp << endl;
-     
+     ostringstream response;
+     response << "HTTP/1.1 " << resp.getStatus() << " " << resp.getValue(resp.getStatus()) << "\r\n";
+     response << "Content-type: " << resp.getType() << "\r\n";
+     response << "Content-Length: " << resp.getBody().size() << "\r\n";
+     response << "Connection: close\r\n\r\n";
+     response << resp.getBody();
+     string final_resp = response.str();
      if (send(clientSocket, final_resp.c_str(), final_resp.size(), 0) == -1)
           cerr << "error Send \n";
      else
@@ -83,39 +81,41 @@ int main(int ac, char **av)
           }
           listen(serverSocket, 5);
           int clientSocket;
-          clientSocket = accept(serverSocket, NULL, NULL);
-          cout << "--------------------Request-----------------\n\n";
-          Request req;
-          Response resp;
-          try
+          while (true)
           {
-               resp.setError(200, "OK");
-               resp.setError(204, "No Content");
-               resp.setError(403, "Forbidden");
-               resp.setError(404, "Not Found");
-               resp.setError(405, "Method Not Allowed");
-               resp.setError(409, "Conflict");
-               req.ParseRequest(clientSocket, servers->at(0));
-               MakeResponce(req, resp);
-          }
-          catch (const std::exception &e)
-          {
-               cout << "---------------\n";
-               resp.setStatus(400);
-               map<int, string> body = servers->at(0).getError_page();
-               if (body[400][0] == '/')
-                    body[400].erase(0, 1);
-               fstream file(body[400].c_str());
-               if (!file.is_open())
+               clientSocket = accept(serverSocket, NULL, NULL);
+               cout << "--------------------Request-----------------\n\n";
+               Request req;
+               Response resp;
+               try
                {
-                    std::cerr << "❌ Failed to open file: " << body[400] << std::endl;
+                    resp.setError(200, "OK");
+                    resp.setError(204, "No Content");
+                    resp.setError(403, "Forbidden");
+                    resp.setError(404, "Not Found");
+                    resp.setError(405, "Method Not Allowed");
+                    resp.setError(409, "Conflict");
+                    req.ParseRequest(clientSocket, servers->at(0));
+                    MakeResponce(req, resp);
                }
-               std::string buffer((std::istreambuf_iterator<char>(file)),
-                                  std::istreambuf_iterator<char>());
-               resp.setBody(buffer);
-               
+               catch (const std::exception &e)
+               {
+                    cout << "---------------\n";
+                    resp.setStatus(400);
+                    map<int, string> body = servers->at(0).getError_page();
+                    if (body[400][0] == '/')
+                         body[400].erase(0, 1);
+                    fstream file(body[400].c_str());
+                    if (!file.is_open())
+                    {
+                         std::cerr << "❌ Failed to open file: " << body[400] << std::endl;
+                    }
+                    std::string buffer((std::istreambuf_iterator<char>(file)),
+                                       std::istreambuf_iterator<char>());
+                    resp.setBody(buffer);
+               }
+               SendResponse(resp, clientSocket);
           }
-          SendResponse(resp, clientSocket);
           close(clientSocket);
           close(serverSocket);
           // close(clientSocket);

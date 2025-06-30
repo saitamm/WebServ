@@ -6,15 +6,30 @@ void getContentType(string &real_path, Response &resp)
     string four = real_path.substr(real_path.size() - 4, real_path.size() - 1);
     string three = real_path.substr(real_path.size() - 3, real_path.size() - 1);
     if (".html" == five)
+    {
         resp.setType("text/html");
-    if ((".jpeg" == five || "jpg" == four))
+        return ;
+    }
+    if ((".jpeg" == five || ".jpg" == four))
+    {
         resp.setType("image/jpeg");
+        return ;
+    }
     if (".png" == four)
+    {
         resp.setType("image/png");
+        return ;
+    }
     if (".css" == four)
+    {
         resp.setType("text/css");
+        return ;
+    }
     if (".js" == three)
+    {
         resp.setType("application/javascript");
+        return ;
+    }
     resp.setType("application/octet-stream");
 }
 
