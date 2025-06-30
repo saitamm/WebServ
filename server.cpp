@@ -36,21 +36,16 @@ void printServ(ConfigFile serv)
 
 void SendResponse(Response &resp, int clientSocket)
 {
-     stringstream ss;
-     ss << resp.getBody().size();
-     stringstream ll;
-     ll << resp.getStatus();
-     std::string response =
-         "HTTP/1.1 " + ll.str() + " " + resp.getValue(ll.str()) +"\r\n"
-                                                                  "Content-Type: "+resp.getContenttype()+ "charset=UTF-8\r\n"
-                                                                  "Content-Length: " +
-         ss.str() +
-         "\r\n"
-         "Connection: close\r\n""Cache-Control: no-cache\r\n"
-         "\r\n" +
-         resp.getBody();
-         cout << response <<endl;
-     if (send(clientSocket, response.c_str(), response.size(), 0) == -1)
+      ostringstream response;
+    response << "HTTP/1.1 "<< resp.getStatus() << " " << resp.getValue(resp.getStatus()) <<"\r\n";
+    response << "Content-type: " << resp.getType() << "\r\n";
+    response << "Content-Length: " << resp.getBody().size() << "\r\n";
+    response << "Connection: close\r\n\r\n";
+    response << resp.getBody();
+    string final_resp = response.str();
+    cout << final_resp << endl;
+     
+     if (send(clientSocket, final_resp.c_str(), final_resp.size(), 0) == -1)
           cerr << "error Send \n";
      else
           cout << "response sended ✅ \n";
@@ -94,12 +89,12 @@ int main(int ac, char **av)
           Response resp;
           try
           {
-               resp.setError("200", "OK");
-               resp.setError("204", "No Content");
-               resp.setError("403", "Forbidden");
-               resp.setError("404", "Not Found");
-               resp.setError("405", "Method Not Allowed");
-               resp.setError("409", "Conflict");
+               resp.setError(200, "OK");
+               resp.setError(204, "No Content");
+               resp.setError(403, "Forbidden");
+               resp.setError(404, "Not Found");
+               resp.setError(405, "Method Not Allowed");
+               resp.setError(409, "Conflict");
                req.ParseRequest(clientSocket, servers->at(0));
                MakeResponce(req, resp);
           }

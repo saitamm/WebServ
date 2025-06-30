@@ -1,58 +1,54 @@
 #include "../hpp/Response.hpp"
 
-string getContentType(string &real_path)
+void getContentType(string &real_path, Response &resp)
 {
-    string five = real_path.substr(real_path.size() - 5, real_path.size() -1);
-    string four = real_path.substr(real_path.size() - 4, real_path.size() -1);
-    string three = real_path.substr(real_path.size() - 3, real_path.size() -1);
+    string five = real_path.substr(real_path.size() - 5, real_path.size() - 1);
+    string four = real_path.substr(real_path.size() - 4, real_path.size() - 1);
+    string three = real_path.substr(real_path.size() - 3, real_path.size() - 1);
     if (".html" == five)
-        return "text/html";
+        resp.setType("text/html");
     if ((".jpeg" == five || "jpg" == four))
-        return "image/jpeg";
+        resp.setType("image/jpeg");
     if (".png" == four)
-        return "image/png";
+        resp.setType("image/png");
     if (".css" == four)
-        return "text/css";
+        resp.setType("text/css");
     if (".js" == three)
-        return ("application/javascript");
-    return "application/octet-stream";
+        resp.setType("application/javascript");
+    resp.setType("application/octet-stream");
 }
 
-void generateResponse(string &content, string &real_path)
+void handleGet(Response &resp)
 {
-    ostringstream response;
-    response << "HTTP/1.1 200 OK\r\n";
-    response << "Content-type: " << getContentType(real_path) << "\r\n";
-    response << "Content-Length: " << content.length() << "\r\n";
-    response << "Connection: close\r\n\r\n";
-    response << content;
-    string final_resp = response.str();
-}
-
-void handleGet(Response& resp)
-{
-    string real_path = resp.getRequest().getConfigFile().getRoot() + resp.getRequest().getUri();
+    string real_path = resp.getRequest().getUri();
     struct stat path;
-    if (!stat(real_path.c_str(), &path)) {
-        if (S_ISREG(path.st_mode))
-        {
-            ifstream file(real_path.c_str(), ios::binary);
-            // if (!file.is_open())
-            // {
-            //     return buildErrorPage(403);
-            // }
-            ostringstream ss;
-            ss << file.rdbuf();
-            string content = ss.str();
-            generateResponse(content, real_path);
-        
-        }
+    cout << real_path << endl;
+    if (real_path[0] == '/')
+        real_path.erase(0, 1);
+    if (stat(real_path.c_str(), &path) == -1)
+    {
+        setErrorBodyStatus(resp, 404);
+        return;
+    }
+    if (S_ISREG(path.st_mode))
+    {
+        ifstream file(real_path.c_str(), ios::binary);
+        // if (!file.is_open())
+        // {
+        //     return buildErrorPage(403);
+        // }
+        std::string buffer((std::istreambuf_iterator<char>(file)),
+                           std::istreambuf_iterator<char>());
+        // ostringstream ss;
+        // ss << file.rdbuf();
+        resp.setStatus(200);
+        resp.setBody(buffer);
+        getContentType(real_path, resp);
+    }
     //     else if (S_ISDIR(path.st_mode)) {
     //         // It's a directory
     //     }
     // } else {
-        // File or directory doesn't exist
-        // }
-
-    }
+    // File or directory doesn't exist
+    // }
 }

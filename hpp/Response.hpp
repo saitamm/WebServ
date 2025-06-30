@@ -14,7 +14,7 @@ public:
     int getStatus(void) const;
     string &getContenttype(void);
     Request &getRequest(void);
-    string &getValue(string key);
+    string &getValue(int key);
     string &getBody(void);
     string & getType();
     //setters
@@ -22,14 +22,14 @@ public:
     void setRequest(Request &req);
     void setContentType(string content) ;
     void setBody(string &body);
-    void setError(string key, string value);
-    void setType(string &type);
+    void setError(int key, string value);
+    void setType(const string &type);
     // void MakeResponce(Request &req);
 
 private:
     int _status;
     string _ContentType;
-    map<string, string> _Error;
+    map<int, string> _Error;
     string _body;
     Request _req;
     string _type;

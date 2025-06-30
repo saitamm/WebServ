@@ -131,7 +131,7 @@ const map<int, string>& ConfigFile::getError_page() const
 
 void ConfigFile::add_error(int err, string path)
 {
-    if (err < 300 || err >= 600)
+    if (err < 200 || err >= 600)
     throw InvalidErrorPageException();
     if (path.empty())
         throw ErrorConfigFileException();
