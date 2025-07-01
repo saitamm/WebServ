@@ -111,7 +111,7 @@ int ConfigFile::setMax_size(const string& size)
         if (!isdigit(s[i]))
             return 0;
     }
-    int sz;
+    size_t sz;
     stringstream ss(s);
     ss >> sz;
     if (unit == 'K')
@@ -201,4 +201,17 @@ const string& Location::getPath() const
 void Location::setPath(const string& p)
 {
     path = p;
+}
+
+const string& Location::getLoc_idx() const
+{
+    return loc_idx;
+}
+
+void Location::setLoc_idx(const string& idx)
+{
+    string file = idx.substr(idx.size() - 5, idx.size() -1);
+    if (file != ".html")
+        throw ErrorConfigFileException();
+    loc_idx = idx;
 }

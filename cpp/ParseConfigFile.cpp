@@ -82,10 +82,10 @@ void ParseLocation(string &key, string &value, string &new_line, Location &curr_
     }
     else if (key == "autoindex")
         curr_loc.setAuto_idx(value);
+    else if (key == "index")
+        curr_loc.setLoc_idx(value);
     else if (key == "upload_store")
-    {
         curr_loc.setUp_store(value);
-    }
     else if (key == "cgi_pass")
         curr_loc.setCgi_pass(value);
 }

@@ -25,6 +25,7 @@ class Location
         string auto_idx;
         string up_store;
         string cgi_pass;
+        string loc_idx;
     public:
         const string& getPath() const;
         void setPath(const string& p);
@@ -36,6 +37,8 @@ class Location
         void setUp_store(const string& path);
         const string& getCgi_pass() const;
         void setCgi_pass(const string& path);
+        const string& getLoc_idx() const;
+        void setLoc_idx(const string& idx);
 };
 
 class ConfigFile
