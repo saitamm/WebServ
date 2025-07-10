@@ -44,35 +44,35 @@ void Request::ParseRequest(int clientSocket, ConfigFile &serv)
 {
     this->_serv = serv;
     std::string Header;
-    char buf[1];
+    char buf[1024];
     ssize_t bytesRead;
-    map<int , string > body = this->getConfigFile().getError_page();
-    while ((bytesRead = recv(clientSocket, buf, sizeof(buf), 0)) > 0)
-    {
+    map<int, string> body = this->getConfigFile().getError_page();
+    if ((bytesRead = recv(clientSocket, buf, sizeof(buf), 0)) > 0)
         Header.append(buf, bytesRead);
-        if (Header.find("\r\n\r\n") != std::string::npos)
-            break;
-    }
+    cout << "--------------------\n";
+    cout << "=========="<<Header <<endl;
     stringstream line(Header);
     line >> this->_method;
-    if (_method != "GET" && _method != "DELETE" && _method != "POST")
-    throw BadRequestException();
+    if ((_method != "GET" && _method != "DELETE" && _method != "POST" )|| _method.empty())
+        throw BadRequestException();
+    cout <<"this is my line = "<< line.str() <<endl;
     string path;
     vector<string> res;
     line >> path;
     split(path, '?', this->_url);
     string Httpv;
     line >> Httpv;
+    cout << Header << endl;
     trim(Httpv, "\n\t\r ");
     if (Httpv != "HTTP/1.1")
-    throw BadRequestException();
+        throw BadRequestException();
     string tmp;
     string tmp1;
     while (line >> tmp && tmp.find("boundary") == string::npos)
     {
         if (tmp != "Content-Length:" && tmp != "Host:")
         {
-            
+
             trim(tmp, ":");
             string value;
             line >> value;
@@ -87,9 +87,9 @@ void Request::ParseRequest(int clientSocket, ConfigFile &serv)
         {
             line >> this->_host;
             if (tmp.find(':') == string::npos)
-            throw BadRequestException();
+                throw BadRequestException();
             if (this->_host.find(':') != string::npos)
-            this->_host = this->_host.substr(0, this->_host.find(':'));
+                this->_host = this->_host.substr(0, this->_host.find(':'));
         }
     }
     if (this->_host.empty())
@@ -113,21 +113,21 @@ void Request::ParseRequest(int clientSocket, ConfigFile &serv)
     int pos = tmp.find('-');
     tmp.erase(0, pos);
     string Body;
+    if (this->_ContentLength > this->_serv.getMax_size())
+        throw BadRequestException();
     unsigned long long totalReceived = 0;
     srand(time(0));
     stringstream ll;
     ll << rand();
     this->filename = "Body/body_" + ll.str() + ".txt";
     ofstream file(filename.c_str());
-    while (totalReceived < this->_ContentLength + 10)
+    while (totalReceived < this->_ContentLength)
     {
         bytesRead = recv(clientSocket, buf, sizeof(buf), 0);
         if (bytesRead < 0)
             throw SocketErrorException();
         if (bytesRead == 0)
-        {
             throw BadRequestException();
-        }
         Body.append(buf, bytesRead);
         totalReceived += bytesRead;
     }
@@ -144,5 +144,6 @@ string &Request::getQuery(void) { return (_url[1]); }
 string &Request::getFilename(void) { return (filename); }
 string &Request::getCtype(void) { return (_head["Content-Type"]); }
 Location *Request::getLocation(void) { return (_locat); }
+string &Request::getHeadvalue(string key) { return (_head[key]); }
 unsigned long long &Request::getContentLength(void) { return (_ContentLength); }
 ConfigFile &Request::getConfigFile(void) { return (_serv); }

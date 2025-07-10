@@ -49,4 +49,5 @@ void handleDelete(Response &resp);
 void handleGet(Response &resp);
 void setErrorBodyStatus(Response &resp, int error);
 void getContentType(string &real_path, Response &resp);
+void handlePost(Response &resp);
 #endif

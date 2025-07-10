@@ -14,7 +14,7 @@ server
     client_max_body_size 2M
 
     location /
-        methods POST GET
+        methods POST
         autoindex on    
         root ./www
         upload_store ./uploads

@@ -1,10 +1,13 @@
 SRC =  server.cpp \
+		Help.cpp \
 		cpp/Request.cpp \
 		cpp/ConfigFile.cpp \
+		cpp/Client.cpp \
 		cpp/ParseConfigFile.cpp \
 		cpp/Response.cpp \
 		Methods/Delete.cpp \
-		Methods/Get.cpp
+		Methods/Get.cpp \
+		Methods/Post.cpp  
 
 NAME = WebServ
 

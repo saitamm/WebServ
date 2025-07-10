@@ -52,6 +52,7 @@ public:
     unsigned long long &getContentLength(void);
     void ParseRequest(int clientSocket, ConfigFile &serv);
     ConfigFile &getConfigFile(void);
+    string &getHeadvalue(string key);
 
 private:
     string _method;

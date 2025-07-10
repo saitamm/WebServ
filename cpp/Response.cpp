@@ -31,6 +31,11 @@ void MakeResponce(Request &req, Response &resp)
         handleGet(resp);
         return;
     }
+    if (req.getMethod() == "POST")
+    {
+        handlePost(resp);
+        return ;
+    }
 }
 
 int Response::getStatus(void) const { return (_status); }

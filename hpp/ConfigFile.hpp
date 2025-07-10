@@ -47,7 +47,7 @@ class ConfigFile
         string root;
         string index;
         map<int, string> error_page;
-        int max_size;
+        size_t max_size;
         vector<Location> locations;
     public:
         ConfigFile();
@@ -62,7 +62,7 @@ class ConfigFile
         void setRoot(const string& r);
         const string& getIndex() const;
         void setIndex(const string& idx);
-        int getMax_size() const;
+        size_t getMax_size() const;
         int setMax_size(const string& size);
         const map<int, string>& getError_page() const;
         void add_error(int err, string path);
