@@ -16,5 +16,5 @@ private:
     int _fd;
     // bool _finished;
 };
-void ServClient(int clientSocket, vector<ConfigFile> *servers);
+void ServClient(map<int, string> &buffers, int clientSocket, vector<ConfigFile> *servers);
 #endif

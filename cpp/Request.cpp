@@ -8,6 +8,7 @@ Request::~Request() {}
 
 void trim(string &str, string tr)
 {
+
     std::string::size_type pos = str.find_first_not_of(tr);
     str.erase(0, pos);
     pos = str.find_last_not_of(tr);
@@ -40,25 +41,24 @@ Location *matchLocation(const std::string &uri, const std::vector<Location> &loc
     return bestMatch;
 }
 
-void Request::ParseRequest(int clientSocket, ConfigFile &serv)
+void Request::ParseRequest(map<int, string> &buffers, int clientSocket, ConfigFile &serv)
 {
     this->_serv = serv;
-    std::string Header;
     char buf[1024];
     ssize_t bytesRead;
     string tmp1;
+    cout << "clientSocket  = " << clientSocket << endl;
     if (!this->_HeadF)
     {
         map<int, string> body = this->getConfigFile().getError_page();
         if ((bytesRead = recv(clientSocket, buf, sizeof(buf), 0)) > 0)
-            Header.append(buf, bytesRead);
-        cout << Header << endl;
-        if (Header.find("\r\n\r\n") != std::string::npos)
+            buffers[clientSocket].append(buf, bytesRead);
+        if (buffers[clientSocket].find("\r\n\r\n") != std::string::npos)
         {
-            cout << "Header is finished " << endl;
 
             this->_HeadF = true;
-            stringstream line(Header);
+            cout << "Header is finished " << this->_HeadF << endl;
+            stringstream line(buffers[clientSocket]);
             line >> this->_method;
             if ((_method != "GET" && _method != "DELETE" && _method != "POST") || _method.empty())
                 throw BadRequestException();
@@ -105,45 +105,45 @@ void Request::ParseRequest(int clientSocket, ConfigFile &serv)
                 throw BadRequestException();
             }
         }
-        else
+    }
+    else
+    {
+        if (_method == "GET" || _method == "DELETE")
         {
-            if (_method == "GET" || _method == "DELETE")
-            {
-                return;
-            }
-            // body
-            stringstream ss(tmp1);
-            ss >> this->_ContentLength;
-            if ((tmp1.empty() && _head["Transfer-Encoding"].empty()) || tmp1[0] == '-' || ss.fail())
-                throw BadRequestException();
-            // int pos = tmp.find('-');
-            // tmp.erase(0, pos);
-            int pos = Header.find("\r\n\r\n");
-            string buff = Header.substr(pos + 4);
-            cout << "rest in header =" << buff << "=" << endl;
-            // string Body;
-            // if (this->_ContentLength > this->_serv.getMax_size())
-            //     throw BadRequestException();
-            // unsigned long long totalReceived = 0;
-            // srand(time(0));
-            // stringstream ll;
-            // ll << rand();
-            // this->filename = "Body/body_" + ll.str() + ".txt";
-            // ofstream file(filename.c_str());
-            // while (totalReceived < this->_ContentLength)
-            // {
-            //     bytesRead = recv(clientSocket, buf, sizeof(buf), 0);
-            //     if (bytesRead < 0)
-            //         throw SocketErrorException();
-            //     if (bytesRead == 0)
-            //         throw BadRequestException();
-            //     Body.append(buf, bytesRead);
-            //     totalReceived += bytesRead;
-            // }
-            // file << Body;
-            // file.close();
-            this->_BodyF = true;
+            return;
         }
+        // body
+        stringstream ss(tmp1);
+        ss >> this->_ContentLength;
+        if ((tmp1.empty() && _head["Transfer-Encoding"].empty()) || tmp1[0] == '-' || ss.fail())
+            throw BadRequestException();
+        // int pos = tmp.find('-');
+        // tmp.erase(0, pos);
+        int pos = buffers[clientSocket].find("\r\n\r\n");
+        string buff = buffers[clientSocket].substr(pos + 4);
+        cout << "rest in header =" << buff << "=" << endl;
+        // string Body;
+        // if (this->_ContentLength > this->_serv.getMax_size())
+        //     throw BadRequestException();
+        // unsigned long long totalReceived = 0;
+        // srand(time(0));
+        // stringstream ll;
+        // ll << rand();
+        // this->filename = "Body/body_" + ll.str() + ".txt";
+        // ofstream file(filename.c_str());
+        // while (totalReceived < this->_ContentLength)
+        // {
+        //     bytesRead = recv(clientSocket, buf, sizeof(buf), 0);
+        //     if (bytesRead < 0)
+        //         throw SocketErrorException();
+        //     if (bytesRead == 0)
+        //         throw BadRequestException();
+        //     Body.append(buf, bytesRead);
+        //     totalReceived += bytesRead;
+        // }
+        // file << Body;
+        // file.close();
+        this->_BodyF = true;
     }
 }
 

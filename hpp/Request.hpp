@@ -50,7 +50,7 @@ public:
     string &getFilename(void);
     Location *getLocation(void);
     unsigned long long &getContentLength(void);
-    void ParseRequest(int clientSocket, ConfigFile &serv);
+    void ParseRequest(map<int, string> &buffers, int clientSocket, ConfigFile &serv);
     ConfigFile &getConfigFile(void);
     string &getHeadvalue(string key);
     bool getfinishedHead(){return (_HeadF);};

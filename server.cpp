@@ -80,6 +80,7 @@ int main(int ac, char **av)
           FD_ZERO(&read_fds);
           FD_SET(server_socket, &all_sockets);
           fd_max = server_socket;
+          map<int, string> buffers;
           while (1)
           {
                read_fds = all_sockets;
@@ -108,8 +109,7 @@ int main(int ac, char **av)
                     }
                     else
                     {
-                         cout << "===" << i << endl;
-                         ServClient(i, servers);
+                         ServClient(buffers,i, servers);
                     }
                }
           }
