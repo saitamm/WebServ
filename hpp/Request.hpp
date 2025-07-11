@@ -53,11 +53,15 @@ public:
     void ParseRequest(int clientSocket, ConfigFile &serv);
     ConfigFile &getConfigFile(void);
     string &getHeadvalue(string key);
+    bool getfinishedHead(){return (_HeadF);};
+    bool getfinishedBody(){return (_BodyF);};
 
 private:
     string _method;
     string _host;
     vector<string> _url;
+    bool _HeadF;
+    bool _BodyF;
     unsigned long long _ContentLength;
     string _body;
     string filename;

@@ -5,7 +5,7 @@
 #include <unistd.h>
 #include <dirent.h>
 
-class BadDirectoryException: public std::exception
+class BadDirectoryException : public std::exception
 {
 public:
     const char *what() const throw()
@@ -22,10 +22,11 @@ public:
     // getters
     int getStatus(void) const;
     string &getContenttype(void);
-    Request &getRequest(void);
+    Request *getRequest(void);
     string &getValue(int key);
     string &getBody(void);
     string &getType();
+    bool getSend() { return (_sendit); };
     // setters
     void setStatus(int stat);
     void setRequest(Request &req);
@@ -33,6 +34,7 @@ public:
     void setBody(string &body);
     void setError(int key, string value);
     void setType(const string &type);
+    void setSend(void) { _sendit = true; };
     // void MakeResponce(Request &req);
 
 private:
@@ -40,8 +42,9 @@ private:
     string _ContentType;
     map<int, string> _Error;
     string _body;
-    Request _req;
+    Request *_req;
     string _type;
+    bool _sendit;
 };
 
 void MakeResponce(Request &req, Response &resp);

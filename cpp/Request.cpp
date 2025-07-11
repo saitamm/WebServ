@@ -46,93 +46,105 @@ void Request::ParseRequest(int clientSocket, ConfigFile &serv)
     std::string Header;
     char buf[1024];
     ssize_t bytesRead;
-    map<int, string> body = this->getConfigFile().getError_page();
-    if ((bytesRead = recv(clientSocket, buf, sizeof(buf), 0)) > 0)
-        Header.append(buf, bytesRead);
-    cout << "--------------------\n";
-    cout << "=========="<<Header <<endl;
-    stringstream line(Header);
-    line >> this->_method;
-    if ((_method != "GET" && _method != "DELETE" && _method != "POST" )|| _method.empty())
-        throw BadRequestException();
-    cout <<"this is my line = "<< line.str() <<endl;
-    string path;
-    vector<string> res;
-    line >> path;
-    split(path, '?', this->_url);
-    string Httpv;
-    line >> Httpv;
-    cout << Header << endl;
-    trim(Httpv, "\n\t\r ");
-    if (Httpv != "HTTP/1.1")
-        throw BadRequestException();
-    string tmp;
     string tmp1;
-    while (line >> tmp && tmp.find("boundary") == string::npos)
+    if (!this->_HeadF)
     {
-        if (tmp != "Content-Length:" && tmp != "Host:")
+        map<int, string> body = this->getConfigFile().getError_page();
+        if ((bytesRead = recv(clientSocket, buf, sizeof(buf), 0)) > 0)
+            Header.append(buf, bytesRead);
+        cout << Header << endl;
+        if (Header.find("\r\n\r\n") != std::string::npos)
         {
+            cout << "Header is finished " << endl;
 
-            trim(tmp, ":");
-            string value;
-            line >> value;
-            trim(value, "\n\t\r ");
-            this->_head[tmp] = value;
-        }
-        else if (tmp == "Content-Length:")
-        {
-            line >> tmp1;
-        }
-        else if (tmp == "Host:")
-        {
-            line >> this->_host;
-            if (tmp.find(':') == string::npos)
+            this->_HeadF = true;
+            stringstream line(Header);
+            line >> this->_method;
+            if ((_method != "GET" && _method != "DELETE" && _method != "POST") || _method.empty())
                 throw BadRequestException();
-            if (this->_host.find(':') != string::npos)
-                this->_host = this->_host.substr(0, this->_host.find(':'));
+            string path;
+            vector<string> res;
+            line >> path;
+            split(path, '?', this->_url);
+            string Httpv;
+            line >> Httpv;
+            trim(Httpv, "\n\t\r ");
+            if (Httpv != "HTTP/1.1")
+                throw BadRequestException();
+            string tmp;
+            while (line >> tmp && tmp.find("boundary") == string::npos)
+            {
+                if (tmp != "Content-Length:" && tmp != "Host:")
+                {
+
+                    trim(tmp, ":");
+                    string value;
+                    line >> value;
+                    trim(value, "\n\t\r ");
+                    this->_head[tmp] = value;
+                }
+                else if (tmp == "Content-Length:")
+                {
+                    line >> tmp1;
+                }
+                else if (tmp == "Host:")
+                {
+                    line >> this->_host;
+                    if (tmp.find(':') == string::npos)
+                        throw BadRequestException();
+                    if (this->_host.find(':') != string::npos)
+                        this->_host = this->_host.substr(0, this->_host.find(':'));
+                }
+            }
+            if (this->_host.empty())
+                throw BadRequestException();
+            this->_locat = matchLocation(this->_url[0], serv.getLocations());
+            if (!this->_locat)
+            {
+                cout << "No matching location found for URI: " << this->_url[0] << endl;
+                throw BadRequestException();
+            }
+        }
+        else
+        {
+            if (_method == "GET" || _method == "DELETE")
+            {
+                return;
+            }
+            // body
+            stringstream ss(tmp1);
+            ss >> this->_ContentLength;
+            if ((tmp1.empty() && _head["Transfer-Encoding"].empty()) || tmp1[0] == '-' || ss.fail())
+                throw BadRequestException();
+            // int pos = tmp.find('-');
+            // tmp.erase(0, pos);
+            int pos = Header.find("\r\n\r\n");
+            string buff = Header.substr(pos + 4);
+            cout << "rest in header =" << buff << "=" << endl;
+            // string Body;
+            // if (this->_ContentLength > this->_serv.getMax_size())
+            //     throw BadRequestException();
+            // unsigned long long totalReceived = 0;
+            // srand(time(0));
+            // stringstream ll;
+            // ll << rand();
+            // this->filename = "Body/body_" + ll.str() + ".txt";
+            // ofstream file(filename.c_str());
+            // while (totalReceived < this->_ContentLength)
+            // {
+            //     bytesRead = recv(clientSocket, buf, sizeof(buf), 0);
+            //     if (bytesRead < 0)
+            //         throw SocketErrorException();
+            //     if (bytesRead == 0)
+            //         throw BadRequestException();
+            //     Body.append(buf, bytesRead);
+            //     totalReceived += bytesRead;
+            // }
+            // file << Body;
+            // file.close();
+            this->_BodyF = true;
         }
     }
-    if (this->_host.empty())
-        throw BadRequestException();
-    this->_locat = matchLocation(this->_url[0], serv.getLocations());
-    if (!this->_locat)
-    {
-        cout << "No matching location found for URI: " << this->_url[0] << endl;
-        throw BadRequestException();
-    }
-
-    if (_method == "GET" || _method == "DELETE")
-    {
-        // cout << "i am Get or Delete \n";
-        return;
-    }
-    stringstream ss(tmp1);
-    ss >> this->_ContentLength;
-    if ((tmp1.empty() && _head["Transfer-Encoding"].empty()) || tmp1[0] == '-' || ss.fail())
-        throw BadRequestException();
-    int pos = tmp.find('-');
-    tmp.erase(0, pos);
-    string Body;
-    if (this->_ContentLength > this->_serv.getMax_size())
-        throw BadRequestException();
-    unsigned long long totalReceived = 0;
-    srand(time(0));
-    stringstream ll;
-    ll << rand();
-    this->filename = "Body/body_" + ll.str() + ".txt";
-    ofstream file(filename.c_str());
-    while (totalReceived < this->_ContentLength)
-    {
-        bytesRead = recv(clientSocket, buf, sizeof(buf), 0);
-        if (bytesRead < 0)
-            throw SocketErrorException();
-        if (bytesRead == 0)
-            throw BadRequestException();
-        Body.append(buf, bytesRead);
-        totalReceived += bytesRead;
-    }
-    file << Body;
-    file.close();
 }
 
 // getters

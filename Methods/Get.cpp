@@ -35,7 +35,7 @@ void getContentType(string &real_path, Response &resp)
 
 void handleGet(Response &resp)
 {
-    string real_path = resp.getRequest().getUri();
+    string real_path = resp.getRequest()->getUri();
     struct stat path;
     if (real_path[0] == '/')
         real_path.erase(0, 1);

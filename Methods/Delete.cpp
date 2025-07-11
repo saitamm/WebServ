@@ -2,7 +2,7 @@
 void setErrorBodyStatus(Response &resp, int error)
 {
     resp.setStatus(error);
-    map<int, string> body = resp.getRequest().getConfigFile().getError_page();
+    map<int, string> body = resp.getRequest()->getConfigFile().getError_page();
     if (body[error][0] == '/')
     body[error].erase(0, 1);
     getContentType(body[error], resp);
@@ -57,7 +57,7 @@ void deleteRecursively(const std::string &path)
 void handleDelete(Response &resp)
 {
     struct stat path;
-    string file = resp.getRequest().getUri();
+    string file = resp.getRequest()->getUri();
     if (file[0] == '/')
         file.erase(0, 1);
     if (stat(file.c_str(), &path) == -1)

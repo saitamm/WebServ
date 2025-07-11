@@ -60,21 +60,25 @@ void SetErrors(Response &resp)
     resp.setError(409, "Conflict");
 }
 
-void ServClient(map<int, Client> &clients, int clientSocket, vector<ConfigFile> *servers)
+void ServClient(int clientSocket, vector<ConfigFile> *servers)
 {
     Request req;
     Response resp;
-    cout << clients[0].getFd() <<endl;
     SetErrors(resp);
     try
     {
         req.ParseRequest(clientSocket, servers->at(0));
-        MakeResponce(req, resp);
+        if (req.getfinishedHead() == true)
+        {
+            cout << "ccccccc" << endl;
+            MakeResponce(req, resp);
+        }
     }
     catch (const std::exception &e)
     {
         resp.setRequest(req);
         setErrorBodyStatus(resp, 400);
     }
-    SendResponse(resp, clientSocket);
+    if (resp.getSend())
+        SendResponse(resp, clientSocket);
 }

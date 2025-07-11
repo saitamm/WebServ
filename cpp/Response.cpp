@@ -19,36 +19,40 @@ void MakeResponce(Request &req, Response &resp)
     if (!allowMethod(*req.getLocation(), req.getMethod()))
     {
         setErrorBodyStatus(resp, 405);
+        resp.setSend();
         return;
     }
     if (req.getMethod() == "DELETE")
     {
         handleDelete(resp);
         return;
+        resp.setSend();
     }
-    if(req.getMethod() == "GET")
+    if (req.getMethod() == "GET")
     {
         handleGet(resp);
+        resp.setSend();
         return;
     }
-    if (req.getMethod() == "POST")
+    if (req.getMethod() == "POST" && req.getfinishedBody())
     {
         handlePost(resp);
-        return ;
+        resp.setSend();
+        return;
     }
 }
 
 int Response::getStatus(void) const { return (_status); }
 string &Response::getContenttype(void) { return (_ContentType); }
-Request &Response::getRequest(void) { return (_req); }
+Request *Response::getRequest(void) { return (_req); }
 string &Response::getValue(int key) { return (_Error[key]); }
 string &Response::getBody(void) { return (_body); }
-string &Response::getType(){return _type;}
+string &Response::getType() { return _type; }
 
 // setters
 void Response::setContentType(string content) { _ContentType = content; }
-void Response::setRequest(Request &req) { _req = req; }
+void Response::setRequest(Request &req) { _req = &req; }
 void Response::setStatus(int stat) { _status = stat; }
 void Response::setBody(string &body) { _body = body; }
 void Response::setError(int key, string value) { _Error[key] = value; }
-void Response::setType(const string &type) {_type = type;}
+void Response::setType(const string &type) { _type = type; }
