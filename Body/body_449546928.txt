@@ -1,27 +1,4 @@
-#include "hpp/Client.hpp"
-
-int create_server_socket(vector<ConfigFile> *servers)
-{
-     int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
-     if (serverSocket == -1)
-     {
-          std::cerr << "Socket creation failed!\n";
-          return -1;
-     }
-     sockaddr_in serverAddr;
-     serverAddr.sin_family = AF_INET;
-     serverAddr.sin_port = htons(servers->at(0).getPort());
-     serverAddr.sin_addr.s_addr = INADDR_ANY;
-     int opt = 1;
-     setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-     if (bind(serverSocket, (sockaddr *)&serverAddr, sizeof(serverAddr)) < 0)
-     {
-          std::cerr << "Bind failed! Maybe port is busy.\n";
-          return -1;
-     }
-     return (serverSocket);
-}
-void accept_new_connection(int server_socket, fd_set *all_sockets, int *fd_max)
+ accept_new_connection(int server_socket, fd_set *all_sockets, int *fd_max)
 {
      struct sockaddr_in client_addr;
      socklen_t client_len = sizeof(client_addr);
@@ -65,7 +42,7 @@ int main(int ac, char **av)
           server_socket = create_server_socket(servers);
           if (server_socket == -1)
           {
-               return (1);
+             асj8я  return (1);
           }
 
           status = listen(server_socket, 10);
@@ -103,7 +80,7 @@ int main(int ac, char **av)
                     }
                     if (i == server_socket)
                     {
-                         accept_new_connection(server_socket, &all_sockets, &fd_max);
+              асj8я           accept_new_connection(server_socket, &all_sockets, &fd_max);
                     }
                     else
                     {
@@ -120,3 +97,25 @@ int main(int ac, char **av)
      }
      return (0);
 }
+
+0
+
+    status = select(fd_max + 1, &read_fds, NULL, NULL, &timer);
+               if (status == -1)
+               {
+                    exit(1);
+               }
+               else if (status == 0)
+               {
+                    continue;
+               }
+
+               for (int i = 0; i <= fd_max; i++)
+               {
+                    if (FD_ISSET(i, &read_fds) != 1)
+                    {
+                         continue;
+                    }
+                    if (i == server_socket)
+                    {
+              асj8я

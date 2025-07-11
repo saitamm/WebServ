@@ -42,7 +42,30 @@ Location *matchLocation(const std::string &uri, const std::vector<Location> &loc
     return bestMatch;
 }
 
-void Request::ParseRequest(map<int, Client> &clients, int clientSocket, ConfigFile &serv)
+// void Request::ParseRequest(int clientSocket, ConfigFile &serv)
+// {
+
+// else
+// {
+//
+// }
+
+// getters
+
+string &Request::getHost(void) { return (_host); }
+string &Request::getMethod(void) { return (_method); }
+string &Request::getUri(void) { return (_url[0]); }
+string &Request::getQuery(void) { return (_url[1]); }
+string &Request::getFilename(void) { return (filename); }
+string &Request::getCtype(void) { return (_head["Content-Type"]); }
+Location *Request::getLocation(void) { return (_locat); }
+string &Request::getHeadvalue(string key) { return (_head[key]); }
+unsigned long long &Request::getContentLength(void) { return (_ContentLength); }
+ConfigFile &Request::getConfigFile(void) { return (_serv); }
+
+// test
+
+void Request::ParseHttpRequest(string &Header, int clientSocket, ConfigFile &serv, fstream &body)
 {
     this->_serv = serv;
     char buf[1024];
@@ -52,14 +75,12 @@ void Request::ParseRequest(map<int, Client> &clients, int clientSocket, ConfigFi
     {
         map<int, string> body = this->getConfigFile().getError_page();
         if ((bytesRead = recv(clientSocket, buf, sizeof(buf), 0)) > 0)
-            tmp1.append(buf, bytesRead);
-        if (clients[clientSocket].getbuff().find("\r\n\r\n") != std::string::npos)
+            Header.append(buf, bytesRead);
+        if (Header.find("\r\n\r\n") != std::string::npos)
         {
-            cout << "header =" << clients[clientSocket].getbuff() << endl;
 
             this->_HeadF = true;
-            cout << "Header is finished " << this->_HeadF << endl;
-            stringstream line(clients[clientSocket].getbuff());
+            stringstream line(Header);
             line >> this->_method;
             if ((_method != "GET" && _method != "DELETE" && _method != "POST") || _method.empty())
                 throw BadRequestException();
@@ -105,6 +126,10 @@ void Request::ParseRequest(map<int, Client> &clients, int clientSocket, ConfigFi
                 cout << "No matching location found for URI: " << this->_url[0] << endl;
                 throw BadRequestException();
             }
+            stringstream ss(tmp1);
+            ss >> this->_ContentLength;
+            if ((tmp1.empty() && _head["Transfer-Encoding"].empty()) || tmp1[0] == '-' || ss.fail())
+                throw BadRequestException();
         }
     }
     else
@@ -114,20 +139,16 @@ void Request::ParseRequest(map<int, Client> &clients, int clientSocket, ConfigFi
             return;
         }
         // body
-        stringstream ss(tmp1);
-        ss >> this->_ContentLength;
-        if ((tmp1.empty() && _head["Transfer-Encoding"].empty()) || tmp1[0] == '-' || ss.fail())
-            throw BadRequestException();
-        int pos = clients[clientSocket].getbuff().find("\r\n\r\n");
-        string buff = clients[clientSocket].getbuff().substr(pos + 4);
+        int pos = Header.find("\r\n\r\n");
+        string buff = Header.substr(pos + 4);
         size_t totalReceived = 0;
-        cout << "rest in header =" << buff << "=" << endl;
+        cout << buff <<endl;
         if (!this->_head["Transfer-Encoding"].empty())
         {
         }
         else
         {
-            while (totalReceived < this->_ContentLength + 10)
+            while (totalReceived < this->_ContentLength)
             {
                 bytesRead = recv(clientSocket, buf, sizeof(buf), 0);
                 if (bytesRead < 0)
@@ -136,6 +157,7 @@ void Request::ParseRequest(map<int, Client> &clients, int clientSocket, ConfigFi
                 {
                     throw BadRequestException();
                 }
+                body << buf ;
                 // Body.append(buf, bytesRead);
                 totalReceived += bytesRead;
             }
@@ -143,16 +165,3 @@ void Request::ParseRequest(map<int, Client> &clients, int clientSocket, ConfigFi
         this->_BodyF = true;
     }
 }
-
-// getters
-
-string &Request::getHost(void) { return (_host); }
-string &Request::getMethod(void) { return (_method); }
-string &Request::getUri(void) { return (_url[0]); }
-string &Request::getQuery(void) { return (_url[1]); }
-string &Request::getFilename(void) { return (filename); }
-string &Request::getCtype(void) { return (_head["Content-Type"]); }
-Location *Request::getLocation(void) { return (_locat); }
-string &Request::getHeadvalue(string key) { return (_head[key]); }
-unsigned long long &Request::getContentLength(void) { return (_ContentLength); }
-ConfigFile &Request::getConfigFile(void) { return (_serv); }

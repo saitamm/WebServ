@@ -47,8 +47,8 @@ void SendResponse(Response &resp, int clientSocket)
     string final_resp = response.str();
     if (send(clientSocket, final_resp.c_str(), final_resp.size(), 0) == -1)
         cerr << "error Send \n";
-    else
-        cout << "response sended ✅ \n";
+    // else
+    //     cout << "response sended ✅ \n";
 }
 void SetErrors(Response &resp)
 {
@@ -60,17 +60,19 @@ void SetErrors(Response &resp)
     resp.setError(409, "Conflict");
 }
 
-void ServClient(map<int, Client> &clients, int clientSocket, vector<ConfigFile> *servers)
+void ServClient(map<int, Client *> &clients, int clientSocket, vector<ConfigFile> *servers)
 {
     Request req;
     Response resp;
     SetErrors(resp);
     try
     {
-        req.ParseRequest(clients, clientSocket, servers->at(0));
+        req.ParseHttpRequest(clients[clientSocket]->getbuff(), clientSocket, servers->at(0), clients[clientSocket]->getbody());
+       
         if (req.getfinishedHead() == true)
         {
             MakeResponce(req, resp);
+            // clients[clientSocket]->setResp(resp);
         }
     }
     catch (const std::exception &e)

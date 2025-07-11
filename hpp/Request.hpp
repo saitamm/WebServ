@@ -1,6 +1,5 @@
 #ifndef REQUEST_HPP
 #define REQUEST_HPP
-
 #include <iostream>
 #include <string>
 #include <unistd.h>
@@ -13,10 +12,11 @@
 #include <map>
 #include <sstream>
 #include "ConfigFile.hpp"
-#include "Response.hpp"
-#include "Client.hpp"
 #include <algorithm>
 #include <cctype>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <dirent.h>
 
 #define LIMIT 1024
 
@@ -52,11 +52,11 @@ public:
     string &getFilename(void);
     Location *getLocation(void);
     unsigned long long &getContentLength(void);
-    void ParseRequest(map<int, Client> &buffers, int clientSocket, ConfigFile &serv);
     ConfigFile &getConfigFile(void);
     string &getHeadvalue(string key);
-    bool getfinishedHead(){return (_HeadF);};
-    bool getfinishedBody(){return (_BodyF);};
+    bool getfinishedHead() { return (_HeadF); };
+    bool getfinishedBody() { return (_BodyF); };
+    void ParseHttpRequest(string &Header, int clientSocket, ConfigFile &serv, fstream &body);
 
 private:
     string _method;
