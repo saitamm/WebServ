@@ -1,4 +1,5 @@
 #include "../hpp/Request.hpp"
+#include "../hpp/Client.hpp"
 
 Request::Request()
 {
@@ -41,24 +42,24 @@ Location *matchLocation(const std::string &uri, const std::vector<Location> &loc
     return bestMatch;
 }
 
-void Request::ParseRequest(map<int, string> &buffers, int clientSocket, ConfigFile &serv)
+void Request::ParseRequest(map<int, Client> &clients, int clientSocket, ConfigFile &serv)
 {
     this->_serv = serv;
     char buf[1024];
     ssize_t bytesRead;
     string tmp1;
-    cout << "clientSocket  = " << clientSocket << endl;
     if (!this->_HeadF)
     {
         map<int, string> body = this->getConfigFile().getError_page();
         if ((bytesRead = recv(clientSocket, buf, sizeof(buf), 0)) > 0)
-            buffers[clientSocket].append(buf, bytesRead);
-        if (buffers[clientSocket].find("\r\n\r\n") != std::string::npos)
+            tmp1.append(buf, bytesRead);
+        if (clients[clientSocket].getbuff().find("\r\n\r\n") != std::string::npos)
         {
+            cout << "header =" << clients[clientSocket].getbuff() << endl;
 
             this->_HeadF = true;
             cout << "Header is finished " << this->_HeadF << endl;
-            stringstream line(buffers[clientSocket]);
+            stringstream line(clients[clientSocket].getbuff());
             line >> this->_method;
             if ((_method != "GET" && _method != "DELETE" && _method != "POST") || _method.empty())
                 throw BadRequestException();
@@ -117,32 +118,28 @@ void Request::ParseRequest(map<int, string> &buffers, int clientSocket, ConfigFi
         ss >> this->_ContentLength;
         if ((tmp1.empty() && _head["Transfer-Encoding"].empty()) || tmp1[0] == '-' || ss.fail())
             throw BadRequestException();
-        // int pos = tmp.find('-');
-        // tmp.erase(0, pos);
-        int pos = buffers[clientSocket].find("\r\n\r\n");
-        string buff = buffers[clientSocket].substr(pos + 4);
+        int pos = clients[clientSocket].getbuff().find("\r\n\r\n");
+        string buff = clients[clientSocket].getbuff().substr(pos + 4);
+        size_t totalReceived = 0;
         cout << "rest in header =" << buff << "=" << endl;
-        // string Body;
-        // if (this->_ContentLength > this->_serv.getMax_size())
-        //     throw BadRequestException();
-        // unsigned long long totalReceived = 0;
-        // srand(time(0));
-        // stringstream ll;
-        // ll << rand();
-        // this->filename = "Body/body_" + ll.str() + ".txt";
-        // ofstream file(filename.c_str());
-        // while (totalReceived < this->_ContentLength)
-        // {
-        //     bytesRead = recv(clientSocket, buf, sizeof(buf), 0);
-        //     if (bytesRead < 0)
-        //         throw SocketErrorException();
-        //     if (bytesRead == 0)
-        //         throw BadRequestException();
-        //     Body.append(buf, bytesRead);
-        //     totalReceived += bytesRead;
-        // }
-        // file << Body;
-        // file.close();
+        if (!this->_head["Transfer-Encoding"].empty())
+        {
+        }
+        else
+        {
+            while (totalReceived < this->_ContentLength + 10)
+            {
+                bytesRead = recv(clientSocket, buf, sizeof(buf), 0);
+                if (bytesRead < 0)
+                    throw SocketErrorException();
+                if (bytesRead == 0)
+                {
+                    throw BadRequestException();
+                }
+                // Body.append(buf, bytesRead);
+                totalReceived += bytesRead;
+            }
+        }
         this->_BodyF = true;
     }
 }

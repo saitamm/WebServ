@@ -25,8 +25,8 @@ void MakeResponce(Request &req, Response &resp)
     if (req.getMethod() == "DELETE")
     {
         handleDelete(resp);
-        return;
         resp.setSend();
+        return;
     }
     if (req.getMethod() == "GET")
     {

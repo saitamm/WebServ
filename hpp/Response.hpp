@@ -1,9 +1,10 @@
 #ifndef RESPONSE_HPP
 #define RESPONSE_HPP
-#include "Request.hpp"
 #include <sys/stat.h>
 #include <unistd.h>
+#include "Request.hpp"
 #include <dirent.h>
+
 
 class BadDirectoryException : public std::exception
 {

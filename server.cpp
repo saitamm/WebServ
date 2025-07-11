@@ -1,5 +1,3 @@
-#include "hpp/Request.hpp"
-#include "hpp/Response.hpp"
 #include "hpp/Client.hpp"
 
 int create_server_socket(vector<ConfigFile> *servers)
@@ -80,7 +78,7 @@ int main(int ac, char **av)
           FD_ZERO(&read_fds);
           FD_SET(server_socket, &all_sockets);
           fd_max = server_socket;
-          map<int, string> buffers;
+          map<int, Client> clients;
           while (1)
           {
                read_fds = all_sockets;
@@ -109,7 +107,7 @@ int main(int ac, char **av)
                     }
                     else
                     {
-                         ServClient(buffers,i, servers);
+                         ServClient(clients,i, servers);
                     }
                }
           }

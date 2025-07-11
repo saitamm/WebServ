@@ -7,14 +7,18 @@ class Client
 public:
     Client();
     Client(int fd);
-    Response &getResp(void);
+    Response *getResp(void);
     void setResp(Response &rep);
+    void setBuff(string &buff, size_t &readbyte);
     int getFd(void) const;
+    string &getbuff(void){return(_buffer);}
 
 private:
-    Response _resp;
+    Response *_resp;
     int _fd;
+    string _buffer;
+    fstream _file;
     // bool _finished;
 };
-void ServClient(map<int, string> &buffers, int clientSocket, vector<ConfigFile> *servers);
+void ServClient(map<int, Client> &buffers, int clientSocket, vector<ConfigFile> *servers);
 #endif

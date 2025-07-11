@@ -11,7 +11,7 @@ Client::Client(int fd)
 
 void Client::setResp(Response &resp)
 {
-    _resp = resp;
+    _resp = &resp;
 }
 
 
@@ -21,7 +21,12 @@ int Client::getFd(void) const
 }
 
 
-Response &Client::getResp(void)
+Response *Client::getResp(void)
 {
     return (_resp);
+}
+
+void Client::setBuff(string &buff, size_t &readbyte)
+{
+    _buffer.append(buff, readbyte);
 }

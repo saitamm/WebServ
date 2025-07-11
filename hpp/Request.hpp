@@ -13,6 +13,8 @@
 #include <map>
 #include <sstream>
 #include "ConfigFile.hpp"
+#include "Response.hpp"
+#include "Client.hpp"
 #include <algorithm>
 #include <cctype>
 
@@ -50,7 +52,7 @@ public:
     string &getFilename(void);
     Location *getLocation(void);
     unsigned long long &getContentLength(void);
-    void ParseRequest(map<int, string> &buffers, int clientSocket, ConfigFile &serv);
+    void ParseRequest(map<int, Client> &buffers, int clientSocket, ConfigFile &serv);
     ConfigFile &getConfigFile(void);
     string &getHeadvalue(string key);
     bool getfinishedHead(){return (_HeadF);};

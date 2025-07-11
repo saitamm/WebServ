@@ -5,9 +5,9 @@ import threading
 def send_split_header():
     s = socket.socket()
     s.connect(('localhost', 8080))
-    s.send(b"GE")
+    s.send(b"DELETE")
     time.sleep(1)  # Simulate slow header
-    s.send(b"T / HTTP/1.2\r\nHost: localhost\r\n")
+    s.send(b" /Body/ HTTP/1.1\r\nHost: localhost\r\n")
     s.send(b"\r\n\r\n")  # Finish header
     print("Sent split header")
     print(s.recv(1024))
