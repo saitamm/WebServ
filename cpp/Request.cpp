@@ -78,7 +78,6 @@ void Request::ParseHttpRequest(string &Header, int clientSocket, ConfigFile &ser
             Header.append(buf, bytesRead);
         if (Header.find("\r\n\r\n") != std::string::npos)
         {
-
             this->_HeadF = true;
             stringstream line(Header);
             line >> this->_method;
@@ -128,7 +127,7 @@ void Request::ParseHttpRequest(string &Header, int clientSocket, ConfigFile &ser
             }
             stringstream ss(tmp1);
             ss >> this->_ContentLength;
-            if ((tmp1.empty() && _head["Transfer-Encoding"].empty()) || tmp1[0] == '-' || ss.fail())
+            if (((tmp1.empty() && _head["Transfer-Encoding"].empty()) || tmp1[0] == '-' || ss.fail()) && _method == "POST")
                 throw BadRequestException();
         }
     }
@@ -142,9 +141,25 @@ void Request::ParseHttpRequest(string &Header, int clientSocket, ConfigFile &ser
         int pos = Header.find("\r\n\r\n");
         string buff = Header.substr(pos + 4);
         size_t totalReceived = 0;
-        cout << buff <<endl;
         if (!this->_head["Transfer-Encoding"].empty())
         {
+             std::string buffer((std::istreambuf_iterator<char>(body)),
+                       std::istreambuf_iterator<char>());
+            cout << "buffer = "<< buffer << "end" <<endl;
+            while (buffer.find("\r\n\r\n") != string::npos)
+            {
+                bytesRead = recv(clientSocket, buf, sizeof(buf), 0);
+                if (bytesRead < 0)
+                    throw SocketErrorException();
+                if (bytesRead == 0)
+                {
+                    throw BadRequestException();
+                }
+                cout << buf << endl;
+                buf[bytesRead] = '\0';
+                body.write(buf, bytesRead);
+                buffer.append(buf, bytesRead);
+            }
         }
         else
         {
@@ -157,7 +172,9 @@ void Request::ParseHttpRequest(string &Header, int clientSocket, ConfigFile &ser
                 {
                     throw BadRequestException();
                 }
-                body << buf ;
+                // body << buf ;
+                buf[bytesRead] = '\0';
+                body.write(buf, bytesRead);
                 // Body.append(buf, bytesRead);
                 totalReceived += bytesRead;
             }

@@ -2,6 +2,7 @@
 #include "hpp/Client.hpp"
 void printRequest(Request req)
 {
+
     cout << "method = ******" << req.getMethod() << endl;
     cout << "uri = ******" << req.getUri() << endl;
     if (req.getQuery().empty())
@@ -47,8 +48,6 @@ void SendResponse(Response &resp, int clientSocket)
     string final_resp = response.str();
     if (send(clientSocket, final_resp.c_str(), final_resp.size(), 0) == -1)
         cerr << "error Send \n";
-    // else
-    //     cout << "response sended ✅ \n";
 }
 void SetErrors(Response &resp)
 {
@@ -62,25 +61,22 @@ void SetErrors(Response &resp)
 
 void ServClient(map<int, Client *> &clients, int clientSocket, vector<ConfigFile> *servers)
 {
-    Request req;
-    Response resp;
-    SetErrors(resp);
+    SetErrors(*clients[clientSocket]->getResp());
     try
     {
-        req.ParseHttpRequest(clients[clientSocket]->getbuff(), clientSocket, servers->at(0), clients[clientSocket]->getbody());
-       
-        if (req.getfinishedHead() == true)
+        clients[clientSocket]->getRequest()->ParseHttpRequest(clients[clientSocket]->getbuff(), clientSocket, servers->at(0), clients[clientSocket]->getbody());
+        if (clients[clientSocket]->getRequest()->getfinishedHead() == true)
         {
-            MakeResponce(req, resp);
-            // clients[clientSocket]->setResp(resp);
+            MakeResponce(*clients[clientSocket]->getRequest(), *clients[clientSocket]->getResp());
         }
     }
     catch (const std::exception &e)
     {
-        resp.setRequest(req);
-        resp.setSend();
-        setErrorBodyStatus(resp, 400);
+        clients[clientSocket]->getResp()->setRequest(*clients[clientSocket]->getRequest());
+        clients[clientSocket]->getResp()->setSend();
+        setErrorBodyStatus(*clients[clientSocket]->getResp(), 400);
+        cout << "i am exception \n";
     }
-    if (resp.getSend())
-        SendResponse(resp, clientSocket);
+    if (clients[clientSocket]->getResp()->getSend())
+        SendResponse(*clients[clientSocket]->getResp(), clientSocket);
 }

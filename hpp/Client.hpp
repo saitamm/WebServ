@@ -15,10 +15,12 @@ public:
     int getFd(void) const;
     string &getbuff(void) { return (_buffer); }
     fstream &getbody(void) { return (_body); }
+    Request *getRequest(void){return(_req);};
 
 private:
     Client(const Client &copy) ;
-    Client &operator=(Client &hs) ;
+    // Client &operator=(Client &hs);
+    Request *_req;
     Response *_resp;
     int _fd;
     string _buffer;

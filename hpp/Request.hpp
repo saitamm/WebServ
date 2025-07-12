@@ -65,6 +65,7 @@ private:
     bool _HeadF;
     bool _BodyF;
     unsigned long long _ContentLength;
+    // size_t totalReceived;
     string _body;
     string filename;
     map<string, string> _head;

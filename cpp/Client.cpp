@@ -3,23 +3,23 @@
 Client::Client()
 {
     srand(time(0));
-    stringstream ss ;
-    ss <<"Body/body_" << rand() << ".txt";
-    string filename  = ss.str();
+    stringstream ss;
+    ss << "Body/body_" << rand() << ".txt";
+    string filename = ss.str();
     _body.open(filename.c_str(), std::ios::out | std::ios::trunc);
-    cout << "waaaaaaaaaaaaaaaaaaaaaa" << filename<<endl;
     if (!_body.is_open())
     {
         throw std::runtime_error("Failed to open file: " + filename);
     }
+    _req = new Request();
+    _resp = new Response();
 }
 
-Client::~Client() {
+Client::~Client()
+{
     if (_body.is_open())
         _body.close();
 }
-
-
 
 Client::Client(int fd)
 {
