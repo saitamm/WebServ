@@ -68,6 +68,7 @@ int main(int ac, char **av)
           if (server_socket == -1)
           {
             
+18446744073709551615
 byteread=1023
 
 #include "hpp/Client.hpp"
@@ -176,6 +177,7 @@ int main(int ac, char **av)
                     if (i == server_socket)
                     {
             
+18446744073709551615
 byteread=486
 
 #include "hpp/Client.hpp"
@@ -304,3 +306,4 @@ int main(int ac, char **av)
 0
 
 
+3257

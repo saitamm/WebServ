@@ -76,7 +76,7 @@ void Request::ParseHttpRequest(string &Header, int clientSocket, ConfigFile &ser
     if (!this->_HeadF)
     {
         this->totalReceived = 0;
-        // map<int, string> body = this->getConfigFile().getError_page();
+        map<int, string> body = this->getConfigFile().getError_page();
         if ((bytesRead = recv(clientSocket, buf, sizeof(buf), 0)) > 0)
             Header.append(buf, bytesRead);
         if (Header.find("\r\n\r\n") != std::string::npos)
@@ -171,10 +171,12 @@ void Request::ParseHttpRequest(string &Header, int clientSocket, ConfigFile &ser
             std::string buffer((std::istreambuf_iterator<char>(body)),
                                std::istreambuf_iterator<char>());
             cout << buffer << endl;
-            if (buffer.find("0\r\n\r\n") != string::npos)
+            cout << buffer.find("\r\n")<<endl;
+            cout.flush();
+            if (buffer.find("\r\n") != string::npos)
             {
-                cout << "--------------i beaked------------------------\n";
                 // break;
+                cout << "--------------i beaked------------------------\n"; 
                 this->_body = true;
             }
             // }

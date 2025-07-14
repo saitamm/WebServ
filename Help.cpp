@@ -67,7 +67,9 @@ void ServClient(map<int, Client *> &clients, int clientSocket, vector<ConfigFile
         clients[clientSocket]->getRequest()->ParseHttpRequest(clients[clientSocket]->getbuff(), clientSocket, servers->at(0), clients[clientSocket]->getbody());
         if (clients[clientSocket]->getRequest()->getfinishedHead() == true)
         {
+            
             MakeResponce(*clients[clientSocket]->getRequest(), *clients[clientSocket]->getResp());
+            clients[clientSocket]->getResp()->setSend();
         }
     }
     catch (const std::exception &e)
@@ -78,5 +80,9 @@ void ServClient(map<int, Client *> &clients, int clientSocket, vector<ConfigFile
         cout << "i am exception \n";
     }
     if (clients[clientSocket]->getResp()->getSend())
+    {
+        cout << "==================================\n";
         SendResponse(*clients[clientSocket]->getResp(), clientSocket);
+
+    }
 }
