@@ -71,6 +71,8 @@ private:
     map<string, string> _head;
     ConfigFile _serv;
     Location *_locat;
+    size_t totalReceived;
+    string restHeader;
 };
 void trim(string &str, string tr);
 #endif

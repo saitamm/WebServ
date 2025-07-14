@@ -6,7 +6,7 @@ Client::Client()
     stringstream ss;
     ss << "Body/body_" << rand() << ".txt";
     string filename = ss.str();
-    _body.open(filename.c_str(), std::ios::out | std::ios::trunc);
+    _body.open(filename.c_str(), std::ios::in | std::ios::out | std::ios::trunc | std::ios::binary);
     if (!_body.is_open())
     {
         throw std::runtime_error("Failed to open file: " + filename);
@@ -28,7 +28,7 @@ Client::Client(int fd)
     stringstream ll;
     ll << rand();
     string filename = "Body/body_" + ll.str() + ".txt";
-    _body.open(filename.c_str(), std::ios::out | std::ios::trunc);
+    _body.open(filename.c_str(), std::ios::in | std::ios::out | std::ios::trunc | std::ios::binary);
     if (!_body.is_open())
     {
         throw std::runtime_error("Failed to open file: " + filename);

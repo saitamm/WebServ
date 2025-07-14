@@ -3,6 +3,8 @@
 
 Request::Request()
 {
+    _HeadF = false;
+    _BodyF = false;
 }
 
 Request::~Request() {}
@@ -73,7 +75,8 @@ void Request::ParseHttpRequest(string &Header, int clientSocket, ConfigFile &ser
     string tmp1;
     if (!this->_HeadF)
     {
-        map<int, string> body = this->getConfigFile().getError_page();
+        this->totalReceived = 0;
+        // map<int, string> body = this->getConfigFile().getError_page();
         if ((bytesRead = recv(clientSocket, buf, sizeof(buf), 0)) > 0)
             Header.append(buf, bytesRead);
         if (Header.find("\r\n\r\n") != std::string::npos)
@@ -130,55 +133,73 @@ void Request::ParseHttpRequest(string &Header, int clientSocket, ConfigFile &ser
             if (((tmp1.empty() && _head["Transfer-Encoding"].empty()) || tmp1[0] == '-' || ss.fail()) && _method == "POST")
                 throw BadRequestException();
         }
+        int pos = Header.find("\r\n\r\n");
+        this->restHeader = Header.substr(pos + 4);
     }
-    else
+    if (this->_HeadF && !this->_BodyF)
     {
         if (_method == "GET" || _method == "DELETE")
         {
             return;
         }
         // body
-        int pos = Header.find("\r\n\r\n");
-        string buff = Header.substr(pos + 4);
-        size_t totalReceived = 0;
         if (!this->_head["Transfer-Encoding"].empty())
         {
-             std::string buffer((std::istreambuf_iterator<char>(body)),
-                       std::istreambuf_iterator<char>());
-            cout << "buffer = "<< buffer << "end" <<endl;
-            while (buffer.find("\r\n\r\n") != string::npos)
+            string del;
+            stringstream ss(this->restHeader);
+            ss >> del;
+            this->restHeader.erase(0, del.size() + 1);
+            if (!this->totalReceived)
             {
-                bytesRead = recv(clientSocket, buf, sizeof(buf), 0);
-                if (bytesRead < 0)
-                    throw SocketErrorException();
-                if (bytesRead == 0)
-                {
-                    throw BadRequestException();
-                }
-                cout << buf << endl;
-                buf[bytesRead] = '\0';
-                body.write(buf, bytesRead);
-                buffer.append(buf, bytesRead);
+                this->totalReceived += this->restHeader.size();
+                body.write(this->restHeader.c_str(), this->totalReceived);
             }
+            // while (1)
+            // {
+            bytesRead = recv(clientSocket, buf, sizeof(buf) - 1, 0);
+            cout << "byteread=" << bytesRead << endl;
+            if (bytesRead < 0)
+                throw SocketErrorException();
+            if (bytesRead == 0)
+                throw BadRequestException();
+            buf[bytesRead] = '\0';
+            body.write(buf, bytesRead);
+            body.flush();
+            body.clear();
+            string gg(buf);
+            body.seekg(0);
+            std::string buffer((std::istreambuf_iterator<char>(body)),
+                               std::istreambuf_iterator<char>());
+            cout << buffer << endl;
+            if (buffer.find("0\r\n\r\n") != string::npos)
+            {
+                cout << "--------------i beaked------------------------\n";
+                // break;
+                this->_body = true;
+            }
+            // }
         }
         else
         {
-            while (totalReceived < this->_ContentLength)
+            if (!this->totalReceived)
             {
-                bytesRead = recv(clientSocket, buf, sizeof(buf), 0);
-                if (bytesRead < 0)
-                    throw SocketErrorException();
-                if (bytesRead == 0)
-                {
-                    throw BadRequestException();
-                }
-                // body << buf ;
-                buf[bytesRead] = '\0';
-                body.write(buf, bytesRead);
-                // Body.append(buf, bytesRead);
-                totalReceived += bytesRead;
+                this->totalReceived += this->restHeader.size();
+                body.write(this->restHeader.c_str(), this->totalReceived);
             }
+            string Body;
+            cout << "totalreceive = " << this->totalReceived << "   content = " << this->_ContentLength << endl;
+
+            bytesRead = recv(clientSocket, buf, sizeof(buf) - 1, 0);
+            if (bytesRead < 0)
+                throw SocketErrorException();
+            if (bytesRead == 0)
+                throw BadRequestException();
+            buf[bytesRead] = '\0';
+            body.write(buf, bytesRead);
+            body.flush();
+            this->totalReceived += bytesRead;
+            if (this->totalReceived == this->_ContentLength)
+                this->_BodyF = true;
         }
-        this->_BodyF = true;
     }
 }
