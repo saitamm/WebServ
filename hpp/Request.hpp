@@ -57,6 +57,8 @@ public:
     bool getfinishedHead() { return (_HeadF); };
     bool getfinishedBody() { return (_BodyF); };
     void ParseHttpRequest(string &Header, int clientSocket, ConfigFile &serv, fstream &body);
+    void ParseHeader(string &Header);
+    void ParseBody(fstream &body , int clientSocket);
 
 private:
     string _method;

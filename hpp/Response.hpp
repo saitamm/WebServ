@@ -30,7 +30,7 @@ public:
     void setRequest(Request &req);
     void setContentType(string content);
     void setBody(string &body);
-    void setError(int key, string value);
+    void setCode(int key, string value);
     void setType(const string &type);
     void setSend(void) { _sendit = true; };
     // void MakeResponce(Request &req);
@@ -48,7 +48,7 @@ private:
 void MakeResponce(Request &req, Response &resp);
 void handleDelete(Response &resp);
 void handleGet(Response &resp);
-void setErrorBodyStatus(Response &resp, int error);
+void setCodeBodyStatus(Response &resp, int error);
 void getContentType(string &real_path, Response &resp);
 void handlePost(Response &resp);
 #endif

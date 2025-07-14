@@ -19,13 +19,11 @@ public:
 
 private:
     Client(const Client &copy) ;
-    // Client &operator=(Client &hs);
     Request *_req;
     Response *_resp;
     int _fd;
     string _buffer;
     fstream _body;
-    // bool _finished;
 };
 void ServClient(map<int, Client*> &buffers, int clientSocket, vector<ConfigFile> *servers);
 #endif

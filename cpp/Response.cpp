@@ -18,7 +18,7 @@ void MakeResponce(Request &req, Response &resp)
     resp.setRequest(req);
     if (!allowMethod(*req.getLocation(), req.getMethod()))
     {
-        setErrorBodyStatus(resp, 405);
+        setCodeBodyStatus(resp, 405);
         resp.setSend();
         return;
     }
@@ -54,5 +54,5 @@ void Response::setContentType(string content) { _ContentType = content; }
 void Response::setRequest(Request &req) { _req = &req; }
 void Response::setStatus(int stat) { _status = stat; }
 void Response::setBody(string &body) { _body = body; }
-void Response::setError(int key, string value) { _Error[key] = value; }
+void Response::setCode(int key, string value) { _Error[key] = value; }
 void Response::setType(const string &type) { _type = type; }

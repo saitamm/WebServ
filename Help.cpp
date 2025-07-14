@@ -49,25 +49,24 @@ void SendResponse(Response &resp, int clientSocket)
     if (send(clientSocket, final_resp.c_str(), final_resp.size(), 0) == -1)
         cerr << "error Send \n";
 }
-void SetErrors(Response &resp)
+void setStatusCode(Response &resp)
 {
-    resp.setError(200, "OK");
-    resp.setError(204, "No Content");
-    resp.setError(403, "Forbidden");
-    resp.setError(404, "Not Found");
-    resp.setError(405, "Method Not Allowed");
-    resp.setError(409, "Conflict");
+    resp.setCode(200, "OK");
+    resp.setCode(204, "No Content");
+    resp.setCode(403, "Forbidden");
+    resp.setCode(404, "Not Found");
+    resp.setCode(405, "Method Not Allowed");
+    resp.setCode(409, "Conflict");
 }
 
 void ServClient(map<int, Client *> &clients, int clientSocket, vector<ConfigFile> *servers)
 {
-    SetErrors(*clients[clientSocket]->getResp());
+    setStatusCode(*clients[clientSocket]->getResp());
     try
     {
         clients[clientSocket]->getRequest()->ParseHttpRequest(clients[clientSocket]->getbuff(), clientSocket, servers->at(0), clients[clientSocket]->getbody());
         if (clients[clientSocket]->getRequest()->getfinishedHead() == true)
         {
-            
             MakeResponce(*clients[clientSocket]->getRequest(), *clients[clientSocket]->getResp());
             clients[clientSocket]->getResp()->setSend();
         }
@@ -76,7 +75,7 @@ void ServClient(map<int, Client *> &clients, int clientSocket, vector<ConfigFile
     {
         clients[clientSocket]->getResp()->setRequest(*clients[clientSocket]->getRequest());
         clients[clientSocket]->getResp()->setSend();
-        setErrorBodyStatus(*clients[clientSocket]->getResp(), 400);
+        setCodeBodyStatus(*clients[clientSocket]->getResp(), 400);
         cout << "i am exception \n";
     }
     if (clients[clientSocket]->getResp()->getSend())

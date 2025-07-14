@@ -1,5 +1,5 @@
 #include "../hpp/Response.hpp"
-void setErrorBodyStatus(Response &resp, int error)
+void setCodeBodyStatus(Response &resp, int error)
 {
     resp.setStatus(error);
     map<int, string> body = resp.getRequest()->getConfigFile().getError_page();
@@ -62,7 +62,7 @@ void handleDelete(Response &resp)
         file.erase(0, 1);
     if (stat(file.c_str(), &path) == -1)
     {
-        setErrorBodyStatus(resp, 404);
+        setCodeBodyStatus(resp, 404);
         return;
     }
     // file
@@ -70,7 +70,7 @@ void handleDelete(Response &resp)
     {
         if (unlink(file.c_str()) == -1)
         {
-            setErrorBodyStatus(resp, 403);
+            setCodeBodyStatus(resp, 403);
             return;
         }
         else
@@ -94,29 +94,29 @@ void handleDelete(Response &resp)
         {
             if (access(file.c_str(), W_OK) == -1)
             {
-                setErrorBodyStatus(resp, 403);
+                setCodeBodyStatus(resp, 403);
                 return;
             }
             try
             {
                 deleteRecursively(file);
-                setErrorBodyStatus(resp, 204);
+                setCodeBodyStatus(resp, 204);
             }
             catch (const std::exception &e)
             {
-                setErrorBodyStatus(resp, 403);
+                setCodeBodyStatus(resp, 403);
             }
 
             return;
         }
         else
         {
-            setErrorBodyStatus(resp, 409);
+            setCodeBodyStatus(resp, 409);
             return;
         }
     }
     else
     {
-        setErrorBodyStatus(resp, 404);
+        setCodeBodyStatus(resp, 404);
     }
 }
