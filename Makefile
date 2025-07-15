@@ -21,7 +21,9 @@ $(NAME): $(OBJ)
 	@echo "\033[32mCompilation complete ✅\033[0m"
 
 %.o: %.cpp
+	@mkdir -p $(dir $@)
 	@$(CXX) $(CXXFLAGS) -c $< -o $@
+
 clean:
 	@rm -rf $(OBJ)
 fclean: clean 
