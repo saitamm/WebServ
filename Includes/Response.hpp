@@ -45,7 +45,7 @@ private:
     bool _sendit;
 };
 
-void MakeResponce(Request &req, Response &resp);
+void MakeResponce(Client &client);
 void handleDelete(Response &resp);
 void handleGet(Response &resp);
 void setCodeBodyStatus(Response &resp, int error);

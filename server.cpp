@@ -1,4 +1,4 @@
-#include "hpp/Client.hpp"
+#include "Includes/Client.hpp"
 
 int create_server_socket(vector<ConfigFile> *servers)
 {
@@ -52,7 +52,7 @@ int main(int ac, char **av)
      vector<ConfigFile> *servers;
      try
      {
-
+          //set defaults error pages
           servers = config.ParseConfigFile(av[1]);
           int server_socket;
           int status;
@@ -61,7 +61,6 @@ int main(int ac, char **av)
           fd_set read_fds;
           int fd_max;
           struct timeval timer;
-
           server_socket = create_server_socket(servers);
           if (server_socket == -1)
           {
@@ -109,7 +108,7 @@ int main(int ac, char **av)
                     {
                          if (clients.find(i) == clients.end())
                               clients[i] = new Client();
-                         ServClient(clients, i, servers);
+                         handleClientRequest(clients, i, servers);
                     }
                }
           }

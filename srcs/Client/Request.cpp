@@ -1,49 +1,11 @@
-#include "../hpp/Request.hpp"
-#include "../hpp/Client.hpp"
+#include "../../Includes/Request.hpp"
 
 Request::Request()
 {
     _HeadF = false;
     _BodyF = false;
 }
-
 Request::~Request() {}
-
-void trim(string &str, string tr)
-{
-
-    std::string::size_type pos = str.find_first_not_of(tr);
-    str.erase(0, pos);
-    pos = str.find_last_not_of(tr);
-    str.erase(pos + 1);
-}
-void split(string str, char c, vector<string> &resul)
-{
-    if (str.find(c) == string::npos)
-    {
-        resul.push_back(str);
-        return;
-    }
-    resul.push_back(str.substr(0, str.find(c)));
-    str.erase(0, str.find(c) + 1);
-    resul.push_back(str);
-}
-Location *matchLocation(const std::string &uri, const std::vector<Location> &locations)
-{
-    Location *bestMatch = NULL;
-    size_t maxMatchLength = 0;
-    for (size_t i = 0; i < locations.size(); ++i)
-    {
-        std::string path = locations[i].getPath();
-        if (uri.find(path) != string::npos && path.length() > maxMatchLength)
-        {
-            bestMatch = new Location(locations[i]);
-            maxMatchLength = path.length();
-        }
-    }
-    return bestMatch;
-}
-
 // getters
 
 string &Request::getHost(void) { return (_host); }
@@ -64,7 +26,7 @@ void Request::ParseHeader(string &Header)
     stringstream line(Header);
     line >> this->_method;
     if ((_method != "GET" && _method != "DELETE" && _method != "POST") || _method.empty())
-    throw BadRequestException();
+        throw BadRequestException();
     string path;
     vector<string> res;
     line >> path;
@@ -73,13 +35,13 @@ void Request::ParseHeader(string &Header)
     line >> Httpv;
     trim(Httpv, "\n\t\r ");
     if (Httpv != "HTTP/1.1")
-    throw BadRequestException();
+        throw BadRequestException();
     string tmp;
     while (line >> tmp && tmp.find("boundary") == string::npos)
     {
         if (tmp != "Content-Length:" && tmp != "Host:")
         {
-            
+
             trim(tmp, ":");
             string value;
             line >> value;
@@ -94,17 +56,17 @@ void Request::ParseHeader(string &Header)
         {
             line >> this->_host;
             if (tmp.find(':') == string::npos)
-            throw BadRequestException();
+                throw BadRequestException();
             if (this->_host.find(':') != string::npos)
-            this->_host = this->_host.substr(0, this->_host.find(':'));
+                this->_host = this->_host.substr(0, this->_host.find(':'));
         }
     }
     if (this->_host.empty())
-    throw BadRequestException();
+        throw BadRequestException();
     stringstream ss(tmp1);
     ss >> this->_ContentLength;
     if (((tmp1.empty() && _head["Transfer-Encoding"].empty()) || tmp1[0] == '-' || ss.fail()) && _method == "POST")
-    throw BadRequestException();
+        throw BadRequestException();
     int pos = Header.find("\r\n\r\n");
     this->restHeader = Header.substr(pos + 4);
     this->_HeadF = true;
@@ -141,8 +103,6 @@ void Request::ParseBody(fstream &body, int clientSocket)
         body.seekg(0);
         std::string buffer((std::istreambuf_iterator<char>(body)),
                            std::istreambuf_iterator<char>());
-        // cout << buffer << endl;
-        // cout << buffer.find("\r\n")<<endl;
         cout.flush();
         if (buffer.find("\r\n") != string::npos)
         {

@@ -24,6 +24,7 @@ private:
     int _fd;
     string _buffer;
     fstream _body;
+    static map<int, string> _StatusCode;
 };
-void ServClient(map<int, Client*> &buffers, int clientSocket, vector<ConfigFile> *servers);
+void handleClientRequest(map<int, Client*> &buffers, int clientSocket, vector<ConfigFile> *servers);
 #endif

@@ -58,7 +58,7 @@ public:
     bool getfinishedBody() { return (_BodyF); };
     void ParseHttpRequest(string &Header, int clientSocket, ConfigFile &serv, fstream &body);
     void ParseHeader(string &Header);
-    void ParseBody(fstream &body , int clientSocket);
+    void ParseBody(fstream &body, int clientSocket);
 
 private:
     string _method;
@@ -77,4 +77,6 @@ private:
     string restHeader;
 };
 void trim(string &str, string tr);
+Location *matchLocation(const std::string &uri, const std::vector<Location> &locations);
+void split(string str, char c, vector<string> &resul);
 #endif

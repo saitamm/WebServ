@@ -49,6 +49,7 @@ class ConfigFile
         map<int, string> error_page;
         size_t max_size;
         vector<Location> locations;
+        static map<int, string> default_errors;
     public:
         ConfigFile();
         ~ConfigFile();
@@ -116,4 +117,9 @@ class DuplicateServerException : public exception{
             return "Error, Duplicate Server !";
         }
 };
+string trimLine(const string &line);
+void ParseServer(string &key, string &value, ConfigFile &curr_server, string &new_line, map<string, bool> &alreadySeen);
+void ParseLocation(string &key, string &value, string &new_line, Location &curr_loc, map<string, bool> &alreadySeen);
+void CheckDupLoc(ConfigFile& curr_server, Location& curr_loc);
+void CheckDupServ(vector<ConfigFile> *servers, ConfigFile& curr_server);
 #endif

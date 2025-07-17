@@ -1,4 +1,4 @@
-#include "../hpp/Response.hpp"
+#include "../../../Includes/Response.hpp"
 void setCodeBodyStatus(Response &resp, int error)
 {
     resp.setStatus(error);
@@ -46,7 +46,7 @@ void deleteRecursively(const std::string &path)
         }
         else
         {
-            if (unlink(fullPath.c_str()) != 0)
+            if (remove(fullPath.c_str()) != 0)
                 throw BadDirectoryException();
         }
     }
@@ -68,7 +68,7 @@ void handleDelete(Response &resp)
     // file
     if (S_ISREG(path.st_mode))
     {
-        if (unlink(file.c_str()) == -1)
+        if (remove(file.c_str()) == -1)
         {
             setCodeBodyStatus(resp, 403);
             return;
