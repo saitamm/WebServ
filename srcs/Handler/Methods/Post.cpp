@@ -11,14 +11,14 @@ void handlePost(Response &resp)
 {
     if (SupportUpload(resp))
     {
-        setCodeBodyStatus(resp, 403);
+        setCodeStatus(resp, 403);
         return;
     }
     string filename = resp.getRequest()->getFilename();
     ifstream file(filename.c_str());
     std::string buffer((std::istreambuf_iterator<char>(file)),
     std::istreambuf_iterator<char>());
-    setCodeBodyStatus(resp, 200);
+    setCodeStatus(resp, 200);
     srand(time(0));
     stringstream ll;
     // cout << "contenttype = " << resp.getRequest().getHeadvalue("Content-Type")<<endl;

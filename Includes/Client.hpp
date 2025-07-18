@@ -16,6 +16,8 @@ public:
     string &getbuff(void) { return (_buffer); }
     fstream &getbody(void) { return (_body); }
     Request *getRequest(void){return(_req);};
+    void buildResponse(void);
+    void initStatusCodes(void);
 
 private:
     Client(const Client &copy) ;
@@ -27,4 +29,6 @@ private:
     static map<int, string> _StatusCode;
 };
 void handleClientRequest(map<int, Client*> &buffers, int clientSocket, vector<ConfigFile> *servers);
+int allowMethod(Location loc, string method);
+void printRequest(Request req);
 #endif

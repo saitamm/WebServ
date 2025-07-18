@@ -41,7 +41,7 @@ void handleGet(Response &resp)
         real_path.erase(0, 1);
     if (stat(real_path.c_str(), &path) == -1)
     {
-        setCodeBodyStatus(resp, 404);
+        setCodeStatus(resp, 404);
         return;
     }
     if (S_ISREG(path.st_mode))

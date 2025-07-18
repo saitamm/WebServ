@@ -9,7 +9,7 @@ string trimLine(const string &line)
     return line.substr(start, end - start + 1);
 }
 
-void ParseServer(string &key, string &value, ConfigFile &curr_server, string &new_line, map<string, bool> &alreadySeen)
+void    ParseServer(string &key, string &value, ConfigFile &curr_server, string &new_line, map<string, bool> &alreadySeen)
 {
     stringstream ss(new_line);
     ss >> key;

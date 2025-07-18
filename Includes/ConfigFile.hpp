@@ -70,6 +70,14 @@ class ConfigFile
         const vector<Location>& getLocations() const;
         void add_locations(const Location& loc);
         vector<ConfigFile>* ParseConfigFile(string confFile);
+
+
+        /// i add this to get the default error pages
+        string getDefaultErrorPage(int error) const
+        {
+            return (default_errors.at(error));
+        }
+        void initDefaultError(void);
 };
 
 class ErrorConfigFileException : public exception

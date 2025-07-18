@@ -8,7 +8,8 @@ SRC =  server.cpp \
 		srcs/Handler/Methods/Delete.cpp \
 		srcs/Handler/Methods/Post.cpp \
 		srcs/Handler/Engine/Response.cpp \
-		srcs/Handler/Engine/ServerEngine.cpp
+		srcs/Handler/Engine/ServerEngine.cpp \
+		help.cpp
 
 NAME = WebServ
 

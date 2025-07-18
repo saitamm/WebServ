@@ -1,5 +1,42 @@
-#include "../../../Includes/Response.hpp"
 #include "../../../Includes/Client.hpp"
+// check this fucntion because the body is not necessery set here
+void setCodeStatus(Response &resp, int error)
+{
+    resp.setStatus(error);
+    map<int, string> body = resp.getRequest()->getConfigFile().getError_page();
+    if (body[error][0] == '/')
+        body[error].erase(0, 1);
+    if (body[error].empty())
+    {
+        string defaultErrorPage = resp.getRequest()->getConfigFile().getDefaultErrorPage(error);
+        getContentType(defaultErrorPage, resp);
+        ifstream file(defaultErrorPage.c_str());
+        if (!file.is_open())
+        {
+            std::cerr << "❌ Failed to open file: " << body[error] << std::endl;
+            return;
+        }
+        std::string buffer((std::istreambuf_iterator<char>(file)),
+                           std::istreambuf_iterator<char>());
+        resp.setBody(buffer);
+        file.close();
+    }
+    else
+    {
+        getContentType(body[error], resp);
+        ifstream file(body[error].c_str());
+        if (!file.is_open())
+        {
+            std::cerr << "❌ Failed to open file: " << body[error] << std::endl;
+            return;
+        }
+        std::string buffer((std::istreambuf_iterator<char>(file)),
+                           std::istreambuf_iterator<char>());
+        resp.setBody(buffer);
+        file.close();
+
+    }
+}
 
 void SendResponse(Response &resp, int clientSocket)
 {
@@ -12,15 +49,8 @@ void SendResponse(Response &resp, int clientSocket)
     string final_resp = response.str();
     if (send(clientSocket, final_resp.c_str(), final_resp.size(), 0) == -1)
         cerr << "error Send \n";
-}
-void setStatusCode(Response &resp)
-{
-    resp.setCode(200, "OK");
-    resp.setCode(204, "No Content");
-    resp.setCode(403, "Forbidden");
-    resp.setCode(404, "Not Found");
-    resp.setCode(405, "Method Not Allowed");
-    resp.setCode(409, "Conflict");
+    else 
+        cout << "Response sent successfully to client socket: " << clientSocket << endl;
 }
 int allowMethod(Location loc, string method)
 {
@@ -32,56 +62,27 @@ int allowMethod(Location loc, string method)
     return (0);
 }
 
-void MakeResponce(Client &client)
-{
-    // resp.setRequest(req);
-    // if (!allowMethod(*req.getLocation(), req.getMethod()))
-    // {
-    //     setCodeBodyStatus(resp, 405);
-    //     resp.setSend();
-    //     return;
-    // }
-    // if (req.getMethod() == "DELETE")
-    // {
-    //     handleDelete(resp);
-    //     resp.setSend();
-    //     return;
-    // }
-    // if (req.getMethod() == "GET")
-    // {
-    //     handleGet(resp);
-    //     resp.setSend();
-    //     return;
-    // }
-    // if (req.getMethod() == "POST" && req.getfinishedBody())
-    // {
-    //     handlePost(resp);
-    //     resp.setSend();
-    //     return;
-    // }
-}
-
 void handleClientRequest(map<int, Client *> &clients, int clientSocket, vector<ConfigFile> *servers)
 {
-    // setStatusCode(*clients[clientSocket]->getResp());
     try
     {
-        //here we have to match server
+        // here we have to match server
         clients[clientSocket]->getRequest()->ParseHttpRequest(clients[clientSocket]->getbuff(), clientSocket, servers->at(0), clients[clientSocket]->getbody());
+        printRequest(*clients[clientSocket]->getRequest());
         if (clients[clientSocket]->getRequest()->getfinishedHead() == true)
         {
-            MakeResponce(*clients[clientSocket]);
-            clients[clientSocket]->getResp()->setSend();
+            clients[clientSocket]->buildResponse();
+
+            // clients[clientSocket]->getResp()->setSend();
         }
     }
     catch (const std::exception &e)
     {
         clients[clientSocket]->getResp()->setRequest(*clients[clientSocket]->getRequest());
         clients[clientSocket]->getResp()->setSend();
-        setCodeBodyStatus(*clients[clientSocket]->getResp(), 400);
+        setCodeStatus(*clients[clientSocket]->getResp(), 400);
         cout << "i am exception \n";
     }
     if (clients[clientSocket]->getResp()->getSend())
         SendResponse(*clients[clientSocket]->getResp(), clientSocket);
-
 }

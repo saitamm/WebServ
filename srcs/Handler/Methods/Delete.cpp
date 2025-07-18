@@ -1,22 +1,5 @@
 #include "../../../Includes/Response.hpp"
-void setCodeBodyStatus(Response &resp, int error)
-{
-    resp.setStatus(error);
-    map<int, string> body = resp.getRequest()->getConfigFile().getError_page();
-    if (body[error][0] == '/')
-    body[error].erase(0, 1);
-    getContentType(body[error], resp);
-    fstream file(body[error].c_str());
-    if (!file.is_open())
-    {
-        std::cerr << "❌ Failed to open file: " << body[error] << std::endl;
-        return;
-    }
-    std::string buffer((std::istreambuf_iterator<char>(file)),
-                       std::istreambuf_iterator<char>());
-    resp.setBody(buffer);
 
-}
 void deleteRecursively(const std::string &path)
 {
     DIR *dir = opendir(path.c_str());
@@ -62,7 +45,7 @@ void handleDelete(Response &resp)
         file.erase(0, 1);
     if (stat(file.c_str(), &path) == -1)
     {
-        setCodeBodyStatus(resp, 404);
+        setCodeStatus(resp, 404);
         return;
     }
     // file
@@ -70,7 +53,7 @@ void handleDelete(Response &resp)
     {
         if (remove(file.c_str()) == -1)
         {
-            setCodeBodyStatus(resp, 403);
+            setCodeStatus(resp, 403);
             return;
         }
         else
@@ -94,29 +77,29 @@ void handleDelete(Response &resp)
         {
             if (access(file.c_str(), W_OK) == -1)
             {
-                setCodeBodyStatus(resp, 403);
+                setCodeStatus(resp, 403);
                 return;
             }
             try
             {
                 deleteRecursively(file);
-                setCodeBodyStatus(resp, 204);
+                setCodeStatus(resp, 204);
             }
             catch (const std::exception &e)
             {
-                setCodeBodyStatus(resp, 403);
+                setCodeStatus(resp, 403);
             }
 
             return;
         }
         else
         {
-            setCodeBodyStatus(resp, 409);
+            setCodeStatus(resp, 409);
             return;
         }
     }
     else
     {
-        setCodeBodyStatus(resp, 404);
+        setCodeStatus(resp, 404);
     }
 }

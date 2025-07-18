@@ -33,7 +33,7 @@ public:
     void setCode(int key, string value);
     void setType(const string &type);
     void setSend(void) { _sendit = true; };
-    // void MakeResponce(Request &req);
+    // void buildResponsee(Request &req);
 
 private:
     int _status;
@@ -45,10 +45,9 @@ private:
     bool _sendit;
 };
 
-void MakeResponce(Client &client);
 void handleDelete(Response &resp);
 void handleGet(Response &resp);
-void setCodeBodyStatus(Response &resp, int error);
+void setCodeStatus(Response &resp, int error);
 void getContentType(string &real_path, Response &resp);
 void handlePost(Response &resp);
 #endif
