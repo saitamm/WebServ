@@ -105,7 +105,7 @@ void ConfigFile::setIndex(const string& idx)
     index = idx;
 }
 
-int ConfigFile::getMax_size() const
+size_t ConfigFile::getMax_size(void) const
 {
     return max_size;
 }

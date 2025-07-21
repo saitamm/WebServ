@@ -66,7 +66,7 @@ class ConfigFile
         void setRoot(const string& r);
         const string& getIndex() const;
         void setIndex(const string& idx);
-        size_t getMax_size() const;
+        size_t getMax_size(void) const;
         int setMax_size(const string& size);
         const map<int, string>& getError_page() const;
         void add_error(int err, string path);
