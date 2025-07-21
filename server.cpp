@@ -42,80 +42,84 @@ void accept_new_connection(int server_socket, fd_set *all_sockets, int *fd_max)
           *fd_max = new_client_fd;
      }
 }
+
+int printErr(const string &err)
+{
+     cerr << err << endl;
+     return 1; 
+}
+
+void setNonBlocking(int fd)
+{
+     int flags = fcntl(fd, F_GETFL, 0);
+     fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+}
+
 int main(int ac, char **av)
 {
      if (ac != 2)
-     {
-          return 1;
-     }
+          return(printErr("ERROR: ./Webserv <file.conf>"));
      ConfigFile config;
      vector<ConfigFile> *servers;
      try
      {
-          //set defaults error pages
           servers = config.ParseConfigFile(av[1]);
-          int server_socket;
-          int status;
+          int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
+          if (serverSocket == -1)
+               return(printErr("Socket creation failed!"));
+          setNonBlocking(serverSocket);
+          int opt = 1;
+          setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+          sockaddr_in serverAddr;
+          memset(&serverAddr, 0, sizeof(serverAddr));
+          serverAddr.sin_family = AF_INET;
+          serverAddr.sin_addr.s_addr = INADDR_ANY;
+          serverAddr.sin_port = htons(servers->at(0).getPort());
+          if (bind(serverSocket, (sockaddr*)&serverAddr, sizeof(serverAddr)) < 0)
+               return(printErr("bind failed, maybe port is busy!"));
+          listen(serverSocket, SOMAXCONN);
+          
+          int epollFd = epoll_create1(0);
+          epoll_event event;
+          memset(&event, 0, sizeof(event));
+          event.data.fd = serverSocket;
+          event.events = EPOLLIN;
+          epoll_ctl(epollFd, EPOLL_CTL_ADD, serverSocket, &event);
 
-          fd_set all_sockets;
-          fd_set read_fds;
-          int fd_max;
-          struct timeval timer;
-          server_socket = create_server_socket(servers);
-          if (server_socket == -1)
+          const int MAX_EVENTS = 1000;
+          epoll_event events[MAX_EVENTS];
+          map<int, Client*> clients;
+          while(1)
           {
-               return (1);
-          }
-
-          status = listen(server_socket, 10);
-          if (status != 0)
-          {
-               return (3);
-          }
-
-          FD_ZERO(&all_sockets);
-          FD_ZERO(&read_fds);
-          FD_SET(server_socket, &all_sockets);
-          fd_max = server_socket;
-          map<int, Client *> clients;
-          while (1)
-          {
-               read_fds = all_sockets;
-               timer.tv_sec = 2;
-               timer.tv_usec = 0;
-
-               status = select(fd_max + 1, &read_fds, NULL, NULL, &timer);
-               if (status == -1)
+               int n = epoll_wait(epollFd, events, MAX_EVENTS, -1);
+               for(int i = 0; i < n; ++i)
                {
-                    exit(1);
-               }
-               else if (status == 0)
-               {
-                    continue;
-               }
-
-               for (int i = 0; i <= fd_max; i++)
-               {
-                    if (FD_ISSET(i, &read_fds) != 1)
+                    if (events[i].data.fd == serverSocket)
                     {
-                         continue;
-                    }
-                    if (i == server_socket)
-                    {
-                         accept_new_connection(server_socket, &all_sockets, &fd_max);
+                         int clientSocket = accept(serverSocket, NULL, NULL);
+                         setNonBlocking(clientSocket);
+                         epoll_event clientEvent;
+                         memset(&clientEvent, 0, sizeof(clientEvent));
+                         clientEvent.data.fd = clientSocket;
+                         clientEvent.events = EPOLLIN | EPOLLET;
+                         epoll_ctl(epollFd, EPOLL_CTL_ADD, clientSocket, &clientEvent);
+                         cout << " New client connected: "<< clientSocket << endl;
                     }
                     else
                     {
                          if (clients.find(i) == clients.end())
                               clients[i] = new Client();
                          handleClientRequest(clients, i, servers);
+                         close(events[i].data.fd);
                     }
                }
           }
+          close(serverSocket);
      }
-     catch (std::exception &e)
+     catch(exception& e)
      {
-          cerr << e.what() << endl;
+          cout << e.what() <<endl;
      }
-     return (0);
+
 }
+

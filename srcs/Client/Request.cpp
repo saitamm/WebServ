@@ -142,6 +142,7 @@ void Request::ParseHttpRequest(string &Header, int clientSocket, ConfigFile &ser
             Header.append(buf, bytesRead);
         if (Header.find("\r\n\r\n") != std::string::npos)
         {
+
             this->ParseHeader(Header);
             // matching location
             this->_locat = matchLocation(this->_url[0], serv.getLocations());

@@ -7,6 +7,8 @@
 #include <fstream>
 #include <string>
 #include <bits/stdc++.h>
+#include<sys/epoll.h>
+#include <fcntl.h>
 
 using namespace std;
 
