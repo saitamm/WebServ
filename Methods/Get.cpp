@@ -52,10 +52,10 @@ void generateResponse(Response& resp, string& real_path)
 
 void handleGet(Response &resp)
 {
-    string real_path = resp.getRequest().getUri();
+    string real_path = resp.getRequest().getConfigFile().getRoot() + resp.getRequest().getUri();
     struct stat path;
-    if (real_path[0] == '/')
-        real_path.erase(0, 1);
+    // if (real_path[0] == '/')
+    //     real_path.erase(0, 1);
     cout << real_path << endl;
     if (stat(real_path.c_str(), &path) == -1)
     {
