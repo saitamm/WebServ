@@ -4,11 +4,11 @@ SRC =  server.cpp \
 		srcs/Client/ParseRequest.cpp \
 		srcs/Server/ConfigFile.cpp \
 		srcs/Server/ParseConfigFile.cpp \
-		srcs/Handler/Methods/Get.cpp \
-		srcs/Handler/Methods/Delete.cpp \
-		srcs/Handler/Methods/Post.cpp \
-		srcs/Handler/Engine/Response.cpp \
-		srcs/Handler/Engine/ServerEngine.cpp \
+		srcs/Server/Methods/Get.cpp \
+		srcs/Server/Methods/Delete.cpp \
+		srcs/Server/Methods/Post.cpp \
+		srcs/Server/Response.cpp \
+		srcs/Server/ServerEngine.cpp \
 		help.cpp
 
 NAME = WebServ
@@ -17,7 +17,7 @@ all: $(NAME)
 
 CXX = c++
 OBJ = $(SRC:.cpp=.o)
-CXXFLAGS = -Wall -Werror -Wextra -std=c++98 -g3  -fsanitize=address
+CXXFLAGS = -Wall -Werror -Wextra -std=c++98 -g3  #-fsanitize=address
 $(NAME): $(OBJ)
 	@$(CXX) $(CXXFLAGS) $(OBJ) -o $(NAME)
 	@echo "\033[32mCompilation complete ✅\033[0m"

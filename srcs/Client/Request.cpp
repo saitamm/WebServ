@@ -87,8 +87,6 @@ void Request::ParseBody(fstream &body, int clientSocket)
             this->totalReceived += this->restHeader.size();
             body.write(this->restHeader.c_str(), this->totalReceived);
         }
-        // while (1)
-        // {
         bytesRead = recv(clientSocket, buf, sizeof(buf) - 1, 0);
         cout << "byteread=" << bytesRead << endl;
         if (bytesRead < 0)
@@ -157,9 +155,7 @@ void Request::ParseHttpRequest(string &Header, int clientSocket, ConfigFile &ser
     if (this->_HeadF && !this->_BodyF)
     {
         if (_method == "GET" || _method == "DELETE")
-        {
             return;
-        }
         this->ParseBody(body, clientSocket);
     }
 }

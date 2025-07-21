@@ -40,9 +40,7 @@ void deleteRecursively(const std::string &path)
 void handleDelete(Response &resp)
 {
     struct stat path;
-    string file = resp.getRequest()->getUri();
-    if (file[0] == '/')
-        file.erase(0, 1);
+    string file = resp.getRequest()->getConfigFile().getRoot() + resp.getRequest()->getUri();
     if (stat(file.c_str(), &path) == -1)
     {
         setCodeStatus(resp, 404);
@@ -58,16 +56,17 @@ void handleDelete(Response &resp)
         }
         else
         {
-            resp.setStatus(200);
-            fstream file("errors/200.html");
-            if (!file.is_open())
-            {
-                std::cerr << "❌ Failed to open file: " << std::endl;
-                return;
-            }
-            std::string buffer((std::istreambuf_iterator<char>(file)),
-                               std::istreambuf_iterator<char>());
-            resp.setBody(buffer);
+            // resp.setStatus(200);
+            // fstream file("errors/200.html");
+            // if (!file.is_open())
+            // {
+            //     std::cerr << "❌ Failed to open file: " << std::endl;
+            //     return;
+            // }
+            // std::string buffer((std::istreambuf_iterator<char>(file)),
+            //                    std::istreambuf_iterator<char>());
+            // resp.setBody(buffer);
+            setCodeStatus(resp, 200);
         }
     }
     // directory

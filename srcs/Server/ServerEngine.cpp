@@ -1,4 +1,4 @@
-#include "../../../Includes/Client.hpp"
+#include "../../Includes/Client.hpp"
 // check this fucntion because the body is not necessery set here
 void setCodeStatus(Response &resp, int error)
 {
@@ -6,6 +6,7 @@ void setCodeStatus(Response &resp, int error)
     map<int, string> body = resp.getRequest()->getConfigFile().getError_page();
     if (body[error][0] == '/')
         body[error].erase(0, 1);
+    //  default error pages
     if (body[error].empty())
     {
         string defaultErrorPage = resp.getRequest()->getConfigFile().getDefaultErrorPage(error);
@@ -34,7 +35,6 @@ void setCodeStatus(Response &resp, int error)
                            std::istreambuf_iterator<char>());
         resp.setBody(buffer);
         file.close();
-
     }
 }
 
@@ -49,7 +49,7 @@ void SendResponse(Response &resp, int clientSocket)
     string final_resp = response.str();
     if (send(clientSocket, final_resp.c_str(), final_resp.size(), 0) == -1)
         cerr << "error Send \n";
-    else 
+    else
         cout << "Response sent successfully to client socket: " << clientSocket << endl;
 }
 int allowMethod(Location loc, string method)
@@ -68,12 +68,10 @@ void handleClientRequest(map<int, Client *> &clients, int clientSocket, vector<C
     {
         // here we have to match server
         clients[clientSocket]->getRequest()->ParseHttpRequest(clients[clientSocket]->getbuff(), clientSocket, servers->at(0), clients[clientSocket]->getbody());
-        printRequest(*clients[clientSocket]->getRequest());
         if (clients[clientSocket]->getRequest()->getfinishedHead() == true)
         {
             clients[clientSocket]->buildResponse();
-
-            // clients[clientSocket]->getResp()->setSend();
+            clients[clientSocket]->getResp()->setSend();
         }
     }
     catch (const std::exception &e)

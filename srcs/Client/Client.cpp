@@ -27,7 +27,7 @@ Client::Client()
 {
     srand(time(0));
     stringstream ss;
-    ss << "Body/body_" << rand() << ".txt";
+    ss << "/tmp/body_" << rand() << ".txt";
     string filename = ss.str();
     _body.open(filename.c_str(), std::ios::in | std::ios::out | std::ios::trunc | std::ios::binary);
     if (!_body.is_open())

@@ -26,7 +26,8 @@ void handlePost(Response &resp)
     // cout << "type = " << type <<endl;
     ll << rand();
     string f = ll.str() +"."+ type;
-    std::ofstream out(("uploads/" + f).c_str());
+    string Up = resp.getRequest()->getConfigFile().getRoot() + resp.getRequest()->getLocation()->getUp_store() + "/" + f;
+    std::ofstream out(Up.c_str());
     // cout << "uploads/" + f << endl; 
     out << buffer;
 }
