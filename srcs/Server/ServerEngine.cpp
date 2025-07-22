@@ -83,5 +83,8 @@ void handleClientRequest(map<int, Client *> &clients, int clientSocket, vector<C
         cout << "i am exception \n";
     }
     if (clients[clientSocket]->getResp()->getSend())
+    {
+        cout << "::::::::::::::::::::::::::::::::::::::::::\n";
         SendResponse(*clients[clientSocket]->getResp(), clientSocket);
+    }
 }

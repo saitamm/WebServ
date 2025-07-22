@@ -68,7 +68,7 @@ void handleGet(Response &resp)
     }
     else if (S_ISDIR(path.st_mode))
     {
-        if (resp.getRequest()->getLocation()->getAuto_idx().empty())
+        if (resp.getRequest()->getLocation()->getLoc_idx().empty())
         {
             if (resp.getRequest()->getLocation()->getAuto_idx() != "on")
             {

@@ -124,7 +124,9 @@ void Request::ParseBody(fstream &body, int clientSocket)
         body.flush();
         this->totalReceived += bytesRead;
         if (this->totalReceived == this->_ContentLength)
+        {
             this->_BodyF = true;
+        }
     }
 }
 void Request::ParseHttpRequest(string &Header, int clientSocket, ConfigFile &serv, fstream &body)
