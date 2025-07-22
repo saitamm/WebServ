@@ -56,7 +56,7 @@ void handleGet(Response &resp)
     struct stat path;
     // if (real_path[0] == '/')
     //     real_path.erase(0, 1);
-    cout << real_path << endl;
+    // cout << real_path << endl;
     if (stat(real_path.c_str(), &path) == -1)
     {
         setCodeStatus(resp, 404);

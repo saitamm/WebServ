@@ -21,13 +21,10 @@ void handlePost(Response &resp)
     setCodeStatus(resp, 200);
     srand(time(0));
     stringstream ll;
-    // cout << "contenttype = " << resp.getRequest().getHeadvalue("Content-Type")<<endl;
     string type = resp.getRequest()->getHeadvalue("Content-Type").substr(resp.getRequest()->getHeadvalue("Content-Type").find('/')+1);
-    // cout << "type = " << type <<endl;
     ll << rand();
     string f = ll.str() +"."+ type;
     string Up = resp.getRequest()->getConfigFile().getRoot() + resp.getRequest()->getLocation()->getUp_store() + "/" + f;
     std::ofstream out(Up.c_str());
-    // cout << "uploads/" + f << endl; 
     out << buffer;
 }

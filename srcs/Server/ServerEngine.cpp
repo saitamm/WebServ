@@ -4,8 +4,8 @@ void setCodeStatus(Response &resp, int error)
 {
     resp.setStatus(error);
     map<int, string> body = resp.getRequest()->getConfigFile().getError_page();
-    if (body[error][0] == '/')
-        body[error].erase(0, 1);
+    // if (body[error][0] == '/')
+    //     body[error].erase(0, 1);
     //  default error pages
     if (body[error].empty())
     {
@@ -43,9 +43,10 @@ void SendResponse(Response &resp, int clientSocket)
     ostringstream response;
     response << "HTTP/1.1 " << resp.getStatus() << " " << resp.getValue(resp.getStatus()) << "\r\n";
     response << "Content-type: " << resp.getType() << "\r\n";
-    response << "Content-Length: " << resp.getBody().size() << "\r\n";
-    response << "Connection: close\r\n\r\n";
+    response << "Content-Length: " << resp.getBody().size() << "\r\n\r\n";
+    // response << "\r\n\r\n";
     response << resp.getBody();
+    // cout << "Body ==="<<resp.getBody() << "===\n";
     string final_resp = response.str();
     if (send(clientSocket, final_resp.c_str(), final_resp.size(), 0) == -1)
         cerr << "error Send \n";
@@ -66,7 +67,7 @@ void handleClientRequest(map<int, Client *> &clients, int clientSocket, vector<C
 {
     try
     {
-        // here we have to match server
+        // here we have to match
         clients[clientSocket]->getRequest()->ParseHttpRequest(clients[clientSocket]->getbuff(), clientSocket, servers->at(0), clients[clientSocket]->getbody());
         if (clients[clientSocket]->getRequest()->getfinishedHead() == true)
         {

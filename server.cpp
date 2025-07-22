@@ -1,5 +1,7 @@
 #include "Includes/Client.hpp"
 
+
+
 int create_server_socket(vector<ConfigFile> *servers)
 {
      int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
@@ -61,6 +63,7 @@ int main(int ac, char **av)
           return(printErr("ERROR: ./Webserv <file.conf>"));
      ConfigFile config;
      vector<ConfigFile> *servers;
+     config.initDefaultError();
      try
      {
           servers = config.ParseConfigFile(av[1]);
@@ -107,9 +110,11 @@ int main(int ac, char **av)
                     }
                     else
                     {
-                         if (clients.find(i) == clients.end())
-                              clients[i] = new Client();
-                         handleClientRequest(clients, i, servers);
+                         if (clients.find(events[i].data.fd) == clients.end())
+                              clients[events[i].data.fd] = new Client();
+                         handleClientRequest(clients, events[i].data.fd, servers);
+                         delete clients[events[i].data.fd];
+                         clients.erase(events[i].data.fd);
                          close(events[i].data.fd);
                     }
                }

@@ -15,7 +15,6 @@ void deleteRecursively(const std::string &path)
             continue;
 
         std::string fullPath = path + "/" + name;
-
         struct stat st;
         if (stat(fullPath.c_str(), &st) == -1)
         {
@@ -47,6 +46,7 @@ void handleDelete(Response &resp)
         return;
     }
     // file
+
     if (S_ISREG(path.st_mode))
     {
         if (remove(file.c_str()) == -1)
@@ -56,22 +56,13 @@ void handleDelete(Response &resp)
         }
         else
         {
-            // resp.setStatus(200);
-            // fstream file("errors/200.html");
-            // if (!file.is_open())
-            // {
-            //     std::cerr << "❌ Failed to open file: " << std::endl;
-            //     return;
-            // }
-            // std::string buffer((std::istreambuf_iterator<char>(file)),
-            //                    std::istreambuf_iterator<char>());
-            // resp.setBody(buffer);
             setCodeStatus(resp, 200);
         }
     }
     // directory
     else if (S_ISDIR(path.st_mode))
     {
+
         if (file[file.size() - 1] == '/')
         {
             if (access(file.c_str(), W_OK) == -1)

@@ -32,7 +32,6 @@ Client::Client()
     _body.open(filename.c_str(), std::ios::in | std::ios::out | std::ios::trunc | std::ios::binary);
     if (!_body.is_open())
     {
-        cout <<"=============================\n";
         throw std::runtime_error("Failed to open file: " + filename);
     }
     _req = new Request();

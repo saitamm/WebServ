@@ -88,7 +88,6 @@ void Request::ParseBody(fstream &body, int clientSocket)
             body.write(this->restHeader.c_str(), this->totalReceived);
         }
         bytesRead = recv(clientSocket, buf, sizeof(buf) - 1, 0);
-        cout << "byteread=" << bytesRead << endl;
         if (bytesRead < 0)
             throw SocketErrorException();
         if (bytesRead == 0)
@@ -115,8 +114,6 @@ void Request::ParseBody(fstream &body, int clientSocket)
             body.write(this->restHeader.c_str(), this->totalReceived);
         }
         string Body;
-        cout << "totalreceive = " << this->totalReceived << "   content = " << this->_ContentLength << endl;
-
         bytesRead = recv(clientSocket, buf, sizeof(buf) - 1, 0);
         if (bytesRead < 0)
             throw SocketErrorException();
@@ -142,7 +139,6 @@ void Request::ParseHttpRequest(string &Header, int clientSocket, ConfigFile &ser
             Header.append(buf, bytesRead);
         if (Header.find("\r\n\r\n") != std::string::npos)
         {
-
             this->ParseHeader(Header);
             // matching location
             this->_locat = matchLocation(this->_url[0], serv.getLocations());
