@@ -26,7 +26,6 @@ private:
     int _fd;
     string _buffer;
     fstream _body;
-    static map<int, string> _StatusCode;
 };
 void handleClientRequest(map<int, Client*> &buffers, int clientSocket, vector<ConfigFile> *servers);
 int allowMethod(Location loc, string method);

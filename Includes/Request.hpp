@@ -59,6 +59,8 @@ public:
     void ParseHttpRequest(string &Header, int clientSocket, ConfigFile &serv, fstream &body);
     void ParseHeader(string &Header);
     void ParseBody(fstream &body, int clientSocket);
+    bool getRedirectionStatus(void) const;
+    void setRedirectionStatus(void);
 
 private:
     string _method;
@@ -75,6 +77,7 @@ private:
     Location *_locat;
     size_t totalReceived;
     string restHeader;
+    bool _redir;
 };
 void trim(string &str, string tr);
 Location *matchLocation(const std::string &uri, const std::vector<Location> &locations);

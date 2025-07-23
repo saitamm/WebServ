@@ -10,19 +10,7 @@
 //     {409, "Conflict"},
 //     {500, "Internal Server Error"}
 // };
-map<int, string> Client::_StatusCode;
 
-void Client::initStatusCodes()
-{
-    _StatusCode[200] = "OK";
-    _StatusCode[204] = "No Content";
-    _StatusCode[403] = "Forbidden";
-    _StatusCode[404] = "Not Found";
-    _StatusCode[405] = "Method Not Allowed";
-    _StatusCode[409] = "Conflict";
-    _StatusCode[500] = "Internal Server Error";
-    // Add other status codes here
-}
 Client::Client()
 {
     srand(time(0));

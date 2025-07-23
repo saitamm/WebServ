@@ -6,7 +6,8 @@ Request::Request()
     _BodyF = false;
 }
 Request::~Request() {}
-// getters
+
+// getters && setters
 
 string &Request::getHost(void) { return (_host); }
 string &Request::getMethod(void) { return (_method); }
@@ -18,6 +19,8 @@ Location *Request::getLocation(void) { return (_locat); }
 string &Request::getHeadvalue(string key) { return (_head[key]); }
 unsigned long long &Request::getContentLength(void) { return (_ContentLength); }
 ConfigFile &Request::getConfigFile(void) { return (_serv); }
+bool Request::getRedirectionStatus(void) const { return _redir; }
+void Request::setRedirectionStatus(void){_redir = true; }
 
 // Parse Request
 void Request::ParseHeader(string &Header)
@@ -129,6 +132,10 @@ void Request::ParseBody(fstream &body, int clientSocket)
         }
     }
 }
+// void RedirectionRequest(Request &req)
+// {
+
+// }
 void Request::ParseHttpRequest(string &Header, int clientSocket, ConfigFile &serv, fstream &body)
 {
     this->_serv = serv;
@@ -149,6 +156,7 @@ void Request::ParseHttpRequest(string &Header, int clientSocket, ConfigFile &ser
                 cout << "No matching location found for URI: " << this->_url[0] << endl;
                 throw BadRequestException();
             }
+            // RedirectionRequest(*this);
         }
     }
     if (this->_HeadF && !this->_BodyF)

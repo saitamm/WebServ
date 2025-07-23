@@ -41,13 +41,14 @@ void setCodeStatus(Response &resp, int error)
 void SendResponse(Response &resp, int clientSocket)
 {
     ostringstream response;
-    response << "HTTP/1.1 " << resp.getStatus() << " " << resp.getValue(resp.getStatus()) << "\r\n";
+    response << "HTTP/1.1 " << resp.getStatus() << " " << resp.getStatusValue(resp.getStatus()) << "\r\n";
     response << "Content-type: " << resp.getType() << "\r\n";
     response << "Content-Length: " << resp.getBody().size() << "\r\n\r\n";
     // response << "\r\n\r\n";
     response << resp.getBody();
     // cout << "Body ==="<<resp.getBody() << "===\n";
     string final_resp = response.str();
+    cout << "Response to be sent: \n" << final_resp << endl;
     if (send(clientSocket, final_resp.c_str(), final_resp.size(), 0) == -1)
         cerr << "error Send \n";
     else
@@ -68,6 +69,8 @@ void handleClientRequest(map<int, Client *> &clients, int clientSocket, vector<C
     try
     {
         // here we have to match
+        clients[clientSocket]->getResp()->initStatusCode();
+        cout << "==========="<<clients[clientSocket]->getResp()->getStatusValue(200)<<endl;
         clients[clientSocket]->getRequest()->ParseHttpRequest(clients[clientSocket]->getbuff(), clientSocket, servers->at(0), clients[clientSocket]->getbody());
         if (clients[clientSocket]->getRequest()->getfinishedHead() == true)
         {

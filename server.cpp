@@ -1,7 +1,5 @@
 #include "Includes/Client.hpp"
 
-
-
 int create_server_socket(vector<ConfigFile> *servers)
 {
      int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
@@ -35,10 +33,7 @@ void accept_new_connection(int server_socket, fd_set *all_sockets, int *fd_max)
           return;
      }
 
-     // Add new socket to the set
      FD_SET(new_client_fd, all_sockets);
-
-     // Update the max fd
      if (new_client_fd > *fd_max)
      {
           *fd_max = new_client_fd;
@@ -112,6 +107,7 @@ int main(int ac, char **av)
                     {
                          if (clients.find(events[i].data.fd) == clients.end())
                               clients[events[i].data.fd] = new Client();
+                         // cout << clients[events[i].data.fd].get
                          handleClientRequest(clients, events[i].data.fd, servers);
                          delete clients[events[i].data.fd];
                          clients.erase(events[i].data.fd);

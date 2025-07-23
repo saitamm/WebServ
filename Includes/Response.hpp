@@ -2,7 +2,6 @@
 #define RESPONSE_HPP
 #include "Request.hpp"
 
-
 class BadDirectoryException : public std::exception
 {
 public:
@@ -21,7 +20,7 @@ public:
     int getStatus(void) const;
     string &getContenttype(void);
     Request *getRequest(void);
-    string &getValue(int key);
+    string &getStatusValue(int key);
     string &getBody(void);
     string &getType();
     bool getSend() { return (_sendit); };
@@ -30,21 +29,20 @@ public:
     void setRequest(Request &req);
     void setContentType(string content);
     void setBody(string &body);
-    void setCode(int key, string value);
     void setType(const string &type);
     void setSend(void) { _sendit = true; };
+    void initStatusCode(void);
     // void buildResponsee(Request &req);
 
 private:
     int _status;
     string _ContentType;
-    map<int, string> _Error;
     string _body;
     Request *_req;
     string _type;
     bool _sendit;
+    static map<int, string> _StatusCode;
 };
-
 void handleDelete(Response &resp);
 void handleGet(Response &resp);
 void setCodeStatus(Response &resp, int error);

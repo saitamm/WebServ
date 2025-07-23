@@ -1,5 +1,27 @@
 #include "../../Includes/Response.hpp"
 
+map<int, string> Response::_StatusCode;
+
+void Response::initStatusCode(void)
+{
+    _StatusCode[200] = "OK";
+    _StatusCode[204] = "No Content";
+    _StatusCode[403] = "Forbidden";
+    _StatusCode[404] = "Not Found";
+    _StatusCode[405] = "Method Not Allowed";
+    _StatusCode[409] = "Conflict";
+    _StatusCode[500] = "Internal Server Error";
+    _StatusCode[300] = "Multiple Choices";
+    _StatusCode[301] = "Moved Permanently";
+    _StatusCode[302] = "Found";
+    _StatusCode[303] = "See Other";
+    _StatusCode[304] = "Not Modified";
+    _StatusCode[305] = "Use Proxy";
+    _StatusCode[306] = "Switch Proxy";
+    _StatusCode[307] = "Temporary Redirect";
+    _StatusCode[308] = "Permanent Redirect";
+}
+
 Response::Response() {}
 Response::~Response() {}
 
@@ -7,7 +29,7 @@ Response::~Response() {}
 int Response::getStatus(void) const { return (_status); }
 string &Response::getContenttype(void) { return (_ContentType); }
 Request *Response::getRequest(void) { return (_req); }
-string &Response::getValue(int key) { return (_Error[key]); }
+string &Response::getStatusValue(int key) { return (_StatusCode[key]); }
 string &Response::getBody(void) { return (_body); }
 string &Response::getType() { return _type; }
 
@@ -16,5 +38,4 @@ void Response::setContentType(string content) { _ContentType = content; }
 void Response::setRequest(Request &req) { _req = &req; }
 void Response::setStatus(int stat) { _status = stat; }
 void Response::setBody(string &body) { _body = body; }
-void Response::setCode(int key, string value) { _Error[key] = value; }
 void Response::setType(const string &type) { _type = type; }
