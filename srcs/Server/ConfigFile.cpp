@@ -234,3 +234,16 @@ string &ConfigFile::getDefaultErrorPage(int error) const
 {
     return (default_errors[error]);
 }
+
+const map<int, string> &Location::getRetur() const
+{
+    return retur;
+}
+
+void Location::add_retur(int err, string path)
+{
+    if (err < 200 || err >= 600)
+        throw InvalidErrorPageException();
+    if (!path.empty())
+        retur[err] = path;
+}

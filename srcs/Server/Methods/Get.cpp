@@ -30,6 +30,11 @@ void getContentType(string &real_path, Response &resp)
         resp.setType("application/javascript");
         return;
     }
+    if (".mp4" == four)
+    {
+        resp.setType("video/mp4");
+        return;
+    }
     resp.setType("application/octet-stream");
 }
 
@@ -68,7 +73,7 @@ void handleGet(Response &resp)
     }
     else if (S_ISDIR(path.st_mode))
     {
-        if (resp.getRequest()->getLocation()->getAuto_idx().empty())
+        if (resp.getRequest()->getLocation()->getLoc_idx().empty())
         {
             if (resp.getRequest()->getLocation()->getAuto_idx() != "on")
             {
