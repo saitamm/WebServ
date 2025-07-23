@@ -25,6 +25,7 @@ void handlePost(Response &resp)
     ll << rand();
     string f = ll.str() +"."+ type;
     string Up = resp.getRequest()->getConfigFile().getRoot() + resp.getRequest()->getLocation()->getUp_store() + "/" + f;
+    cout << Up << endl;
     std::ofstream out(Up.c_str());
     out << buffer;
 }

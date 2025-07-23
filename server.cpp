@@ -107,11 +107,7 @@ int main(int ac, char **av)
                     {
                          if (clients.find(events[i].data.fd) == clients.end())
                               clients[events[i].data.fd] = new Client();
-                         // cout << clients[events[i].data.fd].get
                          handleClientRequest(clients, events[i].data.fd, servers);
-                         delete clients[events[i].data.fd];
-                         clients.erase(events[i].data.fd);
-                         close(events[i].data.fd);
                     }
                }
           }

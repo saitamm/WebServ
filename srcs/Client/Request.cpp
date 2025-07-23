@@ -20,7 +20,7 @@ string &Request::getHeadvalue(string key) { return (_head[key]); }
 unsigned long long &Request::getContentLength(void) { return (_ContentLength); }
 ConfigFile &Request::getConfigFile(void) { return (_serv); }
 bool Request::getRedirectionStatus(void) const { return _redir; }
-void Request::setRedirectionStatus(void){_redir = true; }
+void Request::setRedirectionStatus(void) { _redir = true; }
 
 // Parse Request
 void Request::ParseHeader(string &Header)
@@ -117,25 +117,38 @@ void Request::ParseBody(fstream &body, int clientSocket)
             body.write(this->restHeader.c_str(), this->totalReceived);
         }
         string Body;
-        bytesRead = recv(clientSocket, buf, sizeof(buf) - 1, 0);
-        if (bytesRead < 0)
-            throw SocketErrorException();
-        if (bytesRead == 0)
-            throw BadRequestException();
-        buf[bytesRead] = '\0';
-        body.write(buf, bytesRead);
-        body.flush();
-        this->totalReceived += bytesRead;
-        if (this->totalReceived == this->_ContentLength)
+        while (1)
         {
-            this->_BodyF = true;
+            cout << "-------------------------------\n";
+            bytesRead = recv(clientSocket, buf, sizeof(buf) - 1, 0);
+            if (bytesRead < 0)
+                throw SocketErrorException();
+            if (bytesRead == 0)
+                throw BadRequestException();
+            buf[bytesRead] = '\0';
+            body.write(buf, bytesRead);
+            body.flush();
+            this->totalReceived += bytesRead;
+            cout << "total receive is " << this->totalReceived << " and i have this in header  " << this->_ContentLength << endl;
+            if (this->totalReceived == this->_ContentLength)
+            {
+                this->_BodyF = true;
+                break;
+            }
         }
     }
 }
-// void RedirectionRequest(Request &req)
-// {
-
-// }
+void RedirectionRequest(Request &req)
+{
+    if (req.getLocation()->getRetur().empty())
+        return;
+    std::map<int, string>::const_iterator it = req.getLocation()->getRetur().begin();
+    if ((it->first >= 300 && it->first <= 308))
+    {
+        req.setRedirectionStatus();
+        throw BadRequestException();
+    }
+}
 void Request::ParseHttpRequest(string &Header, int clientSocket, ConfigFile &serv, fstream &body)
 {
     this->_serv = serv;
@@ -156,7 +169,7 @@ void Request::ParseHttpRequest(string &Header, int clientSocket, ConfigFile &ser
                 cout << "No matching location found for URI: " << this->_url[0] << endl;
                 throw BadRequestException();
             }
-            // RedirectionRequest(*this);
+            RedirectionRequest(*this);
         }
     }
     if (this->_HeadF && !this->_BodyF)
