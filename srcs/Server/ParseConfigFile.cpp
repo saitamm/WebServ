@@ -88,6 +88,17 @@ void ParseLocation(string &key, string &value, string &new_line, Location &curr_
         curr_loc.setUp_store(value);
     else if (key == "cgi_pass")
         curr_loc.setCgi_pass(value);
+    else if (key == "return")
+    {
+        stringstream ss(value);
+        int err;
+        string path;
+        ss >> err;
+        getline(ss, path);
+        if (!path.empty() && path[0] == ' ')
+            path.erase(0, 1);
+        curr_loc.add_retur(err, path);
+    }
 }
 
 void CheckDupLoc(ConfigFile& curr_server, Location& curr_loc)

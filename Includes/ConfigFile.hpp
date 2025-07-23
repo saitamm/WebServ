@@ -28,6 +28,7 @@ private:
     string up_store;
     string cgi_pass;
     string loc_idx;
+    map<int, string> retur;
 
 public:
     const string &getPath() const;
@@ -42,6 +43,8 @@ public:
     void setCgi_pass(const string &path);
     const string &getLoc_idx() const;
     void setLoc_idx(const string &idx);
+    const map<int, string> &getRetur() const;
+    void add_retur(int err, string path);
 };
 
 class ConfigFile

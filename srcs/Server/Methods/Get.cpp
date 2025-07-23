@@ -30,6 +30,11 @@ void getContentType(string &real_path, Response &resp)
         resp.setType("application/javascript");
         return;
     }
+    if (".mp4" == four)
+    {
+        resp.setType("video/mp4");
+        return;
+    }
     resp.setType("application/octet-stream");
 }
 

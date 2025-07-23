@@ -78,7 +78,7 @@ void Request::ParseHeader(string &Header)
 void Request::ParseBody(fstream &body, int clientSocket)
 {
     char buf[1024];
-    size_t bytesRead = 0;
+    int bytesRead = 0;
     if (!this->_head["Transfer-Encoding"].empty())
     {
         string del;
