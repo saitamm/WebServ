@@ -18,6 +18,7 @@ Client::Client()
     ss << "/tmp/body_" << rand() << ".txt";
     string filename = ss.str();
     _body.open(filename.c_str(), std::ios::in | std::ios::out | std::ios::trunc | std::ios::binary);
+    cout << "filename is " << filename << endl;
     if (!_body.is_open())
     {
         throw std::runtime_error("Failed to open file: " + filename);
@@ -89,7 +90,7 @@ void Client::buildResponse(void)
     }
     if (this->_req->getMethod() == "POST" && this->_req->getfinishedBody())
     {
-        handlePost(*this->_resp);
+        handlePost(*this->_resp, this->_body);
         this->_resp->setSend();
         return;
     }

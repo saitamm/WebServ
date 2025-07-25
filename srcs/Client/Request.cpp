@@ -102,12 +102,12 @@ void Request::ParseBody(fstream &body, int clientSocket)
         string gg(buf);
         body.seekg(0);
         std::string buffer((std::istreambuf_iterator<char>(body)),
-                           std::istreambuf_iterator<char>());
-        cout.flush();
+        std::istreambuf_iterator<char>());
         if (buffer.find("\r\n") != string::npos)
         {
             this->_body = true;
         }
+        body.seekg(0);
     }
     else
     {
@@ -117,24 +117,19 @@ void Request::ParseBody(fstream &body, int clientSocket)
             body.write(this->restHeader.c_str(), this->totalReceived);
         }
         string Body;
-        while (1)
+        bytesRead = recv(clientSocket, buf, sizeof(buf) - 1, 0);
+        if (bytesRead < 0)
+        throw SocketErrorException();
+        if (bytesRead == 0)
+        throw BadRequestException();
+        buf[bytesRead] = '\0';
+        body.write(buf, bytesRead);
+        body.flush();
+        this->totalReceived += bytesRead;
+        if (this->totalReceived == this->_ContentLength)
         {
-            cout << "-------------------------------\n";
-            bytesRead = recv(clientSocket, buf, sizeof(buf) - 1, 0);
-            if (bytesRead < 0)
-                throw SocketErrorException();
-            if (bytesRead == 0)
-                throw BadRequestException();
-            buf[bytesRead] = '\0';
-            body.write(buf, bytesRead);
-            body.flush();
-            this->totalReceived += bytesRead;
-            cout << "total receive is " << this->totalReceived << " and i have this in header  " << this->_ContentLength << endl;
-            if (this->totalReceived == this->_ContentLength)
-            {
-                this->_BodyF = true;
-                break;
-            }
+            this->_BodyF = true;
+            body.seekg(0);
         }
     }
 }

@@ -47,5 +47,5 @@ void handleDelete(Response &resp);
 void handleGet(Response &resp);
 void setCodeStatus(Response &resp, int error);
 void getContentType(string &real_path, Response &resp);
-void handlePost(Response &resp);
+void handlePost(Response &resp,fstream &body);
 #endif

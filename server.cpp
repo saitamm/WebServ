@@ -99,7 +99,8 @@ int main(int ac, char **av)
                          epoll_event clientEvent;
                          memset(&clientEvent, 0, sizeof(clientEvent));
                          clientEvent.data.fd = clientSocket;
-                         clientEvent.events = EPOLLIN | EPOLLET;
+                         // clientEvent.events = EPOLLIN | EPOLLET;
+                         clientEvent.events = EPOLLIN;
                          epoll_ctl(epollFd, EPOLL_CTL_ADD, clientSocket, &clientEvent);
                          cout << " New client connected: "<< clientSocket << endl;
                     }

@@ -78,9 +78,7 @@ void handleClientRequest(map<int, Client *> &clients, int clientSocket, vector<C
         clients[clientSocket]->getResp()->initStatusCode();
         clients[clientSocket]->getRequest()->ParseHttpRequest(clients[clientSocket]->getbuff(), clientSocket, servers->at(0), clients[clientSocket]->getbody());
         if (clients[clientSocket]->getRequest()->getfinishedHead() == true)
-        {
             clients[clientSocket]->buildResponse();
-        }
     }
     catch (const std::exception &e)
     {
