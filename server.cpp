@@ -43,7 +43,7 @@ void accept_new_connection(int server_socket, fd_set *all_sockets, int *fd_max)
 int printErr(const string &err)
 {
      cerr << err << endl;
-     return 1; 
+     return 1;
 }
 
 void setNonBlocking(int fd)
@@ -55,7 +55,7 @@ void setNonBlocking(int fd)
 int main(int ac, char **av)
 {
      if (ac != 2)
-          return(printErr("ERROR: ./Webserv <file.conf>"));
+          return (printErr("ERROR: ./Webserv <file.conf>"));
      ConfigFile config;
      vector<ConfigFile> *servers;
      config.initDefaultError();
@@ -64,7 +64,7 @@ int main(int ac, char **av)
           servers = config.ParseConfigFile(av[1]);
           int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
           if (serverSocket == -1)
-               return(printErr("Socket creation failed!"));
+               return (printErr("Socket creation failed!"));
           setNonBlocking(serverSocket);
           int opt = 1;
           setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
@@ -73,10 +73,10 @@ int main(int ac, char **av)
           serverAddr.sin_family = AF_INET;
           serverAddr.sin_addr.s_addr = INADDR_ANY;
           serverAddr.sin_port = htons(servers->at(0).getPort());
-          if (bind(serverSocket, (sockaddr*)&serverAddr, sizeof(serverAddr)) < 0)
-               return(printErr("bind failed, maybe port is busy!"));
+          if (bind(serverSocket, (sockaddr *)&serverAddr, sizeof(serverAddr)) < 0)
+               return (printErr("bind failed, maybe port is busy!"));
           listen(serverSocket, SOMAXCONN);
-          
+
           int epollFd = epoll_create1(0);
           epoll_event event;
           memset(&event, 0, sizeof(event));
@@ -86,11 +86,11 @@ int main(int ac, char **av)
 
           const int MAX_EVENTS = 1000;
           epoll_event events[MAX_EVENTS];
-          map<int, Client*> clients;
-          while(1)
+          map<int, Client *> clients;
+          while (1)
           {
                int n = epoll_wait(epollFd, events, MAX_EVENTS, -1);
-               for(int i = 0; i < n; ++i)
+               for (int i = 0; i < n; ++i)
                {
                     if (events[i].data.fd == serverSocket)
                     {
@@ -99,10 +99,9 @@ int main(int ac, char **av)
                          epoll_event clientEvent;
                          memset(&clientEvent, 0, sizeof(clientEvent));
                          clientEvent.data.fd = clientSocket;
-                         // clientEvent.events = EPOLLIN | EPOLLET;
                          clientEvent.events = EPOLLIN;
                          epoll_ctl(epollFd, EPOLL_CTL_ADD, clientSocket, &clientEvent);
-                         cout << " New client connected: "<< clientSocket << endl;
+                         cout << " New client connected: " << clientSocket << endl;
                     }
                     else
                     {
@@ -114,10 +113,8 @@ int main(int ac, char **av)
           }
           close(serverSocket);
      }
-     catch(exception& e)
+     catch (exception &e)
      {
-          cout << e.what() <<endl;
+          cout << e.what() << endl;
      }
-
 }
-

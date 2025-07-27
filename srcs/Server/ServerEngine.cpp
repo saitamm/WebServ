@@ -70,31 +70,33 @@ int allowMethod(Location loc, string method)
     return (0);
 }
 
-void handleClientRequest(map<int, Client *> &clients, int clientSocket, vector<ConfigFile> *servers)
+void    handleClientRequest(map<int, Client *> &clients, int clientSocket, vector<ConfigFile> *servers)
 {
     try
     {
-        // here we have to match
         clients[clientSocket]->getResp()->initStatusCode();
-        clients[clientSocket]->getRequest()->ParseHttpRequest(clients[clientSocket]->getbuff(), clientSocket, servers->at(0), clients[clientSocket]->getbody());
-        if (clients[clientSocket]->getRequest()->getfinishedHead() == true)
+        clients[clientSocket]->ParseHttpRequest(*clients[clientSocket], clientSocket, servers->at(0));
+        if (clients[clientSocket]->getStatus() == Processing)
             clients[clientSocket]->buildResponse();
     }
     catch (const std::exception &e)
     {
         clients[clientSocket]->getResp()->setRequest(*clients[clientSocket]->getRequest());
-        clients[clientSocket]->getResp()->setSend();
+        clients[clientSocket]->setStatus(Sending);
         if (!clients[clientSocket]->getRequest()->getRedirectionStatus())
             setCodeStatus(*clients[clientSocket]->getResp(), 400);
         else
             setCodeStatus(*clients[clientSocket]->getResp(), 0);
-
-        cout << "i am exception \n";
     }
-    if (clients[clientSocket]->getResp()->getSend())
+    if (clients[clientSocket]->getStatus() == Sending)
     {
         SendResponse(*clients[clientSocket]->getResp(), clientSocket);
-        delete clients[clientSocket];
-        clients.erase(clientSocket);
+        clients[clientSocket]->setStatus(Finished);
+        if (clients[clientSocket]->getStatus() == Finished)
+        {
+            delete clients[clientSocket];
+            clients.erase(clientSocket);
+            close(clientSocket);
+        }
     }
 }

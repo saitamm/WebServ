@@ -1,9 +1,20 @@
 #ifndef CLIENT_HPP
 #define CLIENT_HPP
+
 #include "Response.hpp"
 
+enum ClientStatus
+{
+    CONNECTING,
+    Heading,
+    Body,
+    Processing,
+    Sending,
+    Finished,
+};
+class ConfigFile;
 class Response;
-class Client
+class Client    
 {
 public:
     Client();
@@ -17,7 +28,9 @@ public:
     fstream &getbody(void) { return (_body); }
     Request *getRequest(void){return(_req);};
     void buildResponse(void);
-    void initStatusCodes(void);
+    void setStatus(const ClientStatus &status) { _status = status; }
+    ClientStatus getStatus(void) const { return _status; }
+    void ParseHttpRequest(Client &client,int clientSocket ,ConfigFile &serv);
 
 private:
     Client(const Client &copy) ;
@@ -26,8 +39,11 @@ private:
     int _fd;
     string _buffer;
     fstream _body;
+    ClientStatus _status;
+    
 };
-void handleClientRequest(map<int, Client*> &buffers, int clientSocket, vector<ConfigFile> *servers);
 int allowMethod(Location loc, string method);
 void printRequest(Request req);
+void handleClientRequest(map<int, Client *> &clients, int clientSocket, vector<ConfigFile> *servers);
+
 #endif

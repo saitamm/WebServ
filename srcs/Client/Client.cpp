@@ -14,11 +14,11 @@
 Client::Client()
 {
     srand(time(0));
+    _status = Heading;
     stringstream ss;
     ss << "/tmp/body_" << rand() << ".txt";
     string filename = ss.str();
     _body.open(filename.c_str(), std::ios::in | std::ios::out | std::ios::trunc | std::ios::binary);
-    cout << "filename is " << filename << endl;
     if (!_body.is_open())
     {
         throw std::runtime_error("Failed to open file: " + filename);
@@ -73,25 +73,60 @@ void Client::buildResponse(void)
     if (!allowMethod(*this->_req->getLocation(), this->_req->getMethod()))
     {
         setCodeStatus(*this->getResp(), 405);
-        this->_resp->setSend();
+        _status = Sending;
         return;
     }
     if (this->_req->getMethod() == "DELETE")
     {
         handleDelete(*this->_resp);
-        this->_resp->setSend();
+        _status = Sending;
         return;
     }
     if (this->_req->getMethod() == "GET")
     {
         handleGet(*this->_resp);
-        this->_resp->setSend();
+        _status = Sending;
         return;
     }
-    if (this->_req->getMethod() == "POST" && this->_req->getfinishedBody())
+    if (this->_req->getMethod() == "POST" && _status == Processing)
     {
         handlePost(*this->_resp, this->_body);
-        this->_resp->setSend();
+        _status = Sending;
         return;
+    }
+}
+
+void Client::ParseHttpRequest(Client &client, int clientSocket, ConfigFile &serv)
+{
+    client.getRequest()->setConfigFile(serv);
+    char buf[1024];
+    ssize_t bytesRead;
+    if (_status == Heading)
+    {
+        client.getRequest()->setTotalReceived(0);
+        if ((bytesRead = recv(clientSocket, buf, sizeof(buf), 0)) > 0)
+        _buffer.append(buf, bytesRead);
+        if (_buffer.find("\r\n\r\n") != std::string::npos)
+        {
+            client.getRequest()->ParseHeader(_buffer);
+            _status = Body;
+            client.getRequest()->setLocation(matchLocation(client.getRequest()->getUri(), serv.getLocations()));
+            if (!client.getRequest()->getLocation())
+            {
+                cout << "No matching location found for URI: " << client.getRequest()->getUri() << endl;
+                throw BadRequestException();
+            }
+            RedirectionRequest(*client.getRequest());
+        }
+    }
+    if (_status == Body)
+    {
+        if (client.getRequest()->getMethod() == "GET" || client.getRequest()->getMethod() == "DELETE")
+        {
+            _status = Processing;
+            return;
+        }
+        if (client.getRequest()->ParseBody(client._body, clientSocket))
+            _status = Processing;
     }
 }

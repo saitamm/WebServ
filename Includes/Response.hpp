@@ -17,7 +17,7 @@ public:
     Response();
     ~Response();
     // getters
-    int getStatus(void) const;
+    int getStatus(void) const{ return (_Code); };
     string &getContenttype(void);
     Request *getRequest(void);
     string &getStatusValue(int key);
@@ -25,7 +25,7 @@ public:
     string &getType();
     bool getSend() { return (_sendit); };
     // setters
-    void setStatus(int stat);
+    void setStatus(int stat){ _Code = stat; };
     void setRequest(Request &req);
     void setContentType(string content);
     void setBody(string &body);
@@ -35,13 +35,13 @@ public:
     // void buildResponsee(Request &req);
 
 private:
-    int _status;
     string _ContentType;
     string _body;
     Request *_req;
     string _type;
     bool _sendit;
     static map<int, string> _StatusCode;
+    int _Code;
 };
 void handleDelete(Response &resp);
 void handleGet(Response &resp);

@@ -26,7 +26,6 @@ Response::Response() {}
 Response::~Response() {}
 
 
-int Response::getStatus(void) const { return (_status); }
 string &Response::getContenttype(void) { return (_ContentType); }
 Request *Response::getRequest(void) { return (_req); }
 string &Response::getStatusValue(int key) { return (_StatusCode[key]); }
@@ -36,6 +35,5 @@ string &Response::getType() { return _type; }
 // setters
 void Response::setContentType(string content) { _ContentType = content; }
 void Response::setRequest(Request &req) { _req = &req; }
-void Response::setStatus(int stat) { _status = stat; }
 void Response::setBody(string &body) { _body = body; }
 void Response::setType(const string &type) { _type = type; }
