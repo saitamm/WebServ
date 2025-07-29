@@ -94,11 +94,9 @@ void Client::buildResponse(int clientSocket)
             stringstream ll;
             string type = _resp->getRequest()->getHeadvalue("Content-Type").substr(_resp->getRequest()->getHeadvalue("Content-Type").find('/') + 1);
             ll << rand();
-            cout << "***Type = " <<   _resp->getRequest()->getHeadvalue("Content-Type") <<endl;
             string f = ll.str() + "." + type;
             string Up = _resp->getRequest()->getConfigFile().getRoot() + "/" + _resp->getRequest()->getLocation()->getUp_store() + "/" + f;
             _resp->getFile().open(Up.c_str(), std::ios::out | std::ios::trunc | std::ios::binary);
-            cout << Up <<endl;
             if (!_resp->getFile().is_open())
             {
                 cerr << "soummaya\n";

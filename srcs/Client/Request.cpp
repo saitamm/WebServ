@@ -53,7 +53,6 @@ void Request::ParseHeader(string &Header)
         {
 
             trim(tmp, ":");
-            cout << tmp <<endl;
             string value;
             line >> value;
             trim(value, "\n\t\r ");
