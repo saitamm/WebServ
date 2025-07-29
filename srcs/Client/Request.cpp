@@ -75,7 +75,7 @@ void Request::ParseHeader(string &Header)
         throw BadRequestException();
     stringstream ss(tmp1);
     ss >> this->_ContentLength;
-    if (((tmp1.empty() && _head["Transfer-Encoding"].empty()) || tmp1[0] == '-' || ss.fail()) && _method == "POST")
+    if (((tmp1.empty() && _head["Transfer-Encoding"].empty()) || tmp1[0] == '-') && _method == "POST")
         throw BadRequestException();
     int pos = Header.find("\r\n\r\n");
     this->restHeader = Header.substr(pos + 4);
