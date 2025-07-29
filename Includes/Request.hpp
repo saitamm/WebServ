@@ -49,18 +49,16 @@ public:
     string &getUri(void);
     string &getQuery(void);
     string &getCtype(void);
-    string &getFilename(void);
     Location *getLocation(void);
     unsigned long long &getContentLength(void);
     ConfigFile &getConfigFile(void);
     string &getHeadvalue(string key);
-    // void ParseHttpRequest(string &Header, int clientSocket, ConfigFile &serv, fstream &body);
     void ParseHeader(string &Header);
-    int ParseBody(fstream &body, int clientSocket);
     bool getRedirectionStatus(void) const;
     void setRedirectionStatus(void);
+    string &getrestHeader(void);
 
-    //setters
+    // setters  
     void setMethod(const string &method);
     void setHost(const string &host);
     void setUrl(vector<string> &url);
@@ -68,20 +66,16 @@ public:
     void setLocation(Location *locat);
     void setHeader(string &key, string &value);
     void setRestHeader(const string &rest);
-    size_t getTotalReceived(void) const { return totalReceived; }
-    void setTotalReceived(size_t received) { totalReceived = received; }
-    void setConfigFile(ConfigFile &serv) { _serv = serv; }
+    void setConfigFile(ConfigFile &serv);
 
 private:
     string _method;
     string _host;
     vector<string> _url;
     unsigned long long _ContentLength;
-    // size_t totalReceived;
     map<string, string> _head;
     ConfigFile _serv;
     Location *_locat;
-    size_t totalReceived;
     string restHeader;
     bool _redir;
 };

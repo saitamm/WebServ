@@ -51,7 +51,7 @@ void generateResponse(Response& resp, string& real_path)
     // ostringstream ss;
     // ss << file.rdbuf();
     resp.setStatus(200);
-    resp.setBody(buffer);
+    resp.setBodyResp(buffer);
     getContentType(real_path, resp);
 }
 
@@ -106,7 +106,7 @@ void handleGet(Response &resp)
                     string ss = html.str();
                     closedir(dir);
                     resp.setStatus(200);
-                    resp.setBody(ss);
+                    resp.setBodyResp(ss);
                     resp.setType("text/html");
                 }
             }

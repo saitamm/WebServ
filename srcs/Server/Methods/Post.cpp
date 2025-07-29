@@ -7,23 +7,38 @@ int SupportUpload(Response &resp)
     return (0);
 }
 
-void handlePost(Response &resp, fstream &body)
+int handlePost(Response &resp, int clientSocket)
 {
     if (SupportUpload(resp))
     {
         setCodeStatus(resp, 403);
-        return;
+        return (1);
     }
-    std::string buffer((std::istreambuf_iterator<char>(body)),
-                       std::istreambuf_iterator<char>());  
-    setCodeStatus(resp, 200);
-    srand(time(0));
-    stringstream ll;
-    string type = resp.getRequest()->getHeadvalue("Content-Type").substr(resp.getRequest()->getHeadvalue("Content-Type").find('/') + 1);
-    ll << rand();
-    string f = ll.str() + "." + type;
-    string Up = resp.getRequest()->getConfigFile().getRoot() + "/" + resp.getRequest()->getLocation()->getUp_store() + "/" + f;
-    // cout << Up << endl;
-    std::ofstream out(Up.c_str());
-    out << buffer;
+    char buf[1024];
+    int bytesRead = 0;
+    if (!resp.getTotalReceived())
+    {
+        resp.setTotalReceived(resp.getRequest()->getrestHeader().size());
+        resp.getFile().write(resp.getRequest()->getrestHeader().c_str(), resp.getTotalReceived());
+    }
+    string Body;
+    bytesRead = recv(clientSocket, buf, sizeof(buf) - 1, 0);
+    if (bytesRead < 0)
+        throw SocketErrorException();
+    if (bytesRead == 0)
+        throw BadRequestException();
+    // buf[bytesRead] = '\0';
+    cout << bytesRead << endl;
+    resp.getFile().write(buf, bytesRead);
+    // resp.getFile().flush();
+    resp.setTotalReceived(bytesRead);
+    cout << "Total receive = " << resp.getTotalReceived() << "  ContentLength  = " << resp.getRequest()->getContentLength() << endl;
+    if (resp.getTotalReceived() == resp.getRequest()->getContentLength())
+    {
+        if (!resp.getFile().is_open())
+            resp.getFile().close();
+        setCodeStatus(resp, 200);
+        return (1);
+    }
+    return (0);
 }

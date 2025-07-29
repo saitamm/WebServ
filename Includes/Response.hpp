@@ -17,22 +17,24 @@ public:
     Response();
     ~Response();
     // getters
-    int getStatus(void) const{ return (_Code); };
+    int getStatus(void) const;
     string &getContenttype(void);
     Request *getRequest(void);
     string &getStatusValue(int key);
     string &getBody(void);
     string &getType();
-    bool getSend() { return (_sendit); };
+    bool getSend() ;
+    fstream &getFile(void );
     // setters
-    void setStatus(int stat){ _Code = stat; };
+    void setStatus(int stat);
     void setRequest(Request &req);
     void setContentType(string content);
-    void setBody(string &body);
+    void setBodyResp(string &body);
     void setType(const string &type);
-    void setSend(void) { _sendit = true; };
+    void setSend(void);
     void initStatusCode(void);
-    // void buildResponsee(Request &req);
+    size_t getTotalReceived(void);
+    void setTotalReceived(size_t received);
 
 private:
     string _ContentType;
@@ -42,10 +44,12 @@ private:
     bool _sendit;
     static map<int, string> _StatusCode;
     int _Code;
+    fstream _file;
+    size_t totalReceived;
 };
 void handleDelete(Response &resp);
 void handleGet(Response &resp);
 void setCodeStatus(Response &resp, int error);
 void getContentType(string &real_path, Response &resp);
-void handlePost(Response &resp,fstream &body);
+int handlePost(Response &resp, int clientSocket);
 #endif

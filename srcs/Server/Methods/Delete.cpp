@@ -21,7 +21,6 @@ void deleteRecursively(const std::string &path)
             std::cerr << "Failed to stat: " << fullPath << std::endl;
             throw BadDirectoryException();
         }
-
         if (S_ISDIR(st.st_mode))
         {
             deleteRecursively(fullPath);
@@ -62,7 +61,6 @@ void handleDelete(Response &resp)
     // directory
     else if (S_ISDIR(path.st_mode))
     {
-
         if (file[file.size() - 1] == '/')
         {
             if (access(file.c_str(), W_OK) == -1)

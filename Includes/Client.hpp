@@ -25,9 +25,8 @@ public:
     void setBuff(string &buff, size_t &readbyte);
     int getFd(void) const;
     string &getbuff(void) { return (_buffer); }
-    fstream &getbody(void) { return (_body); }
     Request *getRequest(void){return(_req);};
-    void buildResponse(void);
+    void buildResponse(int clientSocket);
     void setStatus(const ClientStatus &status) { _status = status; }
     ClientStatus getStatus(void) const { return _status; }
     void ParseHttpRequest(Client &client,int clientSocket ,ConfigFile &serv);
@@ -38,7 +37,6 @@ private:
     Response *_resp;
     int _fd;
     string _buffer;
-    fstream _body;
     ClientStatus _status;
     
 };

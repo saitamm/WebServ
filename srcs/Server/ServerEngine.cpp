@@ -9,9 +9,6 @@ void setCodeStatus(Response &resp, int error)
     }
     resp.setStatus(error);
     map<int, string> body = resp.getRequest()->getConfigFile().getError_page();
-    // if (body[error][0] == '/')
-    //     body[error].erase(0, 1);
-    //  default error pages
     if (body[error].empty())
     {
         string defaultErrorPage = resp.getRequest()->getConfigFile().getDefaultErrorPage(error);
@@ -24,7 +21,7 @@ void setCodeStatus(Response &resp, int error)
         }
         std::string buffer((std::istreambuf_iterator<char>(file)),
                            std::istreambuf_iterator<char>());
-        resp.setBody(buffer);
+        resp.setBodyResp(buffer);
         file.close();
     }
     else
@@ -38,7 +35,7 @@ void setCodeStatus(Response &resp, int error)
         }
         std::string buffer((std::istreambuf_iterator<char>(file)),
                            std::istreambuf_iterator<char>());
-        resp.setBody(buffer);
+        resp.setBodyResp(buffer);
         file.close();
     }
 }
@@ -70,14 +67,14 @@ int allowMethod(Location loc, string method)
     return (0);
 }
 
-void    handleClientRequest(map<int, Client *> &clients, int clientSocket, vector<ConfigFile> *servers)
+void handleClientRequest(map<int, Client *> &clients, int clientSocket, vector<ConfigFile> *servers)
 {
     try
     {
         clients[clientSocket]->getResp()->initStatusCode();
         clients[clientSocket]->ParseHttpRequest(*clients[clientSocket], clientSocket, servers->at(0));
-        if (clients[clientSocket]->getStatus() == Processing)
-            clients[clientSocket]->buildResponse();
+        if (clients[clientSocket]->getStatus() == Body || clients[clientSocket]->getStatus() == Processing)
+            clients[clientSocket]->buildResponse(clientSocket);
     }
     catch (const std::exception &e)
     {

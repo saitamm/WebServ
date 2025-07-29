@@ -17,7 +17,7 @@ string &Request::getHeadvalue(string key) { return (_head[key]); }
 unsigned long long &Request::getContentLength(void) { return (_ContentLength); }
 ConfigFile &Request::getConfigFile(void) { return (_serv); }
 bool Request::getRedirectionStatus(void) const { return _redir; }
-void Request::setRedirectionStatus(void) { _redir = true; }
+string &Request::getrestHeader(void) { return (restHeader); }
 
 void Request::setMethod(const string &method) { _method = method; }
 void Request::setHost(const string &host) { _host = host; }
@@ -26,6 +26,8 @@ void Request::setHeadvalue(const string &key, const string &value) { _head[key] 
 void Request::setLocation(Location *locat) { _locat = locat; }
 void Request::setHeader(string &key, string &value) { _head[key] = value; }
 void Request::setRestHeader(const string &rest) { restHeader = rest; }
+void Request::setConfigFile(ConfigFile &serv) { _serv = serv; }
+void Request::setRedirectionStatus(void) { _redir = true; }
 
 // Parse Request
 void Request::ParseHeader(string &Header)
@@ -51,6 +53,7 @@ void Request::ParseHeader(string &Header)
         {
 
             trim(tmp, ":");
+            cout << tmp <<endl;
             string value;
             line >> value;
             trim(value, "\n\t\r ");
@@ -79,65 +82,6 @@ void Request::ParseHeader(string &Header)
     this->restHeader = Header.substr(pos + 4);
 }
 
-int Request::ParseBody(fstream &body, int clientSocket)
-{
-    char buf[1024];
-    int bytesRead = 0;
-    if (!this->_head["Transfer-Encoding"].empty())
-    {
-        string del;
-        stringstream ss(this->restHeader);
-        ss >> del;
-        this->restHeader.erase(0, del.size() + 1);
-        if (!this->totalReceived)
-        {
-            this->totalReceived += this->restHeader.size();
-            body.write(this->restHeader.c_str(), this->totalReceived);
-        }
-        bytesRead = recv(clientSocket, buf, sizeof(buf) - 1, 0);
-        if (bytesRead < 0)
-            throw SocketErrorException();
-        if (bytesRead == 0)
-            throw BadRequestException();
-        buf[bytesRead] = '\0';
-        body.write(buf, bytesRead);
-        body.flush();
-        body.clear();
-        string gg(buf);
-        std::string buffer((std::istreambuf_iterator<char>(body)),
-                           std::istreambuf_iterator<char>());
-        body.seekg(0);
-        if (buffer.find("\r\n") != string::npos)
-        {
-            return (1);
-        }
-        body.seekg(0);
-    }
-    else
-    {
-        if (!this->totalReceived)
-        {
-            this->totalReceived += this->restHeader.size();
-            body.write(this->restHeader.c_str(), this->totalReceived);
-        }
-        string Body;
-        bytesRead = recv(clientSocket, buf, sizeof(buf) - 1, 0);
-        if (bytesRead < 0)
-            throw SocketErrorException();
-        if (bytesRead == 0)
-            throw BadRequestException();
-        buf[bytesRead] = '\0';
-        body.write(buf, bytesRead);
-        body.flush();
-        this->totalReceived += bytesRead;
-        if (this->totalReceived == this->_ContentLength)
-        {
-            body.seekg(0);
-            return (1);
-        }
-    }
-    return (0);
-}
 void RedirectionRequest(Request &req)
 {
     if (req.getLocation()->getRetur().empty())

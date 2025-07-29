@@ -22,18 +22,27 @@ void Response::initStatusCode(void)
     _StatusCode[308] = "Permanent Redirect";
 }
 
-Response::Response() {}
+Response::Response()
+{
+    totalReceived = 0;
+}
 Response::~Response() {}
-
 
 string &Response::getContenttype(void) { return (_ContentType); }
 Request *Response::getRequest(void) { return (_req); }
 string &Response::getStatusValue(int key) { return (_StatusCode[key]); }
 string &Response::getBody(void) { return (_body); }
 string &Response::getType() { return _type; }
+int Response::getStatus(void) const { return (_Code); };
+bool Response::getSend() { return (_sendit); };
+fstream &Response::getFile(void) { return (_file); }
+size_t Response::getTotalReceived(void) { return totalReceived; }
 
 // setters
 void Response::setContentType(string content) { _ContentType = content; }
 void Response::setRequest(Request &req) { _req = &req; }
-void Response::setBody(string &body) { _body = body; }
+void Response::setBodyResp(string &body) { _body = body; }
 void Response::setType(const string &type) { _type = type; }
+void Response::setStatus(int stat) { _Code = stat; };
+void Response::setSend(void) { _sendit = true; };
+void Response::setTotalReceived(size_t received) { totalReceived += received; }
