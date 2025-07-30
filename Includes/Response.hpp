@@ -23,29 +23,35 @@ public:
     string &getStatusValue(int key);
     string &getBody(void);
     string &getType();
-    bool getSend() ;
     fstream &getFile(void );
+    unsigned int getReceived(void);
+    unsigned int getBufferSize(void);
     // setters
     void setStatus(int stat);
     void setRequest(Request &req);
     void setContentType(string content);
     void setBodyResp(string &body);
     void setType(const string &type);
-    void setSend(void);
     void initStatusCode(void);
     size_t getTotalReceived(void);
     void setTotalReceived(size_t received);
+    void setReceived(unsigned int received);
+    void restartChunk(void);
+    void setBufferSize(unsigned int size);
 
 private:
     string _ContentType;
     string _body;
     Request *_req;
     string _type;
-    bool _sendit;
     static map<int, string> _StatusCode;
     int _Code;
     fstream _file;
     size_t totalReceived;
+
+    //chunked body
+    unsigned int _received;
+    unsigned int bufferSize;
 };
 void handleDelete(Response &resp);
 void handleGet(Response &resp);

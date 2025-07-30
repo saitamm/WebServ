@@ -92,28 +92,28 @@ int ChunkedBody(Response &resp, int clientSocket)
     }
     else
     {
-        BufferSize = getSize(clientSocket);
-        if (BufferSize == 0)
+        if (resp.getReceived() == 0)
         {
-
-            return (1);
+            resp.setBufferSize(getSize(clientSocket));
+            if (resp.getBufferSize() == 0)
+                return (1);
         }
-        unsigned int received = 0;
-        while (received < BufferSize)
-        {
-            char buff[4096];
-            size_t read = min(BufferSize - received, (unsigned int)sizeof(buff));
-            bytesRead = recv(clientSocket, buff, read, 0);
-            if (bytesRead <= 0)
-                throw BadRequestException();
-            resp.getFile().write(buff, bytesRead);
-            resp.getFile().flush();
-            received +=bytesRead;
-        }
-        char del[2];
-        bytesRead = recv(clientSocket, del, sizeof(del), 0);
+        char buff[1024];
+        size_t read = min(resp.getBufferSize() - resp.getReceived(), (unsigned int)sizeof(buff));
+        bytesRead = recv(clientSocket, buff, read, 0);
         if (bytesRead <= 0)
-            throw SocketErrorException();
+        throw BadRequestException();
+        resp.getFile().write(buff, bytesRead);
+        resp.getFile().flush();
+        resp.setReceived(bytesRead);
+        if (resp.getReceived() == resp.getBufferSize())
+        {
+            resp.restartChunk();
+            char del[2];
+            bytesRead = recv(clientSocket, del, sizeof(del), 0);
+            if (bytesRead <= 0)
+                throw SocketErrorException();
+        }
     }
     return (0);
 }

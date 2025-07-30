@@ -25,8 +25,11 @@ void Response::initStatusCode(void)
 Response::Response()
 {
     totalReceived = 0;
+    _received = 0;
 }
 Response::~Response() {}
+
+void Response::restartChunk(void){_received = 0;}
 
 string &Response::getContenttype(void) { return (_ContentType); }
 Request *Response::getRequest(void) { return (_req); }
@@ -34,9 +37,10 @@ string &Response::getStatusValue(int key) { return (_StatusCode[key]); }
 string &Response::getBody(void) { return (_body); }
 string &Response::getType() { return _type; }
 int Response::getStatus(void) const { return (_Code); };
-bool Response::getSend() { return (_sendit); };
 fstream &Response::getFile(void) { return (_file); }
 size_t Response::getTotalReceived(void) { return totalReceived; }
+unsigned int Response::getReceived(void) { return _received; }
+unsigned int Response::getBufferSize(void) { return bufferSize; }
 
 // setters
 void Response::setContentType(string content) { _ContentType = content; }
@@ -44,5 +48,6 @@ void Response::setRequest(Request &req) { _req = &req; }
 void Response::setBodyResp(string &body) { _body = body; }
 void Response::setType(const string &type) { _type = type; }
 void Response::setStatus(int stat) { _Code = stat; };
-void Response::setSend(void) { _sendit = true; };
 void Response::setTotalReceived(size_t received) { totalReceived += received; }
+void Response::setReceived(unsigned int received) { _received += received; }
+void Response::setBufferSize(unsigned int size) { bufferSize = size; }
