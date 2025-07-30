@@ -1,7 +1,7 @@
 #ifndef RESPONSE_HPP
 #define RESPONSE_HPP
 #include "Request.hpp"
-
+#include <algorithm>
 class BadDirectoryException : public std::exception
 {
 public:

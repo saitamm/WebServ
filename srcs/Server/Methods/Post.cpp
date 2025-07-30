@@ -14,11 +14,17 @@ unsigned int getSize(int clientSocket)
     while (recv(clientSocket, &c, 1, 0))
     {
         line += c;
-        if (line.find("\r\n") != string::npos)
+        if (line.size() > 2 && line.substr(line.size() - 2) == "\r\n")
             break;
     }
-    cout << "i am in getsize function = " << line << endl;
-    return (1);
+    unsigned int BufferSize;
+    stringstream ll(line);
+    string l;
+    ll >> l;
+    std::stringstream ss;
+    ss << std::hex << l;
+    ss >> BufferSize;
+    return (BufferSize);
 }
 
 void NonChunkedBody(Response &resp, int clientSocket)
@@ -32,7 +38,7 @@ void NonChunkedBody(Response &resp, int clientSocket)
     }
     string Body;
     bytesRead = recv(clientSocket, buf, sizeof(buf), 0);
-    if (bytesRead < 0)
+    if (bytesRead <= 0)
         throw SocketErrorException();
     resp.getFile().write(buf, bytesRead);
     resp.getFile().flush();
@@ -48,52 +54,68 @@ int ChunkedBody(Response &resp, int clientSocket)
         stringstream ll(resp.getRequest()->getrestHeader());
         string l;
         ll >> l;
-        cout << "rest Header =" << ll.str()<<endl;
         std::stringstream ss;
         ss << std::hex << l;
         ss >> BufferSize;
         string line;
         line = ll.str();
         line.erase(0, l.size() + 2);
-        vector<string> splited;
-        cout << "this is the buffer =" << BufferSize <<endl;
-        cout << "this is the Total  = "<< resp.getRequest()->getContentLength() <<endl;
-        return(1);
-        // split(line, "\r\n", splited);
-        // for(int i = 0;i<(int)splited.size();i++)
-        //     cout << "----" << splited[i] <<endl;
-        // resp.getFile().write(line.c_str(), line.size());
-        // resp.setTotalReceived(line.size());
-        // cout << "this is my buffer " << BufferSize << "   and  " << resp.getTotalReceived() << endl;
-        if (BufferSize > resp.getTotalReceived())
+        resp.setTotalReceived(5);
+        int size;
+        while (1)
         {
-
-            char buf[BufferSize - resp.getTotalReceived()];
+            size = (BufferSize > line.size()) ? line.size() : BufferSize;
+            resp.getFile().write(line.substr(0, size).c_str(), size);
+            line.erase(0, size);
+            if (line.empty())
+                break;
+            line.erase(0, 2);
+            stringstream kk(line);
+            string k;
+            kk >> k;
+            stringstream jj;
+            jj << hex << k;
+            jj >> BufferSize;
+            if (BufferSize == 0)
+                return (1);
+            line.erase(0, k.size() + 2);
+        }
+        if (size < (int)BufferSize)
+        {
+            char buf[BufferSize - size];
             bytesRead = recv(clientSocket, buf, sizeof(buf), 0);
-            if (bytesRead < 0)
-                throw SocketErrorException();
-            cout << "----------------------------------------" << endl;
             if (bytesRead == 0)
                 throw BadRequestException();
             resp.getFile().write(buf, bytesRead);
             resp.getFile().flush();
-            resp.setTotalReceived(bytesRead);
-            string end(buf);
-            BufferSize = getSize(clientSocket);
-            if (end.find("0\r\n"))
-            {
-        
-            }
         }
-        // else
-        // {
-        //     if (resp.getFile().is_open())
-        //         resp.getFile().close();
-        //     setCodeStatus(resp, 200);
-        //     return (1);
-        // }
     }
-    return (1);
+    else
+    {
+        BufferSize = getSize(clientSocket);
+        if (BufferSize == 0)
+        {
+
+            return (1);
+        }
+        unsigned int received = 0;
+        while (received < BufferSize)
+        {
+            char buff[4096];
+            size_t read = min(BufferSize - received, (unsigned int)sizeof(buff));
+            bytesRead = recv(clientSocket, buff, read, 0);
+            if (bytesRead <= 0)
+                throw BadRequestException();
+            resp.getFile().write(buff, bytesRead);
+            resp.getFile().flush();
+            received +=bytesRead;
+        }
+        char del[2];
+        bytesRead = recv(clientSocket, del, sizeof(del), 0);
+        if (bytesRead <= 0)
+            throw SocketErrorException();
+    }
+    return (0);
 }
 int handlePost(Response &resp, int clientSocket)
 {
