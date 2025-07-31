@@ -48,8 +48,6 @@ void generateResponse(Response& resp, string& real_path)
     }
     std::string buffer((std::istreambuf_iterator<char>(file)),
                        std::istreambuf_iterator<char>());
-    // ostringstream ss;
-    // ss << file.rdbuf();
     resp.setStatus(200);
     resp.setBody(buffer);
     getContentType(real_path, resp);
@@ -59,9 +57,6 @@ void handleGet(Response &resp)
 {
     string real_path = resp.getRequest()->getConfigFile().getRoot() + resp.getRequest()->getUri();
     struct stat path;
-    // if (real_path[0] == '/')
-    //     real_path.erase(0, 1);
-    // cout << real_path << endl;
     if (stat(real_path.c_str(), &path) == -1)
     {
         setCodeStatus(resp, 404);
@@ -73,6 +68,8 @@ void handleGet(Response &resp)
     }
     else if (S_ISDIR(path.st_mode))
     {
+        if (real_path[real_path.size() - 1] != '/')
+            real_path += '/';
         if (resp.getRequest()->getLocation()->getLoc_idx().empty())
         {
             if (resp.getRequest()->getLocation()->getAuto_idx() != "on")
