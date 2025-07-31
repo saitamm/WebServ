@@ -1,8 +1,7 @@
 #ifndef RESPONSE_HPP
 #define RESPONSE_HPP
 #include "Request.hpp"
-
-
+#include <algorithm>
 class BadDirectoryException : public std::exception
 {
 public:
@@ -21,33 +20,42 @@ public:
     int getStatus(void) const;
     string &getContenttype(void);
     Request *getRequest(void);
-    string &getValue(int key);
+    string &getStatusValue(int key);
     string &getBody(void);
     string &getType();
-    bool getSend() { return (_sendit); };
+    fstream &getFile(void );
+    unsigned int getReceived(void);
+    unsigned int getBufferSize(void);
     // setters
     void setStatus(int stat);
     void setRequest(Request &req);
     void setContentType(string content);
-    void setBody(string &body);
-    void setCode(int key, string value);
+    void setBodyResp(string &body);
     void setType(const string &type);
-    void setSend(void) { _sendit = true; };
-    // void buildResponsee(Request &req);
+    void initStatusCode(void);
+    size_t getTotalReceived(void);
+    void setTotalReceived(size_t received);
+    void setReceived(unsigned int received);
+    void restartChunk(void);
+    void setBufferSize(unsigned int size);
 
 private:
-    int _status;
     string _ContentType;
-    map<int, string> _Error;
     string _body;
     Request *_req;
     string _type;
-    bool _sendit;
-};
+    static map<int, string> _StatusCode;
+    int _Code;
+    fstream _file;
+    size_t totalReceived;
 
+    //chunked body
+    unsigned int _received;
+    unsigned int bufferSize;
+};
 void handleDelete(Response &resp);
 void handleGet(Response &resp);
 void setCodeStatus(Response &resp, int error);
 void getContentType(string &real_path, Response &resp);
-void handlePost(Response &resp);
+int handlePost(Response &resp, int clientSocket);
 #endif

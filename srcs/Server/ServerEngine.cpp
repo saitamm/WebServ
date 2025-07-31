@@ -2,11 +2,13 @@
 // check this fucntion because the body is not necessery set here
 void setCodeStatus(Response &resp, int error)
 {
+    if (resp.getRequest()->getRedirectionStatus())
+    {
+        resp.setStatus(resp.getRequest()->getLocation()->getRetur().begin()->first);
+        return;
+    }
     resp.setStatus(error);
     map<int, string> body = resp.getRequest()->getConfigFile().getError_page();
-    // if (body[error][0] == '/')
-    //     body[error].erase(0, 1);
-    //  default error pages
     if (body[error].empty())
     {
         string defaultErrorPage = resp.getRequest()->getConfigFile().getDefaultErrorPage(error);
@@ -19,7 +21,7 @@ void setCodeStatus(Response &resp, int error)
         }
         std::string buffer((std::istreambuf_iterator<char>(file)),
                            std::istreambuf_iterator<char>());
-        resp.setBody(buffer);
+        resp.setBodyResp(buffer);
         file.close();
     }
     else
@@ -33,7 +35,7 @@ void setCodeStatus(Response &resp, int error)
         }
         std::string buffer((std::istreambuf_iterator<char>(file)),
                            std::istreambuf_iterator<char>());
-        resp.setBody(buffer);
+        resp.setBodyResp(buffer);
         file.close();
     }
 }
@@ -41,12 +43,14 @@ void setCodeStatus(Response &resp, int error)
 void SendResponse(Response &resp, int clientSocket)
 {
     ostringstream response;
-    response << "HTTP/1.1 " << resp.getStatus() << " " << resp.getValue(resp.getStatus()) << "\r\n";
+    response << "HTTP/1.1 " << resp.getStatus() << " " << resp.getStatusValue(resp.getStatus()) << "\r\n";
     response << "Content-type: " << resp.getType() << "\r\n";
+    if (resp.getRequest()->getRedirectionStatus())
+    {
+        response << "Location: " << resp.getRequest()->getLocation()->getRetur().begin()->second << "\r\n";
+    }
     response << "Content-Length: " << resp.getBody().size() << "\r\n\r\n";
-    // response << "\r\n\r\n";
     response << resp.getBody();
-    // cout << "Body ==="<<resp.getBody() << "===\n";
     string final_resp = response.str();
     if (send(clientSocket, final_resp.c_str(), final_resp.size(), 0) == -1)
         cerr << "error Send \n";
@@ -67,21 +71,29 @@ void handleClientRequest(map<int, Client *> &clients, int clientSocket, vector<C
 {
     try
     {
-        // here we have to match
-        clients[clientSocket]->getRequest()->ParseHttpRequest(clients[clientSocket]->getbuff(), clientSocket, servers->at(0), clients[clientSocket]->getbody());
-        if (clients[clientSocket]->getRequest()->getfinishedHead() == true)
-        {
-            clients[clientSocket]->buildResponse();
-            clients[clientSocket]->getResp()->setSend();
-        }
+        clients[clientSocket]->getResp()->initStatusCode();
+        clients[clientSocket]->ParseHttpRequest(*clients[clientSocket], clientSocket, servers->at(0));
+        if (clients[clientSocket]->getStatus() == Body || clients[clientSocket]->getStatus() == Processing)
+            clients[clientSocket]->buildResponse(clientSocket);
     }
     catch (const std::exception &e)
     {
         clients[clientSocket]->getResp()->setRequest(*clients[clientSocket]->getRequest());
-        clients[clientSocket]->getResp()->setSend();
-        setCodeStatus(*clients[clientSocket]->getResp(), 400);
-        cout << "i am exception \n";
+        clients[clientSocket]->setStatus(Sending);
+        if (!clients[clientSocket]->getRequest()->getRedirectionStatus())
+            setCodeStatus(*clients[clientSocket]->getResp(), 400);
+        else
+            setCodeStatus(*clients[clientSocket]->getResp(), 0);
     }
-    if (clients[clientSocket]->getResp()->getSend())
+    if (clients[clientSocket]->getStatus() == Sending)
+    {
         SendResponse(*clients[clientSocket]->getResp(), clientSocket);
+        clients[clientSocket]->setStatus(Finished);
+        if (clients[clientSocket]->getStatus() == Finished)
+        {
+            delete clients[clientSocket];
+            clients.erase(clientSocket);
+            close(clientSocket);
+        }
+    }
 }

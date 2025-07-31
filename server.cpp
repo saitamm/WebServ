@@ -1,7 +1,5 @@
 #include "Includes/Client.hpp"
 
-
-
 int create_server_socket(vector<ConfigFile> *servers)
 {
      int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
@@ -35,10 +33,7 @@ void accept_new_connection(int server_socket, fd_set *all_sockets, int *fd_max)
           return;
      }
 
-     // Add new socket to the set
      FD_SET(new_client_fd, all_sockets);
-
-     // Update the max fd
      if (new_client_fd > *fd_max)
      {
           *fd_max = new_client_fd;
@@ -48,7 +43,7 @@ void accept_new_connection(int server_socket, fd_set *all_sockets, int *fd_max)
 int printErr(const string &err)
 {
      cerr << err << endl;
-     return 1; 
+     return 1;
 }
 
 void setNonBlocking(int fd)
@@ -132,7 +127,7 @@ int main(int ac, char **av)
                          epoll_event clientEvent;
                          memset(&clientEvent, 0, sizeof(clientEvent));
                          clientEvent.data.fd = clientSocket;
-                         clientEvent.events = EPOLLIN | EPOLLET;
+                         clientEvent.events = EPOLLIN;
                          epoll_ctl(epollFd, EPOLL_CTL_ADD, clientSocket, &clientEvent);
 
                          cout << "New client connected on server port " << openedServers[fd].getPort()
@@ -159,4 +154,3 @@ int main(int ac, char **av)
      }
 
 }
-

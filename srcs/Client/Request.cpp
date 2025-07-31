@@ -2,22 +2,32 @@
 
 Request::Request()
 {
-    _HeadF = false;
-    _BodyF = false;
 }
 Request::~Request() {}
-// getters
+
+// getters && setters
 
 string &Request::getHost(void) { return (_host); }
 string &Request::getMethod(void) { return (_method); }
 string &Request::getUri(void) { return (_url[0]); }
 string &Request::getQuery(void) { return (_url[1]); }
-string &Request::getFilename(void) { return (filename); }
 string &Request::getCtype(void) { return (_head["Content-Type"]); }
 Location *Request::getLocation(void) { return (_locat); }
 string &Request::getHeadvalue(string key) { return (_head[key]); }
 unsigned long long &Request::getContentLength(void) { return (_ContentLength); }
 ConfigFile &Request::getConfigFile(void) { return (_serv); }
+bool Request::getRedirectionStatus(void) const { return _redir; }
+string &Request::getrestHeader(void) { return (restHeader); }
+
+void Request::setMethod(const string &method) { _method = method; }
+void Request::setHost(const string &host) { _host = host; }
+void Request::setUrl(vector<string> &url) { _url = url; }
+void Request::setHeadvalue(const string &key, const string &value) { _head[key] = value; }
+void Request::setLocation(Location *locat) { _locat = locat; }
+void Request::setHeader(string &key, string &value) { _head[key] = value; }
+void Request::setRestHeader(const string &rest) { restHeader = rest; }
+void Request::setConfigFile(ConfigFile &serv) { _serv = serv; }
+void Request::setRedirectionStatus(void) { _redir = true; }
 
 // Parse Request
 void Request::ParseHeader(string &Header)
@@ -65,94 +75,20 @@ void Request::ParseHeader(string &Header)
         throw BadRequestException();
     stringstream ss(tmp1);
     ss >> this->_ContentLength;
-    if (((tmp1.empty() && _head["Transfer-Encoding"].empty()) || tmp1[0] == '-' || ss.fail()) && _method == "POST")
+    if (((tmp1.empty() && _head["Transfer-Encoding"].empty()) || tmp1[0] == '-') && _method == "POST")
         throw BadRequestException();
     int pos = Header.find("\r\n\r\n");
     this->restHeader = Header.substr(pos + 4);
-    this->_HeadF = true;
 }
 
-void Request::ParseBody(fstream &body, int clientSocket)
+void RedirectionRequest(Request &req)
 {
-    char buf[1024];
-    int bytesRead = 0;
-    if (!this->_head["Transfer-Encoding"].empty())
+    if (req.getLocation()->getRetur().empty())
+        return;
+    std::map<int, string>::const_iterator it = req.getLocation()->getRetur().begin();
+    if ((it->first >= 300 && it->first <= 308))
     {
-        string del;
-        stringstream ss(this->restHeader);
-        ss >> del;
-        this->restHeader.erase(0, del.size() + 1);
-        if (!this->totalReceived)
-        {
-            this->totalReceived += this->restHeader.size();
-            body.write(this->restHeader.c_str(), this->totalReceived);
-        }
-        bytesRead = recv(clientSocket, buf, sizeof(buf) - 1, 0);
-        if (bytesRead < 0)
-            throw SocketErrorException();
-        if (bytesRead == 0)
-            throw BadRequestException();
-        buf[bytesRead] = '\0';
-        body.write(buf, bytesRead);
-        body.flush();
-        body.clear();
-        string gg(buf);
-        body.seekg(0);
-        std::string buffer((std::istreambuf_iterator<char>(body)),
-                           std::istreambuf_iterator<char>());
-        cout.flush();
-        if (buffer.find("\r\n") != string::npos)
-        {
-            this->_body = true;
-        }
-    }
-    else
-    {
-        if (!this->totalReceived)
-        {
-            this->totalReceived += this->restHeader.size();
-            body.write(this->restHeader.c_str(), this->totalReceived);
-        }
-        string Body;
-        bytesRead = recv(clientSocket, buf, sizeof(buf) - 1, 0);
-        if (bytesRead < 0)
-            throw SocketErrorException();
-        if (bytesRead == 0)
-            throw BadRequestException();
-        buf[bytesRead] = '\0';
-        body.write(buf, bytesRead);
-        body.flush();
-        this->totalReceived += bytesRead;
-        if (this->totalReceived == this->_ContentLength)
-            this->_BodyF = true;
-    }
-}
-void Request::ParseHttpRequest(string &Header, int clientSocket, ConfigFile &serv, fstream &body)
-{
-    this->_serv = serv;
-    char buf[1024];
-    ssize_t bytesRead;
-    if (!this->_HeadF)
-    {
-        this->totalReceived = 0;
-        if ((bytesRead = recv(clientSocket, buf, sizeof(buf), 0)) > 0)
-            Header.append(buf, bytesRead);
-        if (Header.find("\r\n\r\n") != std::string::npos)
-        {
-            this->ParseHeader(Header);
-            // matching location
-            this->_locat = matchLocation(this->_url[0], serv.getLocations());
-            if (!this->_locat)
-            {
-                cout << "No matching location found for URI: " << this->_url[0] << endl;
-                throw BadRequestException();
-            }
-        }
-    }
-    if (this->_HeadF && !this->_BodyF)
-    {
-        if (_method == "GET" || _method == "DELETE")
-            return;
-        this->ParseBody(body, clientSocket);
+        req.setRedirectionStatus();
+        throw BadRequestException();
     }
 }
