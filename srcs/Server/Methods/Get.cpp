@@ -96,8 +96,6 @@ void checkCgi(Response &resp, string &real_path)
         resp.setStatus(200);
         string outStr = output.str();
         resp.setBodyResp(outStr);
-
-        // Optionally parse CGI headers (e.g., Content-Type), or just default:
         resp.setType("text/html");
 
     }
@@ -107,6 +105,7 @@ void handleGet(Response &resp)
 {
     string real_path = resp.getRequest()->getConfigFile().getRoot() + resp.getRequest()->getUri();
     struct stat path;
+    cout << real_path <<endl;
     if (stat(real_path.c_str(), &path) == -1)
     {
         setCodeStatus(resp, 404);
@@ -115,9 +114,15 @@ void handleGet(Response &resp)
     if (S_ISREG(path.st_mode))
     {
         if(!resp.getRequest()->getLocation()->getCgi_pass().empty())
+        {
+            cout << "here ---->" << resp.getRequest()->getLocation()->getCgi_pass()<<endl;
             checkCgi(resp, real_path);
+        }
         else
+        {
+            cout << "HEREEEEEEEEE\n";
             generateResponse(resp, real_path);
+        }
     }
     else if (S_ISDIR(path.st_mode))
     {
