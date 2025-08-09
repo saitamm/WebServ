@@ -52,26 +52,19 @@ void setNonBlocking(int fd)
      fcntl(fd, F_SETFL, flags | O_NONBLOCK);
 }
 
-int openSocket(vector<ConfigFile> *servers, int epollFd, map<int, ConfigFile> &openedServers)
+int main(int ac, char **av)
 {
-     for (size_t i = 0; i < servers->size(); i++)
+     if (ac != 2)
+          return (printErr("ERROR: ./Webserv <file.conf>"));
+     ConfigFile config;
+     vector<ConfigFile> *servers;
+     config.initDefaultError();
+     try
      {
-          int serverSocket;
-          int port = servers->at(i).getPort();
-          bool dupPort = false;
-          for(map<int, ConfigFile>::iterator it = openedServers.begin(); it != openedServers.end(); it++)
-          {
-               if (it->second.getPort() == port)
-               {
-                    dupPort = true;
-                    break;
-               }
-          }
-          if (dupPort)
-               continue;
-          serverSocket = socket(AF_INET, SOCK_STREAM, 0);
+          servers = config.ParseConfigFile(av[1]);
+          int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
           if (serverSocket == -1)
-               return(printErr("reation failed!"));
+               return (printErr("Socket creation failed!"));
           setNonBlocking(serverSocket);
           int opt = 1;
           setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
@@ -79,78 +72,49 @@ int openSocket(vector<ConfigFile> *servers, int epollFd, map<int, ConfigFile> &o
           memset(&serverAddr, 0, sizeof(serverAddr));
           serverAddr.sin_family = AF_INET;
           serverAddr.sin_addr.s_addr = INADDR_ANY;
-          serverAddr.sin_port = htons(port);
-          if (bind(serverSocket, (sockaddr*)&serverAddr, sizeof(serverAddr)) < 0)
-               return(printErr("bind failed, maybe port is busy!"));
+          serverAddr.sin_port = htons(servers->at(0).getPort());
+          if (bind(serverSocket, (sockaddr *)&serverAddr, sizeof(serverAddr)) < 0)
+               return (printErr("bind failed, maybe port is busy!"));
           listen(serverSocket, SOMAXCONN);
+
+          int epollFd = epoll_create1(0);
           epoll_event event;
           memset(&event, 0, sizeof(event));
           event.data.fd = serverSocket;
           event.events = EPOLLIN;
           epoll_ctl(epollFd, EPOLL_CTL_ADD, serverSocket, &event);
-          openedServers[serverSocket] = servers->at(i);
-     }
-     return 0;
-}
 
-int main(int ac, char **av)
-{
-     if (ac != 2)
-     return(printErr("ERROR: ./Webserv <file.conf>"));
-     ConfigFile config;
-     vector<ConfigFile> *servers;
-     config.initDefaultError();
-     try
-     {
-          map<int, ConfigFile>openedServers;
-          servers = config.ParseConfigFile(av[1]);
-          int epollFd = epoll_create1(0);
-          if (epollFd == -1)
-               return(printErr("Failed to create epoll"));
-          if (openSocket(servers, epollFd, openedServers))
-               return 1;
-               
           const int MAX_EVENTS = 1000;
           epoll_event events[MAX_EVENTS];
-          map<int, Client*> clients;
-          while(1)
+          map<int, Client *> clients;
+          while (1)
           {
                int n = epoll_wait(epollFd, events, MAX_EVENTS, -1);
-               cout << "epoll_wait returned: " << n << endl;
-               for(int i = 0; i < n; ++i)
+               for (int i = 0; i < n; ++i)
                {
-                    int fd = events[i].data.fd;
-                    if (openedServers.find(fd) != openedServers.end())
+                    if (events[i].data.fd == serverSocket)
                     {
-                         int clientSocket = accept(fd, NULL, NULL);
+                         int clientSocket = accept(serverSocket, NULL, NULL);
                          setNonBlocking(clientSocket);
                          epoll_event clientEvent;
                          memset(&clientEvent, 0, sizeof(clientEvent));
                          clientEvent.data.fd = clientSocket;
                          clientEvent.events = EPOLLIN;
                          epoll_ctl(epollFd, EPOLL_CTL_ADD, clientSocket, &clientEvent);
-
-                         cout << "New client connected on server port " << openedServers[fd].getPort()
-                              << ": socket = " << clientSocket << endl;
+                         cout << " New client connected: " << clientSocket << endl;
                     }
-                    else 
+                    else
                     {
-                         if (clients.find(fd) == clients.end())
-                              clients[fd] = new Client();
-                         handleClientRequest(clients, fd, servers);  // Pass all servers
-                         delete clients[fd];
-                         clients.erase(fd);
-                         close(fd);
+                         if (clients.find(events[i].data.fd) == clients.end())
+                              clients[events[i].data.fd] = new Client();
+                         handleClientRequest(clients, events[i].data.fd, servers);
                     }
                }
           }
-          for (map<int, ConfigFile>::iterator it = openedServers.begin(); it != openedServers.end(); ++it)
-               close(it->first);
-
+          close(serverSocket);
      }
-     catch(exception& e)
+     catch (exception &e)
      {
-          cout << e.what() <<endl;
+          cout << e.what() << endl;
      }
-
 }
