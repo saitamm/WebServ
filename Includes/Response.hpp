@@ -2,6 +2,7 @@
 #define RESPONSE_HPP
 #include "Request.hpp"
 #include <algorithm>
+#include<sys/wait.h>
 class BadDirectoryException : public std::exception
 {
 public:
