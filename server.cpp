@@ -58,6 +58,7 @@ int main(int ac, char **av)
           return (printErr("ERROR: ./Webserv <file.conf>"));
      ConfigFile config;
      vector<ConfigFile> *servers;
+     //have to check if file is empty because it caused a segmentation fault
      config.initDefaultError();
      try
      {
