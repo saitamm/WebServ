@@ -102,7 +102,7 @@ int ChunkedBody(Response &resp, int clientSocket)
         size_t read = min(resp.getBufferSize() - resp.getReceived(), (unsigned int)sizeof(buff));
         bytesRead = recv(clientSocket, buff, read, 0);
         if (bytesRead <= 0)
-        throw BadRequestException();
+            throw BadRequestException();
         resp.getFile().write(buff, bytesRead);
         resp.getFile().flush();
         resp.setReceived(bytesRead);

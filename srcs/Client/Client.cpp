@@ -107,7 +107,10 @@ void Client::buildResponse(int clientSocket)
             _status = Processing;
         }
         if (handlePost(*this->_resp, clientSocket))
+        {
             _status = Sending;
+            cout << "Post request handled successfully." << endl;
+        }
         return;
     }
 }
