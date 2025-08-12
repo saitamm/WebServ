@@ -29,7 +29,7 @@ public:
     void buildResponse(int clientSocket);
     void setStatus(const ClientStatus &status) { _status = status; }
     ClientStatus getStatus(void) const { return _status; }
-    void ParseHttpRequest(Client &client,int clientSocket ,ConfigFile &serv);
+    void ParseHttpRequest(Client &client,int clientSocket ,vector<ConfigFile> &serv);
 
 private:
     Client(const Client &copy) ;

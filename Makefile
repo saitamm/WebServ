@@ -9,7 +9,7 @@ SRC =  server.cpp \
 		srcs/Server/Methods/Post.cpp \
 		srcs/Server/Response.cpp \
 		srcs/Server/ServerEngine.cpp \
-		help.cpp
+		# help.cpp
 
 NAME = WebServ
 

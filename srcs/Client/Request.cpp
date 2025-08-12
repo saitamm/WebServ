@@ -18,6 +18,13 @@ unsigned long long &Request::getContentLength(void) { return (_ContentLength); }
 ConfigFile &Request::getConfigFile(void) { return (_serv); }
 bool Request::getRedirectionStatus(void) const { return _redir; }
 string &Request::getrestHeader(void) { return (restHeader); }
+int Request::getPort(void)
+{
+    stringstream ss(_port);
+    int port;
+    ss >> port;
+    return (port);
+}
 
 void Request::setMethod(const string &method) { _method = method; }
 void Request::setHost(const string &host) { _host = host; }
@@ -47,6 +54,7 @@ void Request::ParseHeader(string &Header)
     if (Httpv != "HTTP/1.1")
         throw BadRequestException();
     string tmp;
+    _ContentLength = 0;
     while (line >> tmp && tmp.find("boundary") == string::npos)
     {
         if (tmp != "Content-Length:" && tmp != "Host:")
@@ -68,7 +76,10 @@ void Request::ParseHeader(string &Header)
             if (tmp.find(':') == string::npos)
                 throw BadRequestException();
             if (this->_host.find(':') != string::npos)
+            {
+                this->_port = this->_host.substr(this->_host.find(':') + 1);
                 this->_host = this->_host.substr(0, this->_host.find(':'));
+            }
         }
     }
     if (this->_host.empty())
