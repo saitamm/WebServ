@@ -57,6 +57,7 @@ public:
     bool getRedirectionStatus(void) const;
     void setRedirectionStatus(void);
     string &getrestHeader(void);
+    int getPort(void);
 
     // setters  
     void setMethod(const string &method);
@@ -71,6 +72,7 @@ public:
 private:
     string _method;
     string _host;
+    string _port;
     vector<string> _url;
     unsigned long long _ContentLength;
     map<string, string> _head;

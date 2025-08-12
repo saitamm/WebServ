@@ -72,7 +72,7 @@ void handleClientRequest(map<int, Client *> &clients, int clientSocket, vector<C
     try
     {
         clients[clientSocket]->getResp()->initStatusCode();
-        clients[clientSocket]->ParseHttpRequest(*clients[clientSocket], clientSocket, servers->at(0));
+        clients[clientSocket]->ParseHttpRequest(*clients[clientSocket], clientSocket, *servers);
         if (clients[clientSocket]->getStatus() == Body || clients[clientSocket]->getStatus() == Processing)
             clients[clientSocket]->buildResponse(clientSocket);
     }

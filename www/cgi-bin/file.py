@@ -1,10 +1,9 @@
 print ("hello, World!")
+gfhgfhgf;
 # import socket
 # import time
 # import threading
-
-# def send_split_header():
-#     s = socket.socket()
+    s = socket.socket()
 #     s.connect(('localhost', 8080))
 #     s.send(b"DELETE /Body/92823.txt HTTP/1.1\r\nHost: localhost:8080\r\n")
 #     s.send(b"\r\n\r\n")  # Finish header

@@ -65,12 +65,24 @@ void Client::setBuff(string &buff, size_t &readbyte)
     _buffer.append(buff, readbyte);
 }
 
+int checkSize(unsigned long long size, size_t max_size)
+{
+    if (size > max_size)
+        return (1);
+    return (0);
+}
 void Client::buildResponse(int clientSocket)
 {
     this->_resp->setRequest(*this->_req);
     if (!allowMethod(*this->_req->getLocation(), this->_req->getMethod()))
     {
         setCodeStatus(*this->getResp(), 405);
+        _status = Sending;
+        return;
+    }
+    if (checkSize(this->_req->getContentLength(), this->_req->getConfigFile().getMax_size()))
+    {
+        setCodeStatus(*this->getResp(), 413);
         _status = Sending;
         return;
     }
@@ -100,6 +112,7 @@ void Client::buildResponse(int clientSocket)
             if (!_resp->getFile().is_open())
             {
                 cerr << "soummaya\n";
+                setCodeStatus(*this->_resp, 500);
                 _status = Sending;
                 return;
             }
@@ -114,9 +127,8 @@ void Client::buildResponse(int clientSocket)
     }
 }
 
-void Client::ParseHttpRequest(Client &client, int clientSocket, ConfigFile &serv)
+void Client::ParseHttpRequest(Client &client, int clientSocket, vector<ConfigFile> &serv)
 {
-    client._req->setConfigFile(serv);
     char buf[1024];
     ssize_t bytesRead;
     if (_status == Heading)
@@ -126,21 +138,33 @@ void Client::ParseHttpRequest(Client &client, int clientSocket, ConfigFile &serv
         if (_buffer.find("\r\n\r\n") != std::string::npos)
         {
             client.getRequest()->ParseHeader(_buffer);
-            _status = Body;
-            client.getRequest()->setLocation(matchLocation(client.getRequest()->getUri(), serv.getLocations()));
+            // matching server and location
+            
+            this->_req->setConfigFile(serv[0]);
+            for (int i = 0; i < (int)serv.size(); i++)
+            {
+                if (serv[i].getHost() == client.getRequest()->getHost() && serv[i].getPort() == client.getRequest()->getPort())
+                {
+                    cout << "Server matched: " << serv[i].getName() << endl;
+                    client.getRequest()->setConfigFile(serv[i]);
+                    break;
+                }
+            }
+            client.getRequest()->setLocation(matchLocation(client.getRequest()->getUri(), client.getRequest()->getConfigFile().getLocations()));
             if (!client.getRequest()->getLocation())
             {
                 cout << "No matching location found for URI: " << client.getRequest()->getUri() << endl;
                 throw BadRequestException();
             }
             RedirectionRequest(*client.getRequest());
+            _status = Body;
         }
     }
     if (_status == Body)
     {
         if (client.getRequest()->getMethod() == "GET" || client.getRequest()->getMethod() == "DELETE")
         {
-            _status = Processing ;
+            _status = Processing;
             return;
         }
     }
