@@ -30,6 +30,8 @@ public:
     void setStatus(const ClientStatus &status) { _status = status; }
     ClientStatus getStatus(void) const { return _status; }
     void ParseHttpRequest(Client &client,int clientSocket ,vector<ConfigFile> &serv);
+    void setNewSessionId(string &id);
+    string &getSession(void);
 
 private:
     Client(const Client &copy) ;
@@ -38,10 +40,10 @@ private:
     int _fd;
     string _buffer;
     ClientStatus _status;
-    
+    static vector<string> _session;
 };
 int allowMethod(Location loc, string method);
-void printRequest(Request req);
+// void printRequest(Request req);
 void handleClientRequest(map<int, Client *> &clients, int clientSocket, vector<ConfigFile> *servers);
 
 #endif

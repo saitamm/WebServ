@@ -80,6 +80,7 @@ private:
     Location *_locat;
     string restHeader;
     bool _redir;
+    string _cookie;
 };
 void trim(string &str, string tr);
 Location *matchLocation(const std::string &uri, const std::vector<Location> &locations);

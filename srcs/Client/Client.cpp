@@ -1,16 +1,6 @@
 #include "../../Includes/Client.hpp"
 
-// map<int, string> Client::_StatusCode =
-// {
-//     {200, "OK"},
-//     {204, "No Content"},
-//     {403, "Forbidden"},
-//     {404, "Not Found"},
-//     {405, "Method Not Allowed"},
-//     {409, "Conflict"},
-//     {500, "Internal Server Error"}
-// };
-
+std::vector<std::string> Client::_session;
 Client::Client()
 {
     srand(time(0));
@@ -34,15 +24,6 @@ Client::~Client()
 Client::Client(int fd)
 {
     _fd = fd;
-    // srand(time(0));
-    // stringstream ll;
-    // ll << rand();
-    // string filename = "Body/body_" + ll.str() + ".txt";
-    // _body.open(filename.c_str(), std::ios::in | std::ios::out | std::ios::trunc | std::ios::binary);
-    // if (!_body.is_open())
-    // {
-    //     throw std::runtime_error("Failed to open file: " + filename);
-    // }
 }
 
 void Client::setResp(Response &resp)
@@ -139,7 +120,6 @@ void Client::ParseHttpRequest(Client &client, int clientSocket, vector<ConfigFil
         {
             client.getRequest()->ParseHeader(_buffer);
             // matching server and location
-            
             this->_req->setConfigFile(serv[0]);
             for (int i = 0; i < (int)serv.size(); i++)
             {
@@ -169,3 +149,18 @@ void Client::ParseHttpRequest(Client &client, int clientSocket, vector<ConfigFil
         }
     }
 }
+
+
+void Client::setNewSessionId(string &id)
+{
+    if (find(_session.begin(), _session.end(), id) == _session.end())
+    {
+        _session.push_back(id);
+        // cout << "New session ID added: " << id << endl;
+    }
+}
+
+// void Client::getSession(void)
+// {
+//     if (find())
+// }

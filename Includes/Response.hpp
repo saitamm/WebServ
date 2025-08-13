@@ -27,6 +27,7 @@ public:
     fstream &getFile(void );
     unsigned int getReceived(void);
     unsigned int getBufferSize(void);
+    string &getSessionId(void);
     // setters
     void setStatus(int stat);
     void setRequest(Request &req);
@@ -39,6 +40,7 @@ public:
     void setReceived(unsigned int received);
     void restartChunk(void);
     void setBufferSize(unsigned int size);
+    void setSessionId(string  &user);
 
 private:
     string _ContentType;
@@ -49,6 +51,7 @@ private:
     int _Code;
     fstream _file;
     size_t totalReceived;
+    string _sessionId;
 
     //chunked body
     unsigned int _received;
