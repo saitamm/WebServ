@@ -39,7 +39,18 @@ void setCodeStatus(Response &resp, int error)
         file.close();
     }
 }
-
+void generateUser(Response &resp)
+{
+    if (resp.getSessionId().empty())
+    {
+        string Id;
+        stringstream ss;
+        ss << rand();
+        Id = ss.str();
+        resp.setSessionId(Id);
+        cout << "Session ID generated: " << Id << endl;
+    }
+}
 void SendResponse(Response &resp, int clientSocket)
 {
     ostringstream response;
@@ -49,8 +60,11 @@ void SendResponse(Response &resp, int clientSocket)
     {
         response << "Location: " << resp.getRequest()->getLocation()->getRetur().begin()->second << "\r\n";
     }
+    generateUser(resp);
+    response <<"Set-Cookie: user=" << resp.getSessionId() << "; Path=/; HttpOnly\r\n";
     response << "Content-Length: " << resp.getBody().size() << "\r\n\r\n";
     response << resp.getBody();
+
     string final_resp = response.str();
     if (send(clientSocket, final_resp.c_str(), final_resp.size(), 0) == -1)
         cerr << "error Send \n";
