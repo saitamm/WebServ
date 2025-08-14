@@ -116,7 +116,7 @@ int main(int ac, char **av)
           while(1)
           {
                int n = epoll_wait(epollFd, events, MAX_EVENTS, -1);
-               cout << "epoll_wait returned: " << n << endl;
+               // cout << "epoll_wait returned: " << n << endl;
                for(int i = 0; i < n; ++i)
                {
                     int fd = events[i].data.fd;
@@ -138,9 +138,9 @@ int main(int ac, char **av)
                          if (clients.find(fd) == clients.end())
                               clients[fd] = new Client();
                          handleClientRequest(clients, fd, servers);  // Pass all servers
-                         delete clients[fd];
-                         clients.erase(fd);
-                         close(fd);
+                         // delete clients[fd];
+                         // clients.erase(fd);
+                         // close(fd);
                     }
                }
           }
