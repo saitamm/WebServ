@@ -58,6 +58,7 @@ public:
     void setRedirectionStatus(void);
     string &getrestHeader(void);
     int getPort(void);
+    string &getCookie(void);
 
     // setters  
     void setMethod(const string &method);

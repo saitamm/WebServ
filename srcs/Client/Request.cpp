@@ -25,6 +25,7 @@ int Request::getPort(void)
     ss >> port;
     return (port);
 }
+string &Request::getCookie(void) { return _cookie; }
 
 void Request::setMethod(const string &method) { _method = method; }
 void Request::setHost(const string &host) { _host = host; }
@@ -39,7 +40,6 @@ void Request::setRedirectionStatus(void) { _redir = true; }
 // Parse Request
 void Request::ParseHeader(string &Header)
 {
-    cout << "header parsed successfully." << Header << endl;
 
     string tmp1;
     stringstream line(Header);
@@ -59,43 +59,32 @@ void Request::ParseHeader(string &Header)
     _ContentLength = 0;
     getline(line, tmp);
     string input;
-    while (getline(line, input) && input != "\r\n")
+    while (getline(line, input) && input != "\r")
     {
         tmp = input.substr(0, input.find(':'));
-        cout << "header line  = " << tmp <<endl;
-        if (tmp != "Content-Length:" && tmp != "Host:")
+        if (tmp != "Content-Length" && tmp != "Host" && tmp != "Cookie")
         {
-            cout << "Header key: " << tmp << endl;
             string value;
             value = input.substr(input.find(':') + 2);
             trim(value, "\n\t\r ");
             this->_head[tmp] = value;
         }
-        else if (tmp == "Content-Length:")
+        else if (tmp == "Content-Length")
         {
             // line >> tmp1
             tmp1 = input.substr(input.find(':') + 2);
         }
-        else if (tmp == "Host:")
+        else if (tmp == "Host")
         {
             _host = input.substr(input.find(':') + 2);
-            // if (tmp.find(':') == string::npos)
-            //     throw BadRequestException();
             if (this->_host.find(':') != string::npos)
             {
                 this->_port = this->_host.substr(this->_host.find(':') + 1);
                 this->_host = this->_host.substr(0, this->_host.find(':'));
             }
         }
-        else if (tmp == "Cookie")
-        {
-            cout << "-----------------\n";
-            line >> this->_cookie;
-            _cookie = _cookie.substr(_cookie.find('=') + 1);
-            cout << "Cookie: " << _cookie << endl;
-            if (this->_cookie.find('=') == string::npos)
-                throw BadRequestException();
-        }
+        else if (tmp == "Cookie")   
+            _cookie = input.substr(input.find('=') + 1);
     }
     if (this->_host.empty())
         throw BadRequestException();
@@ -105,15 +94,6 @@ void Request::ParseHeader(string &Header)
         throw BadRequestException();
     int pos = Header.find("\r\n\r\n");
     this->restHeader = Header.substr(pos + 4);
-    for (map<string, string>::iterator it = this->_head.begin(); it != this->_head.end(); ++it)
-    {
-        // if (it->first == "Content-Type")
-        // {
-        // this->_head["Content-Type"] = it->second;
-        cout << "Header: " << it->first << " = " << it->second << endl;
-        //     break;
-        // }
-    }
 }
 
 void RedirectionRequest(Request &req)

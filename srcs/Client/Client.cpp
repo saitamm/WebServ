@@ -89,7 +89,8 @@ void Client::buildResponse(int clientSocket)
             ll << rand();
             string f = ll.str() + "." + type;
             string Up = _resp->getRequest()->getConfigFile().getRoot() + "/" + _resp->getRequest()->getLocation()->getUp_store() + "/" + f;
-            _resp->getFile().open(Up.c_str(), std::ios::out | std::ios::trunc | std::ios::binary);
+            _resp->getFile().open(Up.c_str(), ios::out | ios::trunc | ios::binary);
+            _resp->setFileName(Up);
             if (!_resp->getFile().is_open())
             {
                 cerr << "soummaya\n";
@@ -136,6 +137,7 @@ void Client::ParseHttpRequest(Client &client, int clientSocket, vector<ConfigFil
                 cout << "No matching location found for URI: " << client.getRequest()->getUri() << endl;
                 throw BadRequestException();
             }
+
             RedirectionRequest(*client.getRequest());
             _status = Body;
         }
@@ -150,17 +152,8 @@ void Client::ParseHttpRequest(Client &client, int clientSocket, vector<ConfigFil
     }
 }
 
-
 void Client::setNewSessionId(string &id)
 {
     if (find(_session.begin(), _session.end(), id) == _session.end())
-    {
         _session.push_back(id);
-        // cout << "New session ID added: " << id << endl;
-    }
 }
-
-// void Client::getSession(void)
-// {
-//     if (find())
-// }
