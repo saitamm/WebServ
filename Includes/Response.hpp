@@ -2,6 +2,7 @@
 #define RESPONSE_HPP
 #include "Request.hpp"
 #include <algorithm>
+#include<sys/wait.h>
 class BadDirectoryException : public std::exception
 {
 public:
@@ -31,6 +32,7 @@ public:
     void setRequest(Request &req);
     void setContentType(string content);
     void setBodyResp(string &body);
+    void appendBody(const char* data, size_t size);
     void setType(const string &type);
     void initStatusCode(void);
     size_t getTotalReceived(void);

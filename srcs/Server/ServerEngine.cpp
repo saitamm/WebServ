@@ -47,8 +47,15 @@ void SendResponse(Response &resp, int clientSocket)
     response << "Content-type: " << resp.getType() << "\r\n";
     if (resp.getRequest()->getRedirectionStatus())
     {
-        response << "Location: " << resp.getRequest()->getLocation()->getRetur().begin()->second << "\r\n";
+        Location* loc = resp.getRequest()->getLocation();
+        if (loc)
+        {
+            const map<int, string>& returMap = loc->getRetur();
+            if (!returMap.empty())
+                response << "Location: " << returMap.begin()->second << "\r\n";
+        }
     }
+    cout << "============" << resp.getRequest()->getLocation()->getPath();
     response << "Content-Length: " << resp.getBody().size() << "\r\n\r\n";
     response << resp.getBody();
     string final_resp = response.str();

@@ -46,6 +46,7 @@ unsigned int Response::getBufferSize(void) { return bufferSize; }
 void Response::setContentType(string content) { _ContentType = content; }
 void Response::setRequest(Request &req) { _req = &req; }
 void Response::setBodyResp(string &body) { _body = body; }
+void Response::appendBody(const char* data, size_t size) {_body.append(data, size);}
 void Response::setType(const string &type) { _type = type; }
 void Response::setStatus(int stat) { _Code = stat; };
 void Response::setTotalReceived(size_t received) { totalReceived += received; }
