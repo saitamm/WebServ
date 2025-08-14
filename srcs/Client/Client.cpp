@@ -98,6 +98,7 @@ void Client::buildResponse(int clientSocket)
             string Up = _resp->getRequest()->getConfigFile().getRoot() + "/" + _resp->getRequest()->getLocation()->getUp_store() + "/" + f;
             _resp->getFile().open(Up.c_str(), std::ios::out | std::ios::trunc | std::ios::binary);
             cout << "this is my File =  " << Up<<endl;
+            _resp->setFileName(Up);
             if (!_resp->getFile().is_open())
             {
                 cerr << "soummaya\n";
