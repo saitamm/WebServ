@@ -41,6 +41,7 @@ fstream &Response::getFile(void) { return (_file); }
 size_t Response::getTotalReceived(void) { return totalReceived; }
 unsigned int Response::getReceived(void) { return _received; }
 unsigned int Response::getBufferSize(void) { return bufferSize; }
+string& Response::getFileName(){return fileName;}
 
 // setters
 void Response::setContentType(string content) { _ContentType = content; }
@@ -52,3 +53,4 @@ void Response::setStatus(int stat) { _Code = stat; };
 void Response::setTotalReceived(size_t received) { totalReceived += received; }
 void Response::setReceived(unsigned int received) { _received += received; }
 void Response::setBufferSize(unsigned int size) { bufferSize = size; }
+void Response::setFileName(string& name){ fileName = name;}

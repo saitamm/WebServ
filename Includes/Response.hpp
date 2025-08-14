@@ -25,6 +25,7 @@ public:
     string &getBody(void);
     string &getType();
     fstream &getFile(void );
+    string& getFileName();
     unsigned int getReceived(void);
     unsigned int getBufferSize(void);
     // setters
@@ -40,6 +41,7 @@ public:
     void setReceived(unsigned int received);
     void restartChunk(void);
     void setBufferSize(unsigned int size);
+    void setFileName(string &name);
 
 private:
     string _ContentType;
@@ -50,6 +52,7 @@ private:
     int _Code;
     fstream _file;
     size_t totalReceived;
+    string fileName;
 
     //chunked body
     unsigned int _received;
