@@ -39,7 +39,7 @@ void NonChunkedBody(Response &resp, int clientSocket)
     string Body;
     bytesRead = recv(clientSocket, buf, sizeof(buf), 0);
     if (bytesRead <= 0)
-        throw SocketErrorException();
+        return ;
     resp.getFile().write(buf, bytesRead);
     resp.getFile().flush();
     resp.setTotalReceived(bytesRead);
@@ -139,8 +139,8 @@ int handlePost(Response &resp, int clientSocket)
     {
         if (ChunkedBody(resp, clientSocket))
         {
-            if (resp.getFile().is_open())
-                resp.getFile().close();
+            // if (resp.getFile().is_open())
+            //     resp.getFile().close();
             setCodeStatus(resp, 200);
             return (1);
         }

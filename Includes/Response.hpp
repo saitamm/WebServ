@@ -41,6 +41,8 @@ public:
     void restartChunk(void);
     void setBufferSize(unsigned int size);
     void setSessionId(string  &user);
+    void setFileName(const string &filename) { _filename = filename; }
+    string &getFileName(void) { return _filename; }
 
 private:
     string _ContentType;
@@ -52,6 +54,7 @@ private:
     fstream _file;
     size_t totalReceived;
     string _sessionId;
+    string _filename;
 
     //chunked body
     unsigned int _received;

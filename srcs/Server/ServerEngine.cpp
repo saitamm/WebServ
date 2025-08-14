@@ -41,15 +41,16 @@ void setCodeStatus(Response &resp, int error)
 }
 void generateUser(Response &resp)
 {
-    if (resp.getSessionId().empty())
+    if (resp.getRequest()->getCookie().empty())
     {
         string Id;
         stringstream ss;
         ss << rand();
         Id = ss.str();
         resp.setSessionId(Id);
-        cout << "Session ID generated: " << Id << endl;
     }
+    else
+        resp.setSessionId(resp.getRequest()->getCookie());
 }
 void SendResponse(Response &resp, int clientSocket)
 {
@@ -61,7 +62,7 @@ void SendResponse(Response &resp, int clientSocket)
         response << "Location: " << resp.getRequest()->getLocation()->getRetur().begin()->second << "\r\n";
     }
     generateUser(resp);
-    response <<"Set-Cookie: user=" << resp.getSessionId() << "; Path=/; HttpOnly\r\n";
+    response << "Set-Cookie: user=" << resp.getSessionId() << "; Path=/; HttpOnly\r\n";
     response << "Content-Length: " << resp.getBody().size() << "\r\n\r\n";
     response << resp.getBody();
 
@@ -102,6 +103,7 @@ void handleClientRequest(map<int, Client *> &clients, int clientSocket, vector<C
     if (clients[clientSocket]->getStatus() == Sending)
     {
         SendResponse(*clients[clientSocket]->getResp(), clientSocket);
+        clients[clientSocket]->setNewSessionId(clients[clientSocket]->getResp()->getSessionId());
         clients[clientSocket]->setStatus(Finished);
         if (clients[clientSocket]->getStatus() == Finished)
         {
