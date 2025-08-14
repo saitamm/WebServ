@@ -8,16 +8,11 @@ int SupportUpload(Response &resp)
 }
 
 unsigned int getSize(int clientSocket)
-{
-    string line;
-    char c;
-    while (recv(clientSocket, &c, 1, 0))
+{ if (SupportUpload(resp))
     {
-        line += c;
-        if (line.size() > 2 && line.substr(line.size() - 2) == "\r\n")
-            break;
+        setCodeStatus(resp, 403);
+        return (1);
     }
-    unsigned int BufferSize;
     stringstream ll(line);
     string l;
     ll >> l;
@@ -27,14 +22,11 @@ unsigned int getSize(int clientSocket)
     return (BufferSize);
 }
 
-void NonChunkedBody(Response &resp, int clientSocket)
-{
-    char buf[1024];
-    ssize_t bytesRead = 0;
-    if (!resp.getTotalReceived())
+void NonChunkedBody(Response &resp, in if (SupportUpload(resp))
     {
-        resp.setTotalReceived(resp.getRequest()->getrestHeader().size());
-        resp.getFile().write(resp.getRequest()->getrestHeader().c_str(), resp.getTotalReceived());
+        setCodeStatus(resp, 403);
+        return (1);
+    }tRequest()->getrestHeader().c_str(), resp.getTotalReceived());
     }
     string Body;
     bytesRead = recv(clientSocket, buf, sizeof(buf), 0);
@@ -105,8 +97,7 @@ int ChunkedBody(Response &resp, int clientSocket)
         size_t read = min(resp.getBufferSize() - resp.getReceived(), (unsigned int)sizeof(buff));
         bytesRead = recv(clientSocket, buff, read, 0);
         if (bytesRead <= 0)
-        throw BadRequestException();
-        cout << "Read " << bytesRead << " bytes\n";
+            throw BadRequestException();
         resp.getFile().write(buff, bytesRead);
         resp.getFile().flush();
         resp.setReceived(bytesRead);
@@ -216,6 +207,11 @@ void executeCgi(Response &resp)
 
 int handlePost(Response &resp, int clientSocket)
 {
+    if (SupportUpload(resp))
+    {
+        setCodeStatus(resp, 403);
+        return (1);
+    }
     if (!resp.getRequest()->getLocation()->getCgi_pass().empty())
     {
         cout << "waaaaaaaaaaaaaaa3\n";
@@ -239,11 +235,6 @@ int handlePost(Response &resp, int clientSocket)
             }
         }
         return (0); 
-    }
-    if (SupportUpload(resp))
-    {
-        setCodeStatus(resp, 403);
-        return (1);
     }
     if (resp.getRequest()->getHeadvalue("Transfer-Encoding").empty())
     {
