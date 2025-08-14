@@ -105,6 +105,7 @@ void handleGet(Response &resp)
 {
     string real_path = resp.getRequest()->getConfigFile().getRoot() + resp.getRequest()->getUri();
     struct stat path;
+    cout << real_path <<endl;
     if (stat(real_path.c_str(), &path) == -1)
     {
         setCodeStatus(resp, 404);

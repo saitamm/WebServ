@@ -70,6 +70,8 @@ void Client::buildResponse(int clientSocket)
     this->_resp->setRequest(*this->_req);
     if (!allowMethod(*this->_req->getLocation(), this->_req->getMethod()))
     {
+        cout << _req->getMethod()<< endl;
+        cout << "------------damn i am here---------------\n ";
         setCodeStatus(*this->getResp(), 405);
         _status = Sending;
         return;
