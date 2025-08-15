@@ -4,6 +4,7 @@ void setCodeStatus(Response &resp, int error)
 {
     if (resp.getRequest()->getRedirectionStatus())
     {
+        cout << "---------------------------------" <<resp.getRequest()->getRedirectionStatus() <<"\n";
         resp.setStatus(resp.getRequest()->getLocation()->getRetur().begin()->first);
         return;
     }
@@ -55,10 +56,11 @@ void SendResponse(Response &resp, int clientSocket)
                 response << "Location: " << returMap.begin()->second << "\r\n";
         }
     }
-    cout << "============" << resp.getRequest()->getLocation()->getPath();
+    // cout << "============" << resp.getRequest()->getLocation()->getPath();
     response << "Content-Length: " << resp.getBody().size() << "\r\n\r\n";
     response << resp.getBody();
     string final_resp = response.str();
+    cout << "****** Response *******\n" << final_resp <<endl;
     if (send(clientSocket, final_resp.c_str(), final_resp.size(), 0) == -1)
         cerr << "error Send \n";
     else

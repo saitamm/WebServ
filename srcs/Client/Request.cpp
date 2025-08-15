@@ -2,6 +2,7 @@
 
 Request::Request()
 {
+    _redir = false;
 }
 Request::~Request() {}
 
