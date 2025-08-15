@@ -5,7 +5,7 @@ int create_server_socket(vector<ConfigFile> *servers)
      int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
      if (serverSocket == -1)
      {
-          std::cerr << "Socket creation failed!\n";
+          cerr << "Socket creation failed!\n";
           return -1;
      }
      sockaddr_in serverAddr;
@@ -16,7 +16,7 @@ int create_server_socket(vector<ConfigFile> *servers)
      setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
      if (bind(serverSocket, (sockaddr *)&serverAddr, sizeof(serverAddr)) < 0)
      {
-          std::cerr << "Bind failed! Maybe port is busy.\n";
+          cerr << "Bind failed! Maybe port is busy.\n";
           return -1;
      }
      return (serverSocket);

@@ -2,6 +2,7 @@
 
 Request::Request()
 {
+    _redir = false;
 }
 Request::~Request() {}
 
@@ -100,7 +101,7 @@ void RedirectionRequest(Request &req)
 {
     if (req.getLocation()->getRetur().empty())
         return;
-    std::map<int, string>::const_iterator it = req.getLocation()->getRetur().begin();
+    map<int, string>::const_iterator it = req.getLocation()->getRetur().begin();
     if ((it->first >= 300 && it->first <= 308))
     {
         req.setRedirectionStatus();
