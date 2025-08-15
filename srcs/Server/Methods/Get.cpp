@@ -46,8 +46,8 @@ void generateResponse(Response& resp, string& real_path)
         setCodeStatus(resp, 403);
         return;
     }
-    std::string buffer((std::istreambuf_iterator<char>(file)),
-                       std::istreambuf_iterator<char>());
+    string buffer((istreambuf_iterator<char>(file)),
+                       istreambuf_iterator<char>());
     resp.setStatus(200);
     resp.setBodyResp(buffer);
     getContentType(real_path, resp);
@@ -82,7 +82,7 @@ void checkCgi(Response &resp, string &real_path)
     {
         close(fd[1]);
         char buffer[4096];
-        std::stringstream output;
+        stringstream output;
         ssize_t bytesRead;
         while ((bytesRead = read(fd[0], buffer, sizeof(buffer))) > 0)
         {

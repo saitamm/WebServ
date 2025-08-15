@@ -21,8 +21,8 @@ unsigned int getSize(int clientSocket)
     stringstream ll(line);
     string l;
     ll >> l;
-    std::stringstream ss;
-    ss << std::hex << l;
+    stringstream ss;
+    ss << hex << l;
     ss >> BufferSize;
     return (BufferSize);
 }
@@ -54,8 +54,8 @@ int ChunkedBody(Response &resp, int clientSocket)
         stringstream ll(resp.getRequest()->getrestHeader());
         string l;
         ll >> l;
-        std::stringstream ss;
-        ss << std::hex << l;
+        stringstream ss;
+        ss << hex << l;
         ss >> BufferSize;
         string line;
         line = ll.str();
@@ -139,8 +139,8 @@ int handlePost(Response &resp, int clientSocket)
     {
         if (ChunkedBody(resp, clientSocket))
         {
-            // if (resp.getFile().is_open())
-            //     resp.getFile().close();
+            if (resp.getFile().is_open())
+                resp.getFile().close();
             setCodeStatus(resp, 200);
             return (1);
         }

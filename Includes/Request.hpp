@@ -20,7 +20,7 @@
 
 #define LIMIT 1024
 
-class BadRequestException : public std::exception
+class BadRequestException : public exception
 {
 public:
     const char *what() const throw()
@@ -29,7 +29,7 @@ public:
     }
 };
 
-class SocketErrorException : public std::exception
+class SocketErrorException : public exception
 {
 public:
     const char *what() const throw()
@@ -84,7 +84,7 @@ private:
     string _cookie;
 };
 void trim(string &str, string tr);
-Location *matchLocation(const std::string &uri, const std::vector<Location> &locations);
+Location *matchLocation(const string &uri, const vector<Location> &locations);
 void split(string str, char c, vector<string> &resul);
 void RedirectionRequest(Request &req);
 #endif

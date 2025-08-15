@@ -3,7 +3,7 @@
 #include "Request.hpp"
 #include <algorithm>
 #include<sys/wait.h>
-class BadDirectoryException : public std::exception
+class BadDirectoryException : public exception
 {
 public:
     const char *what() const throw()

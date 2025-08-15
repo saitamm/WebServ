@@ -1,6 +1,6 @@
 #include "../../../Includes/Response.hpp"
 
-void deleteRecursively(const std::string &path)
+void deleteRecursively(const string &path)
 {
     DIR *dir = opendir(path.c_str());
     if (!dir)
@@ -9,16 +9,16 @@ void deleteRecursively(const std::string &path)
     struct dirent *entry;
     while ((entry = readdir(dir)) != NULL)
     {
-        std::string name = entry->d_name;
+        string name = entry->d_name;
 
         if (name == "." || name == "..")
             continue;
 
-        std::string fullPath = path + "/" + name;
+        string fullPath = path + "/" + name;
         struct stat st;
         if (stat(fullPath.c_str(), &st) == -1)
         {
-            std::cerr << "Failed to stat: " << fullPath << std::endl;
+            cerr << "Failed to stat: " << fullPath << endl;
             throw BadDirectoryException();
         }
         if (S_ISDIR(st.st_mode))
@@ -73,7 +73,7 @@ void handleDelete(Response &resp)
                 deleteRecursively(file);
                 setCodeStatus(resp, 204);
             }
-            catch (const std::exception &e)
+            catch (const exception &e)
             {
                 setCodeStatus(resp, 403);
             }

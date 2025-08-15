@@ -1,18 +1,10 @@
 #include "../../Includes/Client.hpp"
 
-std::vector<std::string> Client::_session;
+vector<string> Client::_session;
 Client::Client()
 {
     srand(time(0));
     _status = Heading;
-    // stringstream ss;
-    // ss << "/tmp/body_" << rand() << ".txt";
-    // string filename = ss.str();
-    // _body.open(filename.c_str(), std::ios::in | std::ios::out | std::ios::trunc | std::ios::binary);
-    // if (!_body.is_open())
-    // {
-    //     throw std::runtime_error("Failed to open file: " + filename);
-    // }
     _req = new Request();
     _resp = new Response();
 }
@@ -117,7 +109,7 @@ void Client::ParseHttpRequest(Client &client, int clientSocket, vector<ConfigFil
     {
         if ((bytesRead = recv(clientSocket, buf, sizeof(buf), 0)) > 0)
             _buffer.append(buf, bytesRead);
-        if (_buffer.find("\r\n\r\n") != std::string::npos)
+        if (_buffer.find("\r\n\r\n") != string::npos)
         {
             client.getRequest()->ParseHeader(_buffer);
             // matching server and location
@@ -126,7 +118,6 @@ void Client::ParseHttpRequest(Client &client, int clientSocket, vector<ConfigFil
             {
                 if (serv[i].getHost() == client.getRequest()->getHost() && serv[i].getPort() == client.getRequest()->getPort())
                 {
-                    cout << "Server matched: " << serv[i].getName() << endl;
                     client.getRequest()->setConfigFile(serv[i]);
                     break;
                 }
@@ -137,7 +128,6 @@ void Client::ParseHttpRequest(Client &client, int clientSocket, vector<ConfigFil
                 cout << "No matching location found for URI: " << client.getRequest()->getUri() << endl;
                 throw BadRequestException();
             }
-
             RedirectionRequest(*client.getRequest());
             _status = Body;
         }
