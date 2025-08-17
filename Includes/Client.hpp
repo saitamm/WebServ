@@ -30,7 +30,7 @@ public:
     void setStatus(const ClientStatus &status) { _status = status; }
     ClientStatus getStatus(void) const { return _status; }
     void ParseHttpRequest(Client &client,int clientSocket ,ConfigFile &serv);
-
+    void setNonBlocking(int fd);
 private:
     Client(const Client &copy) ;
     Request *_req;

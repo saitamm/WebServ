@@ -1,4 +1,4 @@
-#include "../../../Includes/Response.hpp"
+#include "../../../Includes/Client.hpp"
 
 int SupportUpload(Response &resp)
 {
@@ -144,15 +144,16 @@ map<string, string> CgiEnv(Response &resp, string &path)
 
 void executeCgi(Response &resp)
 {
-    string path = resp.getFileName();
+    string path;
+    path = resp.getFileName();
     map<string, string> env = CgiEnv(resp, path);
-    // int fd_in[2];
+    int fd_in[2];
     int fd_out[2];
-    // if(pipe(fd_in) == -1)
-    // {
-    //     setCodeStatus(resp, 500);
-    //     return;
-    // }
+    if (pipe(fd_in) == -1)
+    {
+        setCodeStatus(resp, 500);
+        return;
+    }
     if (pipe(fd_out) == -1)
     {
         setCodeStatus(resp, 500);
@@ -166,11 +167,9 @@ void executeCgi(Response &resp)
     }
     else if (pid == 0)
     {
-        // dup2(fd_in[0], 0);
+        dup2(fd_in[0], 0);
         dup2(fd_out[1], 1);
-        int fd = open(path.c_str(), O_RDONLY);
-        dup2(fd, 0);
-        // close(fd_in[1]);
+        close(fd_in[1]);
         close(fd_out[0]);
         vector<char *> envp;
         for (map<string, string>::iterator it = env.begin(); it != env.end(); ++it)
@@ -179,45 +178,55 @@ void executeCgi(Response &resp)
             envp.push_back(strdup(entry.c_str()));
         }
         envp.push_back(NULL);
-        string arg = resp.getRequest()->getLocation()->getCgi_pass();
-        char *argv[] = {strdup(arg.c_str()), (char *)path.c_str(), NULL};
-        cerr << "==================soumaya==================\n"<< path <<endl;
-        execve(arg.c_str(), argv, envp.data());
+        string cgiPath = resp.getRequest()->getLocation()->getCgi_pass();
+        char *argv[] = {strdup(cgiPath.c_str()), (char *)path.c_str(), NULL};
+        execve(cgiPath.c_str(), argv, envp.data());
         perror("execve failed");
         exit(1);
     }
     else if (pid > 0)
     {
-        // close(fd_in[0]);
+        int timeout = 13; // seconds
+        time_t start = time(NULL);
+        close(fd_in[0]);
         close(fd_out[1]);
-        // if (!resp.getBody().empty())
-        // {
-        //     write(fd_in[1], resp.getBody().data(), resp.getBody().size());
-        // }
-        // else if (resp.getFile().is_open())
-        // {
-        //     resp.getFile().seekg(0, ios::beg);
-        //     string body((istreambuf_iterator<char>(resp.getFile())), istreambuf_iterator<char>());
-        //     write(fd_in[1], body.data(), body.size());
-        // }
-        // close(fd_in[1]);
+        resp.getFile().seekg(0, std::ios::beg);
+        char buf[1024];
+        while (resp.getFile().read(buf, sizeof(buf)) || resp.getFile().gcount() > 0)
+        {
+            cerr << "**************************************\n";
+            write(1, buf, resp.getFile().gcount());
+            write(fd_in[1], buf, resp.getFile().gcount());
+        }
+        close(fd_in[1]);
         char buffer[1024];
         string cgiOutput;
-        ssize_t bytesRead;
-        (bytesRead = read(fd_out[0], buffer, sizeof(buffer)));
-        while ((bytesRead = read(fd_out[0], buffer, sizeof(buffer))) > 0)
-        {
-            cgiOutput.append(buffer, bytesRead);
-            cout << "*****" << cgiOutput << endl;
+        while (true) {
+            ssize_t bytesRead = read(fd_out[0], buffer, sizeof(buffer));
+            if (bytesRead > 0) {
+                cgiOutput.append(buffer, bytesRead);
+            }
+
+            // check timeout
+            if (time(NULL) - start > timeout) {
+                cerr << "[CGI] Timeout, killing process\n";
+                kill(pid, SIGKILL);
+                waitpid(pid, NULL, 0);
+                setCodeStatus(resp, 500);
+                break;
+            }
+
+            // check if child finished
+            int status;
+            pid_t result = waitpid(pid, &status, WNOHANG);
+            if (result == pid) {
+                // child exited
+                break;
+            }
         }
         close(fd_out[0]);
         resp.getFile().close();
         resp.getFile().open(resp.getFileName().c_str(), std::ios::out | std::ios::trunc | std::ios::binary);
-        if (!resp.getFile().is_open())
-        {
-            
-
-        }
         resp.getFile().write(cgiOutput.data(), cgiOutput.size());
         resp.getFile().flush();
         setCodeStatus(resp, 200);
@@ -225,6 +234,8 @@ void executeCgi(Response &resp)
             resp.getFile().close();
     }
 }
+
+
 
 int handlePost(Response &resp, int clientSocket)
 {
