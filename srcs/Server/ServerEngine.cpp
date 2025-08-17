@@ -20,7 +20,7 @@ void setCodeStatus(Response &resp, int error)
             return;
         }
         string buffer((istreambuf_iterator<char>(file)),
-                           istreambuf_iterator<char>());
+                      istreambuf_iterator<char>());
         resp.setBodyResp(buffer);
         file.close();
     }
@@ -34,7 +34,7 @@ void setCodeStatus(Response &resp, int error)
             return;
         }
         string buffer((istreambuf_iterator<char>(file)),
-                           istreambuf_iterator<char>());
+                      istreambuf_iterator<char>());
         resp.setBodyResp(buffer);
         file.close();
     }
@@ -48,9 +48,13 @@ void generateUser(Response &resp)
         ss << rand();
         Id = ss.str();
         resp.setSessionId(Id);
+        cout << "************ I am a New User ************" << endl;
     }
     else
+    {
         resp.setSessionId(resp.getRequest()->getCookie());
+        cout << "************ I am a Returning User ************" << endl;
+    }
 }
 void SendResponse(Response &resp, int clientSocket)
 {
@@ -62,15 +66,10 @@ void SendResponse(Response &resp, int clientSocket)
         response << "Location: " << resp.getRequest()->getLocation()->getRetur().begin()->second << "\r\n";
     }
     generateUser(resp);
-    cout << "Session ID: " << resp.getSessionId() << endl;
-    response << "Set-Cookie: user=" << resp.getSessionId();
-    cout << "--------------: " << response.str() << endl << "---------------------------------" << endl;
-    response << " ; Path=/; HttpOnly\r\n";
-    cout << "--------------: " << response.str() << endl;
+    response << "Set-Cookie: user=" << resp.getSessionId() << "\r\n";
     response << "Content-Length: " << resp.getBody().size() << "\r\n\r\n";
     response << resp.getBody();
     string final_resp = response.str();
-    cout << "******* Response generated *******: " << final_resp << endl;
     if (send(clientSocket, final_resp.c_str(), final_resp.size(), 0) == -1)
         cerr << "error Send \n";
     else
@@ -107,7 +106,6 @@ void handleClientRequest(map<int, Client *> &clients, int clientSocket, vector<C
     if (clients[clientSocket]->getStatus() == Sending)
     {
         SendResponse(*clients[clientSocket]->getResp(), clientSocket);
-        cout << "this is my ID = " << clients[clientSocket]->getResp()->getSessionId() << endl;
         clients[clientSocket]->setNewSessionId(clients[clientSocket]->getResp()->getSessionId());
         clients[clientSocket]->setStatus(Finished);
         if (clients[clientSocket]->getStatus() == Finished)

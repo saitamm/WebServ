@@ -38,7 +38,7 @@ void getContentType(string &real_path, Response &resp)
     resp.setType("application/octet-stream");
 }
 
-void generateResponse(Response& resp, string& real_path)
+void generateResponse(Response &resp, string &real_path)
 {
     ifstream file(real_path.c_str(), ios::binary);
     if (!file.is_open())
@@ -47,7 +47,7 @@ void generateResponse(Response& resp, string& real_path)
         return;
     }
     string buffer((istreambuf_iterator<char>(file)),
-                       istreambuf_iterator<char>());
+                  istreambuf_iterator<char>());
     resp.setStatus(200);
     resp.setBodyResp(buffer);
     getContentType(real_path, resp);
@@ -56,7 +56,7 @@ void generateResponse(Response& resp, string& real_path)
 void checkCgi(Response &resp, string &real_path)
 {
     int fd[2];
-    if(pipe(fd) == -1)
+    if (pipe(fd) == -1)
     {
         setCodeStatus(resp, 500);
         return;
@@ -67,7 +67,7 @@ void checkCgi(Response &resp, string &real_path)
         setCodeStatus(resp, 500);
         return;
     }
-    else if(pid == 0)
+    else if (pid == 0)
     {
         close(fd[0]);
         dup2(fd[1], STDOUT_FILENO);
@@ -97,7 +97,6 @@ void checkCgi(Response &resp, string &real_path)
         string outStr = output.str();
         resp.setBodyResp(outStr);
         resp.setType("text/html");
-
     }
 }
 
@@ -112,9 +111,9 @@ void handleGet(Response &resp)
     }
     if (S_ISREG(path.st_mode))
     {
-        if(!resp.getRequest()->getLocation()->getCgi_pass().empty())
+        if (!resp.getRequest()->getLocation()->getCgi_pass().empty())
         {
-            cout << "here ---->" << resp.getRequest()->getLocation()->getCgi_pass()<<endl;
+            cout << "here ---->" << resp.getRequest()->getLocation()->getCgi_pass() << endl;
             checkCgi(resp, real_path);
         }
         else
@@ -137,24 +136,31 @@ void handleGet(Response &resp)
                 }
                 else
                 {
-                    string indx_path = resp.getRequest()->getConfigFile().getIndex();
-                    generateResponse(resp, indx_path);
+                    if (resp.getRequest()->getCookie().empty())
+                    {
+                        string indx_path = resp.getRequest()->getConfigFile().getIndex();
+                        generateResponse(resp, indx_path);
+                    }
+                    else
+                    {
+                        string indx_path = "./index1.html";
+                        generateResponse(resp, indx_path);
+                    }
                 }
             }
             else
             {
-                DIR* dir = opendir(real_path.c_str());
+                DIR *dir = opendir(real_path.c_str());
                 if (dir != NULL)
                 {
                     stringstream html;
                     html << "<html><body><h1>Listing directory /" << real_path << "</h1><ul>";
-                    struct dirent* entry;
-                    while((entry = readdir(dir)) != NULL)
+                    struct dirent *entry;
+                    while ((entry = readdir(dir)) != NULL)
                     {
                         if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, ".."))
                             continue;
-                       html << "<li><a href='./" << real_path << entry->d_name << "'>" << entry->d_name << "</a></li>";
-
+                        html << "<li><a href='./" << real_path << entry->d_name << "'>" << entry->d_name << "</a></li>";
                     }
                     html << "</ul></body></html>";
                     string ss = html.str();
@@ -171,5 +177,4 @@ void handleGet(Response &resp)
             generateResponse(resp, path_idx);
         }
     }
-    
 }
