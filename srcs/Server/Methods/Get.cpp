@@ -89,7 +89,7 @@ void checkCgi(Response &resp, string &real_path)
             output.write(buffer, bytesRead);
         }
         close(fd[0]);
-
+        cout << "======================= "<< buffer << endl;
         int status;
         waitpid(pid, &status, 0);
 

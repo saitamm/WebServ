@@ -4,7 +4,7 @@ void setCodeStatus(Response &resp, int error)
 {
     if (resp.getRequest()->getRedirectionStatus())
     {
-        cout << "---------------------------------" <<resp.getRequest()->getRedirectionStatus() <<"\n";
+        cout << "---------------------------------" << resp.getRequest()->getRedirectionStatus() << "\n";
         resp.setStatus(resp.getRequest()->getLocation()->getRetur().begin()->first);
         return;
     }
@@ -48,10 +48,10 @@ void SendResponse(Response &resp, int clientSocket)
     response << "Content-type: " << resp.getType() << "\r\n";
     if (resp.getRequest()->getRedirectionStatus())
     {
-        Location* loc = resp.getRequest()->getLocation();
+        Location *loc = resp.getRequest()->getLocation();
         if (loc)
         {
-            const map<int, string>& returMap = loc->getRetur();
+            const map<int, string> &returMap = loc->getRetur();
             if (!returMap.empty())
                 response << "Location: " << returMap.begin()->second << "\r\n";
         }
@@ -60,7 +60,8 @@ void SendResponse(Response &resp, int clientSocket)
     response << "Content-Length: " << resp.getBody().size() << "\r\n\r\n";
     response << resp.getBody();
     string final_resp = response.str();
-    cout << "****** Response *******\n" << final_resp <<endl;
+    cout << "****** Response *******\n"
+         << final_resp << endl;
     if (send(clientSocket, final_resp.c_str(), final_resp.size(), 0) == -1)
         cerr << "error Send \n";
     else
