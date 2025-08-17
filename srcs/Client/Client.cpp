@@ -85,7 +85,6 @@ void Client::buildResponse(int clientSocket)
             _resp->setFileName(Up);
             if (!_resp->getFile().is_open())
             {
-                cerr << "soummaya\n";
                 setCodeStatus(*this->_resp, 500);
                 _status = Sending;
                 return;
