@@ -48,33 +48,73 @@ void generateUser(Response &resp)
         ss << rand();
         Id = ss.str();
         resp.setSessionId(Id);
-        cout << "************ I am a New User ************" << endl;
     }
     else
     {
         resp.setSessionId(resp.getRequest()->getCookie());
-        cout << "************ I am a Returning User ************" << endl;
     }
 }
 void SendResponse(Response &resp, int clientSocket)
 {
-    ostringstream response;
-    response << "HTTP/1.1 " << resp.getStatus() << " " << resp.getStatusValue(resp.getStatus()) << "\r\n";
-    response << "Content-type: " << resp.getType() << "\r\n";
-    if (resp.getRequest()->getRedirectionStatus())
+    if (resp.getResponseStatus() == Nonchunked)
     {
-        response << "Location: " << resp.getRequest()->getLocation()->getRetur().begin()->second << "\r\n";
+        ostringstream response;
+        response << "HTTP/1.1 " << resp.getStatus() << " " << resp.getStatusValue(resp.getStatus()) << "\r\n";
+        response << "Content-type: " << resp.getType() << "\r\n";
+        if (resp.getRequest()->getRedirectionStatus())
+        {
+            response << "Location: " << resp.getRequest()->getLocation()->getRetur().begin()->second << "\r\n";
+        }
+        generateUser(resp);
+        response << "Set-Cookie: user=" << resp.getSessionId() << "\r\n";
+        response << "Content-Length: " << resp.getBody().size() << "\r\n\r\n";
+        response << resp.getBody();
+        string final_resp = response.str();
+        // cout << "Response to be sent:\n" << final_resp << endl;
+        if (send(clientSocket, final_resp.c_str(), final_resp.size(), 0) == -1)
+            cerr << "error Send \n";
+        else
+            cout << "Response sent successfully to client socket: " << clientSocket << endl;
+        resp.setResponseStatus(Finish);
     }
-    generateUser(resp);
-    response << "Set-Cookie: user=" << resp.getSessionId() << "\r\n";
-    response << "Content-Length: " << resp.getBody().size() << "\r\n\r\n";
-    response << resp.getBody();
-    string final_resp = response.str();
-    // cout << "Response to be sent:\n" << final_resp << endl;
-    if (send(clientSocket, final_resp.c_str(), final_resp.size(), 0) == -1)
-        cerr << "error Send \n";
     else
-        cout << "Response sent successfully to client socket: " << clientSocket << endl;
+    {
+        if (resp.getResponseStatus() == First)
+        {
+            ostringstream response;
+            response << "HTTP/1.1 " << resp.getStatus() << " " << resp.getStatusValue(resp.getStatus()) << "\r\n";
+            response << "Content-type: " << resp.getType() << "\r\n";
+
+            generateUser(resp);
+            response << "Set-Cookie: user=" << resp.getSessionId() << "\r\n";
+            response << "Content-Length: " << resp.getBody().size() << "\r\n";
+            response << "Transfer-Encoding: chunked\r\n\r\n";
+            response << hex << resp.getBody().size() << "\r\n";
+            response << resp.getBody() << "\r\n0\r\n\r\n";
+            string final_resp = response.str();
+            send(clientSocket, final_resp.c_str(), final_resp.size(), 0);
+            resp.setResponseStatus(chunked);
+            cout << "First chunk sent successfully to client socket: " << clientSocket << endl;
+        }
+        else if (resp.getResponseStatus() == chunked)
+        {
+            ostringstream response;
+            response << hex << resp.getBody().size() << "\r\n";
+            response << resp.getBody() << "\r\n";
+            string final_resp = response.str();
+            send(clientSocket, final_resp.c_str(), final_resp.size(), 0);
+            cout << "Chunk sent successfully to client socket: " << clientSocket << endl;
+        }
+        else
+        {
+            ostringstream response;
+            response << "0\r\n\r\n";
+            string final_resp = response.str();
+            send(clientSocket, final_resp.c_str(), final_resp.size(), 0);
+            resp.setResponseStatus(Finish);
+            cout << "Last chunk sent successfully to client socket: " << clientSocket << endl;
+        }
+    }
 }
 int allowMethod(Location loc, string method)
 {
@@ -92,8 +132,12 @@ void handleClientRequest(map<int, Client *> &clients, int clientSocket, vector<C
     {
         clients[clientSocket]->getResp()->initStatusCode();
         clients[clientSocket]->ParseHttpRequest(*clients[clientSocket], clientSocket, *servers);
-        if (clients[clientSocket]->getStatus() == Body || clients[clientSocket]->getStatus() == Processing)
+        cout << clients[clientSocket]->getStatus() <<endl;
+        if (clients[clientSocket]->getStatus() == Body || clients[clientSocket]->getStatus() == Processing || clients[clientSocket]->getStatus() == Sending)
+        {
+            cout << "i am heeeeeeeeeeeeeeeeeeeeeere\n";
             clients[clientSocket]->buildResponse(clientSocket);
+        }
     }
     catch (const exception &e)
     {
@@ -108,7 +152,8 @@ void handleClientRequest(map<int, Client *> &clients, int clientSocket, vector<C
     {
         SendResponse(*clients[clientSocket]->getResp(), clientSocket);
         clients[clientSocket]->setNewSessionId(clients[clientSocket]->getResp()->getSessionId());
-        clients[clientSocket]->setStatus(Finished);
+        if (clients[clientSocket]->getResp()->getResponseStatus() == Finish)
+            clients[clientSocket]->setStatus(Finished);
         if (clients[clientSocket]->getStatus() == Finished)
         {
             delete clients[clientSocket];

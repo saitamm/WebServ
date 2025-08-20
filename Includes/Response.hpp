@@ -12,6 +12,15 @@ public:
     }
 };
 
+enum ResponseStatus
+{
+    chunked,
+    Nonchunked,
+    First,
+    Last,
+    Send,
+    Finish
+};
 class Response
 {
 public:
@@ -44,6 +53,20 @@ public:
     void setFileName(const string &filename) { _filename = filename; }
     string &getFileName(void) { return _filename; }
 
+    //Test
+    void setResponseStatus(ResponseStatus status) { _status = status; }
+    ResponseStatus getResponseStatus(void) const { return _status; }
+    void setChunkFile(string &name)
+    {
+        _chunkFile.open(name.c_str(), ios::in | ios::binary);
+        if (!_chunkFile.is_open())
+        {
+            cerr << "Failed to open chunk file: " << name << endl;
+        }
+        cout << "Chunk file opened successfully: " << name << endl;
+    }
+    fstream &getChunkFile(void) { return _chunkFile; }
+
 private:
     string _ContentType;
     string _body;
@@ -59,6 +82,11 @@ private:
     //chunked body
     unsigned int _received;
     unsigned int bufferSize;
+
+
+    // Chunked Response
+    ResponseStatus _status;
+    fstream _chunkFile;
 };
 void handleDelete(Response &resp);
 void handleGet(Response &resp);
