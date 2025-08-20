@@ -45,6 +45,7 @@ void Request::ParseHeader(string &Header)
     string tmp1;
     stringstream line(Header);
     line >> this->_method;
+    cout << "this is the header " << Header << endl;
     if ((_method != "GET" && _method != "DELETE" && _method != "POST") || _method.empty())
         throw BadRequestException();
     string path;
@@ -84,8 +85,18 @@ void Request::ParseHeader(string &Header)
                 this->_host = this->_host.substr(0, this->_host.find(':'));
             }
         }
-        else if (tmp == "Cookie")   
-            _cookie = input.substr(input.find('=') + 1);
+        else if (tmp == "Cookie")
+        {
+            int i = 0;
+            while (input[i] < 48 || input[i] > 57)
+            {
+                i++;
+            }
+            _cookie = input.substr(input.find("user") + 4);
+            if (_cookie[0] == '=')
+                _cookie = _cookie.substr(1);
+            _cookie = _cookie.substr(0, _cookie.find('P'));
+        }
     }
     if (this->_host.empty())
         throw BadRequestException();
