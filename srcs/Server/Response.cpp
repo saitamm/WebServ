@@ -27,6 +27,7 @@ Response::Response()
 {
     totalReceived = 0;
     _received = 0;
+    _status = Nonchunked;
 }
 Response::~Response() {}
 

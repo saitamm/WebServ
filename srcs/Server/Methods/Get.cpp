@@ -40,17 +40,38 @@ void getContentType(string &real_path, Response &resp)
 
 void generateResponse(Response &resp, string &real_path)
 {
-    ifstream file(real_path.c_str(), ios::binary);
-    if (!file.is_open())
+    getContentType(real_path, resp);
+    if (resp.getResponseStatus() == Nonchunked)
     {
-        setCodeStatus(resp, 403);
+        resp.setChunkFile(real_path);
+        if (!resp.getChunkFile().is_open())
+        {
+            cerr << "Failed to open chunk file: " << real_path << endl;
+            setCodeStatus(resp, 500);
+            resp.setResponseStatus(Nonchunked);
+            return;
+        }
+        resp.setStatus(200);
+        char buffer[2048];
+        resp.getChunkFile().read(buffer, sizeof(buffer));
+        string line(buffer, resp.getChunkFile().gcount());
+        resp.setBodyResp(line);
+        resp.setResponseStatus(First);
         return;
     }
-    string buffer((istreambuf_iterator<char>(file)),
-                  istreambuf_iterator<char>());
     resp.setStatus(200);
-    resp.setBodyResp(buffer);
-    getContentType(real_path, resp);
+    char buffer[2048];
+    resp.getChunkFile().read(buffer, sizeof(buffer));
+    string line(buffer, resp.getChunkFile().gcount());
+    resp.setBodyResp(line);
+    resp.setResponseStatus(chunked);
+    if (line.size() == 0)
+    {
+        cout << ":::::::::::::::::::::::::::::::::::::::::::\n";
+        resp.setResponseStatus(Last);
+        resp.getChunkFile().close();
+        return;
+    }
 }
 
 void checkCgi(Response &resp, string &real_path)
