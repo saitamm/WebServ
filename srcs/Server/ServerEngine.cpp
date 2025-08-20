@@ -70,6 +70,7 @@ void SendResponse(Response &resp, int clientSocket)
     response << "Content-Length: " << resp.getBody().size() << "\r\n\r\n";
     response << resp.getBody();
     string final_resp = response.str();
+    cout << "Response to be sent:\n" << final_resp << endl;
     if (send(clientSocket, final_resp.c_str(), final_resp.size(), 0) == -1)
         cerr << "error Send \n";
     else
