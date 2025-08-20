@@ -45,7 +45,6 @@ void Request::ParseHeader(string &Header)
     string tmp1;
     stringstream line(Header);
     line >> this->_method;
-    cout << "this is the header " << Header << endl;
     if ((_method != "GET" && _method != "DELETE" && _method != "POST") || _method.empty())
         throw BadRequestException();
     string path;
