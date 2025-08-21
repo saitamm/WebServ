@@ -117,33 +117,8 @@ int ChunkedBody(Response &resp, int clientSocket)
     }
     return (0);
 }
-int handlePost(Response &resp, int clientSocket)
-{
-    if (SupportUpload(resp))
-    {
-        setCodeStatus(resp, 403);
-        return (1);
-    }
-    if (resp.getRequest()->getHeadvalue("Transfer-Encoding").empty())
-    {
-        NonChunkedBody(resp, clientSocket);
-        if (resp.getTotalReceived() == resp.getRequest()->getContentLength())
-        {
-            if (resp.getFile().is_open())
-                resp.getFile().close();
-            setCodeStatus(resp, 200);
-            return (1);
-        }
-    }
-    else
-    {
-        if (ChunkedBody(resp, clientSocket))
-        {
-            if (resp.getFile().is_open())
-                resp.getFile().close();
-            setCodeStatus(resp, 200);
-            return (1);
-        }
-    }
-    return (0);
-}
+// int handlePost(Response &resp, int clientSocket)
+// {
+    
+//     return (0);
+// }

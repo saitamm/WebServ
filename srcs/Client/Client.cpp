@@ -7,6 +7,7 @@ Client::Client()
     _status = Heading;
     _req = new Request();
     _resp = new Response();
+    std::memset(&_event, 0, sizeof(_event));
 }
 
 Client::~Client()
@@ -44,9 +45,8 @@ int checkSize(unsigned long long size, size_t max_size)
         return (1);
     return (0);
 }
-void Client::buildResponse(int clientSocket)
+void Client::buildResponse(void)
 {
-    this->_resp->setRequest(*this->_req);
     if (!allowMethod(*this->_req->getLocation(), this->_req->getMethod()))
     {
         setCodeStatus(*this->getResp(), 405);
@@ -71,32 +71,9 @@ void Client::buildResponse(int clientSocket)
         _status = Sending;
         return;
     }
-    if (this->_req->getMethod() == "POST" && (_status == Body || _status == Processing))
+    if (this->_req->getMethod() == "POST")
     {
-        if (_status == Body)
-        {
-            srand(time(0));
-            stringstream ll;
-            string type = _resp->getRequest()->getHeadvalue("Content-Type").substr(_resp->getRequest()->getHeadvalue("Content-Type").find('/') + 1);
-            ll << rand();
-            string f = ll.str() + "." + type;
-            string Up = _resp->getRequest()->getConfigFile().getRoot() + "/" + _resp->getRequest()->getLocation()->getUp_store() + "/" + f;
-            _resp->getFile().open(Up.c_str(), ios::out | ios::trunc | ios::binary);
-            _resp->setFileName(Up);
-            cout << "this is my file name: " << _resp->getFileName() << endl;
-            if (!_resp->getFile().is_open())
-            {
-                setCodeStatus(*this->_resp, 500);
-                _status = Sending;
-                return;
-            }
-            _status = Processing;
-        }
-        if (handlePost(*this->_resp, clientSocket))
-        {
-            _status = Sending;
-            cout << "Post request handled successfully." << endl;
-        }
+        _status = Sending;
         return;
     }
 }
@@ -132,12 +109,59 @@ void Client::ParseHttpRequest(Client &client, int clientSocket, vector<ConfigFil
             _status = Body;
         }
     }
-    if (_status == Body)
+    if (_status == Body || _status == Reading)
     {
+        this->_resp->setRequest(*this->_req);
         if (client.getRequest()->getMethod() == "GET" || client.getRequest()->getMethod() == "DELETE")
         {
+
             _status = Processing;
             return;
+        }
+        if (_status == Body)
+        {
+            srand(time(0));
+            stringstream ll;
+            string type = _resp->getRequest()->getHeadvalue("Content-Type").substr(_resp->getRequest()->getHeadvalue("Content-Type").find('/') + 1);
+            ll << rand();
+            string f = ll.str() + "." + type;
+            string Up = _resp->getRequest()->getConfigFile().getRoot() + "/" + _resp->getRequest()->getLocation()->getUp_store() + "/" + f;
+            _resp->getFile().open(Up.c_str(), ios::out | ios::trunc | ios::binary);
+            _resp->setFileName(Up);
+            cout << "this is my file name: " << _resp->getFileName() << endl;
+            if (!_resp->getFile().is_open())
+            {
+                setCodeStatus(*this->_resp, 500);
+                _status = Reading;
+                return;
+            }
+            _status = Reading;
+        }
+        if (SupportUpload(*_resp))
+        {
+            setCodeStatus(*_resp, 403);
+            _status = Processing;
+        }
+        if (_resp->getRequest()->getHeadvalue("Transfer-Encoding").empty())
+        {
+            NonChunkedBody(*_resp, clientSocket);
+            if (_resp->getTotalReceived() == _resp->getRequest()->getContentLength())
+            {
+                if (_resp->getFile().is_open())
+                    _resp->getFile().close();
+                setCodeStatus(*_resp, 200);
+                _status = Processing;
+            }
+        }
+        else
+        {
+            if (ChunkedBody(*_resp, clientSocket))
+            {
+                if (_resp->getFile().is_open())
+                    _resp->getFile().close();
+                setCodeStatus(*_resp, 200);
+                _status = Processing;
+            }
         }
     }
 }
