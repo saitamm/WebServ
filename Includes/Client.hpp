@@ -8,6 +8,7 @@ enum ClientStatus
     CONNECTING,
     Heading,
     Body,
+    Reading,    
     Processing,
     Sending,
     Finished,
@@ -26,12 +27,20 @@ public:
     int getFd(void) const;
     string &getbuff(void) { return (_buffer); }
     Request *getRequest(void){return(_req);};
-    void buildResponse(int clientSocket);
+    void buildResponse(void);
     void setStatus(const ClientStatus &status) { _status = status; }
     ClientStatus getStatus(void) const { return _status; }
     void ParseHttpRequest(Client &client,int clientSocket ,vector<ConfigFile> &serv);
     void setNewSessionId(string &id);
     string &getSession(void);
+    void setevents(epoll_event &event)
+    {
+        _event = event;
+    }
+    epoll_event &getevents(void)
+    {
+        return _event;
+    }
 
 private:
     Client(const Client &copy) ;
@@ -41,6 +50,7 @@ private:
     string _buffer;
     ClientStatus _status;
     static vector<string> _session;
+    epoll_event _event;
 };
 int allowMethod(Location loc, string method);
 // void printRequest(Request req);

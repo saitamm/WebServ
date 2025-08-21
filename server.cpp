@@ -1,4 +1,5 @@
 #include "Includes/Client.hpp"
+#include <iostream>
 
 int create_server_socket(vector<ConfigFile> *servers)
 {
@@ -59,7 +60,7 @@ int openSocket(vector<ConfigFile> *servers, int epollFd, map<int, ConfigFile> &o
           int serverSocket;
           int port = servers->at(i).getPort();
           bool dupPort = false;
-          for(map<int, ConfigFile>::iterator it = openedServers.begin(); it != openedServers.end(); it++)
+          for (map<int, ConfigFile>::iterator it = openedServers.begin(); it != openedServers.end(); it++)
           {
                if (it->second.getPort() == port)
                {
@@ -71,7 +72,7 @@ int openSocket(vector<ConfigFile> *servers, int epollFd, map<int, ConfigFile> &o
                continue;
           serverSocket = socket(AF_INET, SOCK_STREAM, 0);
           if (serverSocket == -1)
-               return(printErr("reation failed!"));
+               return (printErr("reation failed!"));
           setNonBlocking(serverSocket);
           int opt = 1;
           setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
@@ -80,8 +81,8 @@ int openSocket(vector<ConfigFile> *servers, int epollFd, map<int, ConfigFile> &o
           serverAddr.sin_family = AF_INET;
           serverAddr.sin_addr.s_addr = INADDR_ANY;
           serverAddr.sin_port = htons(port);
-          if (bind(serverSocket, (sockaddr*)&serverAddr, sizeof(serverAddr)) < 0)
-               return(printErr("bind failed, maybe port is busy!"));
+          if (bind(serverSocket, (sockaddr *)&serverAddr, sizeof(serverAddr)) < 0)
+               return (printErr("bind failed, maybe port is busy!"));
           listen(serverSocket, SOMAXCONN);
           epoll_event event;
           memset(&event, 0, sizeof(event));
@@ -96,61 +97,59 @@ int openSocket(vector<ConfigFile> *servers, int epollFd, map<int, ConfigFile> &o
 int main(int ac, char **av)
 {
      if (ac != 2)
-     return(printErr("ERROR: ./Webserv <file.conf>"));
+          return (printErr("ERROR: ./Webserv <file.conf>"));
      ConfigFile config;
      vector<ConfigFile> *servers;
      config.initDefaultError();
      try
      {
-          map<int, ConfigFile>openedServers;
+          map<int, ConfigFile> openedServers;
           servers = config.ParseConfigFile(av[1]);
           int epollFd = epoll_create1(0);
           if (epollFd == -1)
-               return(printErr("Failed to create epoll"));
+               return (printErr("Failed to create epoll"));
           if (openSocket(servers, epollFd, openedServers))
                return 1;
-               
+
           const int MAX_EVENTS = 1000;
           epoll_event events[MAX_EVENTS];
-          map<int, Client*> clients;
-          while(1)
+          map<int, Client *> clients;
+          while (1)
           {
                int n = epoll_wait(epollFd, events, MAX_EVENTS, -1);
-               for(int i = 0; i < n; ++i)
+               for (int i = 0; i < n; ++i)
                {
                     int fd = events[i].data.fd;
                     if (openedServers.find(fd) != openedServers.end())
                     {
+                         cout << "ssssssssssssssoumaya\n";
                          int clientSocket = accept(fd, NULL, NULL);
                          setNonBlocking(clientSocket);
-                         epoll_event clientEvent;
-                         memset(&clientEvent, 0, sizeof(clientEvent));
-                         clientEvent.data.fd = clientSocket;
-                         clientEvent.events = EPOLLIN;
-                         epoll_ctl(epollFd, EPOLL_CTL_ADD, clientSocket, &clientEvent);
-
+                         if (clients.find(clientSocket) == clients.end())
+                              clients[clientSocket] = new Client();
+                         // memset(&clients[clientSocket]->getevents(), 0, sizeof(clients[clientSocket]->getevents()));
+                         clients[clientSocket]->getevents().data.fd = clientSocket;
+                         clients[clientSocket]->getevents().events = EPOLLIN;
+                         epoll_ctl(epollFd, EPOLL_CTL_ADD, clientSocket, &clients[clientSocket]->getevents());
                          cout << "New client connected on server port " << openedServers[fd].getPort()
                               << ": socket = " << clientSocket << endl;
                     }
-                    else 
+                    else
                     {
-                         if (clients.find(fd) == clients.end())
-                              clients[fd] = new Client();
-                         handleClientRequest(clients, fd, servers);  // Pass all servers
+                         handleClientRequest(clients, fd, servers);
+
                          // delete clients[fd];
                          // clients.erase(fd);
                          // close(fd);
-                         //because we are not deleting the client here, we need to handle the response and status (test large body)
+                         // because we are not deleting the client here, we need to handle the response and status (test large body)
                     }
                }
           }
           for (map<int, ConfigFile>::iterator it = openedServers.begin(); it != openedServers.end(); ++it)
                close(it->first);
-
      }
-     catch(exception& e)
+     catch (exception &e)
      {
-          cout << e.what() <<endl;
+          cout << e.what() << endl;
      }
-
 }

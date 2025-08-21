@@ -92,5 +92,8 @@ void handleDelete(Response &resp);
 void handleGet(Response &resp);
 void setCodeStatus(Response &resp, int error);
 void getContentType(string &real_path, Response &resp);
-int handlePost(Response &resp, int clientSocket);
+// int handlePost(Response &resp, int clientSocket);
+void NonChunkedBody(Response &resp, int clientSocket);
+int ChunkedBody(Response &resp, int clientSocket);
+int SupportUpload(Response &resp);
 #endif

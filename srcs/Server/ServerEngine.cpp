@@ -69,9 +69,12 @@ void SendResponse(Response &resp, int clientSocket)
         response << "Set-Cookie: user=" << resp.getSessionId() << "\r\n";
         response << "Content-Length: " << resp.getBody().size() << "\r\n\r\n";
         response << resp.getBody();
-        string final_resp = response.str();
+
+        // cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
+        // cout << response.str() << endl;
+        // cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
         // cout << "Response to be sent:\n" << final_resp << endl;
-        if (send(clientSocket, final_resp.c_str(), final_resp.size(), 0) == -1)
+        if (send(clientSocket, response.str().c_str(), response.str().size(), 0) == -1)
             cerr << "error Send \n";
         else
             cout << "Response sent successfully to client socket: " << clientSocket << endl;
@@ -87,32 +90,37 @@ void SendResponse(Response &resp, int clientSocket)
 
             generateUser(resp);
             response << "Set-Cookie: user=" << resp.getSessionId() << "\r\n";
-            response << "Content-Length: " << resp.getBody().size() << "\r\n";
+            response << "Connection: keep-alive\r\n";
             response << "Transfer-Encoding: chunked\r\n\r\n";
             response << hex << resp.getBody().size() << "\r\n";
-            response << resp.getBody() << "\r\n0\r\n\r\n";
-            string final_resp = response.str();
-            send(clientSocket, final_resp.c_str(), final_resp.size(), 0);
-            resp.setResponseStatus(chunked);
-            cout << "First chunk sent successfully to client socket: " << clientSocket << endl;
+            response << resp.getBody() << "\r\n";
+            // cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
+            // cout << response.str() << endl;
+            // cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
+
+            if (send(clientSocket, response.str().c_str(), response.str().size(), 0) == -1)
+                cerr << "error Send first chunk\n";
+            else
+                cout << "First chunk sent successfully to client socket: " << clientSocket << endl;
+            resp.setResponseStatus(chunked); // Set to chunked to continue reading
         }
         else if (resp.getResponseStatus() == chunked)
         {
             ostringstream response;
             response << hex << resp.getBody().size() << "\r\n";
             response << resp.getBody() << "\r\n";
-            string final_resp = response.str();
-            send(clientSocket, final_resp.c_str(), final_resp.size(), 0);
+            send(clientSocket, response.str().c_str(), response.str().size(), 0);
             cout << "Chunk sent successfully to client socket: " << clientSocket << endl;
         }
-        else
+        else if (resp.getResponseStatus() == Last)
         {
             ostringstream response;
             response << "0\r\n\r\n";
-            string final_resp = response.str();
-            send(clientSocket, final_resp.c_str(), final_resp.size(), 0);
+            if (send(clientSocket, response.str().c_str(), response.str().size(), 0) == -1)
+                cerr << "error Send terminating chunk\n";
+            else
+                cout << "Last chunk sent successfully to client socket: " << clientSocket << endl;
             resp.setResponseStatus(Finish);
-            cout << "Last chunk sent successfully to client socket: " << clientSocket << endl;
         }
     }
 }
@@ -132,11 +140,10 @@ void handleClientRequest(map<int, Client *> &clients, int clientSocket, vector<C
     {
         clients[clientSocket]->getResp()->initStatusCode();
         clients[clientSocket]->ParseHttpRequest(*clients[clientSocket], clientSocket, *servers);
-        cout << clients[clientSocket]->getStatus() <<endl;
-        if (clients[clientSocket]->getStatus() == Body || clients[clientSocket]->getStatus() == Processing || clients[clientSocket]->getStatus() == Sending)
+        if (clients[clientSocket]->getStatus() == Processing || clients[clientSocket]->getStatus() == Sending)
         {
-            cout << "i am heeeeeeeeeeeeeeeeeeeeeere\n";
-            clients[clientSocket]->buildResponse(clientSocket);
+            clients[clientSocket]->getevents().events = EPOLLOUT;
+            clients[clientSocket]->buildResponse();
         }
     }
     catch (const exception &e)
@@ -150,12 +157,14 @@ void handleClientRequest(map<int, Client *> &clients, int clientSocket, vector<C
     }
     if (clients[clientSocket]->getStatus() == Sending)
     {
+        cout << "------------------------\n";
         SendResponse(*clients[clientSocket]->getResp(), clientSocket);
         clients[clientSocket]->setNewSessionId(clients[clientSocket]->getResp()->getSessionId());
         if (clients[clientSocket]->getResp()->getResponseStatus() == Finish)
             clients[clientSocket]->setStatus(Finished);
         if (clients[clientSocket]->getStatus() == Finished)
         {
+
             delete clients[clientSocket];
             clients.erase(clientSocket);
             close(clientSocket);
