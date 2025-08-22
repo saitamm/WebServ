@@ -63,7 +63,6 @@ public:
         {
             cerr << "Failed to open chunk file: " << name << endl;
         }
-        cout << "Chunk file opened successfully: " << name << endl;
     }
     fstream &getChunkFile(void) { return _chunkFile; }
 

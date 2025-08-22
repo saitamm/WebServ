@@ -122,22 +122,20 @@ int main(int ac, char **av)
                     int fd = events[i].data.fd;
                     if (openedServers.find(fd) != openedServers.end())
                     {
-                         cout << "ssssssssssssssoumaya\n";
                          int clientSocket = accept(fd, NULL, NULL);
-                         setNonBlocking(clientSocket);
-                         if (clients.find(clientSocket) == clients.end())
-                              clients[clientSocket] = new Client();
-                         // memset(&clients[clientSocket]->getevents(), 0, sizeof(clients[clientSocket]->getevents()));
-                         clients[clientSocket]->getevents().data.fd = clientSocket;
-                         clients[clientSocket]->getevents().events = EPOLLIN;
-                         epoll_ctl(epollFd, EPOLL_CTL_ADD, clientSocket, &clients[clientSocket]->getevents());
+                         memset(&events[fd], 0, sizeof(events[fd]));
+                         events[fd].data.fd = clientSocket;
+                         events[fd].events = EPOLLIN;
+                         epoll_ctl(epollFd, EPOLL_CTL_ADD, clientSocket, &events[fd]);
                          cout << "New client connected on server port " << openedServers[fd].getPort()
-                              << ": socket = " << clientSocket << endl;
+                         << ": socket = " << clientSocket << endl;
                     }
                     else
                     {
+                         // cout << "------------------------------\n";
+                         if (clients.find(fd) == clients.end())
+                              clients[fd] = new Client();
                          handleClientRequest(clients, fd, servers);
-
                          // delete clients[fd];
                          // clients.erase(fd);
                          // close(fd);

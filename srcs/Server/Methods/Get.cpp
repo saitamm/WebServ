@@ -140,7 +140,6 @@ void handleGet(Response &resp)
         }
         else
         {
-            cout << "HEREEEEEEEEE\n";
             generateResponse(resp, real_path);
         }
     }
