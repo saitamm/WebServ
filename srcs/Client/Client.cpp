@@ -65,8 +65,9 @@ void Client::setBuff(string &buff, size_t &readbyte)
     _buffer.append(buff, readbyte);
 }
 
-void Client::buildResponse(int clientSocket)
+void Client::buildResponse(int clientSocket, int clientFd, int epollFd, map<int, CgiProcess*> &cgis)
 {
+   
     this->_resp->setRequest(*this->_req);
     if (!allowMethod(*this->_req->getLocation(), this->_req->getMethod()))
     {
@@ -82,8 +83,10 @@ void Client::buildResponse(int clientSocket)
     }
     if (this->_req->getMethod() == "GET")
     {
-        handleGet(*this->_resp);
-        _status = Sending;
+        if(handleGet(*this->_resp, clientFd, epollFd, cgis) == 0)
+            _status = Sending;
+        else 
+            _status = WaitingCGI;
         return;
     }
     if (this->_req->getMethod() == "POST" && (_status == Body || _status == Processing))

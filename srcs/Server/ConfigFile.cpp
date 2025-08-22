@@ -197,14 +197,21 @@ void Location::setUp_store(const string &path)
     up_store = path;
 }
 
-const string &Location::getCgi_pass() const
+const set<string> &Location::getCgi_pass() const
 {
     return cgi_pass;
 }
 
 void Location::setCgi_pass(const string &path)
 {
-    cgi_pass = path;
+    cout << path << endl;
+    if (path == "/usr/bin/python3" || path == "/usr/bin/bash")
+        cgi_pass.insert(path);
+    else
+    {
+        cout << "HELLOOOOO\n";
+        throw ErrorConfigFileException();
+    }
 }
 
 const string &Location::getPath() const

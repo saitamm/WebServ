@@ -1,4 +1,4 @@
-#include "../../../Includes/Response.hpp"
+#include "../../../Includes/Client.hpp"
 
 void getContentType(string &real_path, Response &resp)
 {
@@ -53,8 +53,28 @@ void generateResponse(Response& resp, string& real_path)
     getContentType(real_path, resp);
 }
 
-void checkCgi(Response &resp, string &real_path)
+string checkCgiPath(Response &resp)
 {
+    string path = resp.getRequest()->getUri();
+    size_t dotPos = path.find_last_of('.');
+    if (dotPos == string::npos)
+        return "";
+    string ext = path.substr(dotPos);
+    const set<string> cgi = resp.getRequest()->getLocation()->getCgi_pass();
+     if (ext == ".py") {
+        if (cgi.count("/usr/bin/python3"))
+            return "/usr/bin/python3";
+    }
+    else if (ext == ".sh") {
+        if (cgi.count("/usr/bin/bash"))
+            return "/usr/bin/bash";
+    }
+    return "";
+}
+
+void checkCgi(Response &resp, string &real_path, int clientFd, int epollFd, map<int, CgiProcess*> &cgis)
+{
+    string arg = checkCgiPath(resp);
     int fd[2];
     if(pipe(fd) == -1)
     {
@@ -72,36 +92,32 @@ void checkCgi(Response &resp, string &real_path)
         close(fd[0]);
         dup2(fd[1], STDOUT_FILENO);
         close(fd[1]);
-        string arg = resp.getRequest()->getLocation()->getCgi_pass();
         char *argv[] = {strdup(arg.c_str()), strdup(real_path.c_str()), NULL};
         char *envp[] = {strdup("REQUEST_METHOD=GET"), strdup(("SCRIPT_FILENAME=" + real_path).c_str()), NULL};
         execve(arg.c_str(), argv, envp);
         exit(1);
     }
-    else
-    {
-        close(fd[1]);
-        char buffer[4096];
-        std::stringstream output;
-        ssize_t bytesRead;
-        while ((bytesRead = read(fd[0], buffer, sizeof(buffer))) > 0)
-        {
-            output.write(buffer, bytesRead);
-        }
-        close(fd[0]);
-        cout << "======================= "<< buffer << endl;
-        int status;
-        waitpid(pid, &status, 0);
+   else
+   {
+    close(fd[1]);
+    setNonBlocking(fd[0]);
+    epoll_event ev;
+    memset(&ev, 0, sizeof(ev));
+    ev.data.fd = fd[0];
+    ev.events = EPOLLIN | EPOLLHUP;
+    epoll_ctl(epollFd, EPOLL_CTL_ADD, fd[0], &ev);
+    CgiProcess *proc = new CgiProcess(clientFd, real_path);
+    proc->pid = pid;
+    proc->pipeFd = fd[0];
+    proc->start = time(NULL);
 
-        resp.setStatus(200);
-        string outStr = output.str();
-        resp.setBodyResp(outStr);
-        resp.setType("text/html");
-
-    }
+    cgis[fd[0]] = proc; 
 }
 
-void handleGet(Response &resp)
+
+}
+
+int handleGet(Response &resp, int clientFd, int epollFd, map<int, CgiProcess*> &cgis)
 {
     string real_path = resp.getRequest()->getConfigFile().getRoot() + resp.getRequest()->getUri();
     struct stat path;
@@ -109,14 +125,14 @@ void handleGet(Response &resp)
     if (stat(real_path.c_str(), &path) == -1)
     {
         setCodeStatus(resp, 404);
-        return;
+        return 0;
     }
     if (S_ISREG(path.st_mode))
     {
         if(!resp.getRequest()->getLocation()->getCgi_pass().empty())
         {
-            cout << "here ---->" << resp.getRequest()->getLocation()->getCgi_pass()<<endl;
-            checkCgi(resp, real_path);
+            checkCgi(resp, real_path, clientFd, epollFd, cgis);
+            return 1;
         }
         else
         {
@@ -138,7 +154,8 @@ void handleGet(Response &resp)
 
                 if (resp.getRequest()->getConfigFile().getIndex().empty())
                 {
-                    return setCodeStatus(resp, 404);
+                    setCodeStatus(resp, 404);
+                    return 0;
                 }
                 else
                 {
@@ -176,5 +193,5 @@ void handleGet(Response &resp)
             generateResponse(resp, path_idx);
         }
     }
-    
+    return 0;
 }

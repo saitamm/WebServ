@@ -178,7 +178,7 @@ void executeCgi(Response &resp)
             envp.push_back(strdup(entry.c_str()));
         }
         envp.push_back(NULL);
-        string cgiPath = resp.getRequest()->getLocation()->getCgi_pass();
+        string cgiPath = checkCgiPath(resp);
         char *argv[] = {strdup(cgiPath.c_str()), (char *)path.c_str(), NULL};
         execve(cgiPath.c_str(), argv, envp.data());
         perror("execve failed");
@@ -235,7 +235,27 @@ void executeCgi(Response &resp)
     }
 }
 
-
+// void executeCgi(Response& resp)
+// {
+//     int fd[2];
+//     if (pipe(fd) == -1)
+//     {
+//         setCodeStatus(resp, 500);
+//         return;
+//     }
+//     pid_t pid = fork();
+//     if (pid < 0)
+//     {
+//         setCodeStatus(resp, 500);
+//         return;
+//     }
+//     if (pid == 0)
+//     {
+//         dup2(fd[1], STDOUT_FILENO);
+//         close(fd[1]);
+//         close(fd[0]);
+//     }
+// }
 
 int handlePost(Response &resp, int clientSocket)
 {

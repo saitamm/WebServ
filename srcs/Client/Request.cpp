@@ -40,6 +40,7 @@ void Request::ParseHeader(string &Header)
 {
     string tmp1;
     stringstream line(Header);
+    cout << "______________" << Header << endl;
     line >> this->_method;
     if ((_method != "GET" && _method != "DELETE" && _method != "POST") || _method.empty())
         throw BadRequestException();

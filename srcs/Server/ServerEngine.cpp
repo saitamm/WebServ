@@ -2,8 +2,12 @@
 // check this fucntion because the body is not necessery set here
 void setCodeStatus(Response &resp, int error)
 {
+    std::cout << "resp ptr = " << &resp << std::endl;
+    std::cout << "request ptr = " << resp.getRequest() << std::endl;
+
     if (resp.getRequest()->getRedirectionStatus())
     {
+        cout << "HEREEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEee\n";
         cout << "---------------------------------" << resp.getRequest()->getRedirectionStatus() << "\n";
         resp.setStatus(resp.getRequest()->getLocation()->getRetur().begin()->first);
         return;
@@ -77,14 +81,14 @@ int allowMethod(Location loc, string method)
     return (0);
 }
 
-void handleClientRequest(map<int, Client *> &clients, int clientSocket, vector<ConfigFile> *servers)
+void handleClientRequest(map<int, Client *> &clients, int clientSocket, vector<ConfigFile> *servers, int epollFd, map<int, CgiProcess*> &cgis)
 {
     try
     {
         clients[clientSocket]->getResp()->initStatusCode();
         clients[clientSocket]->ParseHttpRequest(*clients[clientSocket], clientSocket, servers->at(0));
         if (clients[clientSocket]->getStatus() == Body || clients[clientSocket]->getStatus() == Processing)
-            clients[clientSocket]->buildResponse(clientSocket);
+            clients[clientSocket]->buildResponse(clientSocket, clientSocket, epollFd, cgis);
     }
     catch (const std::exception &e)
     {

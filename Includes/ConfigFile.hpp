@@ -26,7 +26,7 @@ private:
     set<string> methods;
     string auto_idx;
     string up_store;
-    string cgi_pass;
+    set<string> cgi_pass;
     string loc_idx;
     map<int, string> retur;
 
@@ -39,7 +39,7 @@ public:
     void setAuto_idx(const string &index);
     const string &getUp_store() const;
     void setUp_store(const string &path);
-    const string &getCgi_pass() const;
+    const set<string> &getCgi_pass() const;
     void setCgi_pass(const string &path);
     const string &getLoc_idx() const;
     void setLoc_idx(const string &idx);
