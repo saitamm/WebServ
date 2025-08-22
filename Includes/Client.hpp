@@ -9,9 +9,12 @@ enum ClientStatus
     Heading,
     Body,
     Processing,
+    WaitingCGI,
     Sending,
     Finished,
 };
+
+
 class ConfigFile;
 class Response;
 class Client    
@@ -26,12 +29,11 @@ public:
     int getFd(void) const;
     string &getbuff(void) { return (_buffer); }
     Request *getRequest(void){return(_req);};
-    void buildResponse(int clientSocket);
+    void buildResponse(int clientSocket, int clientFd, int epollFd, map<int, CgiProcess*> &cgis);
     void setStatus(const ClientStatus &status) { _status = status; }
     ClientStatus getStatus(void) const { return _status; }
     void ParseHttpRequest(Client &client,int clientSocket ,ConfigFile &serv);
-    void setNonBlocking(int fd);
-private:
+    private:
     Client(const Client &copy) ;
     Request *_req;
     Response *_resp;
@@ -42,6 +44,8 @@ private:
 };
 int allowMethod(Location loc, string method);
 void printRequest(Request req);
-void handleClientRequest(map<int, Client *> &clients, int clientSocket, vector<ConfigFile> *servers);
+void handleClientRequest(map<int, Client *> &clients, int clientSocket, vector<ConfigFile> *servers, int epollFd, map<int, CgiProcess*>&cgis);
+void SendResponse(Response &resp, int clientSocket);
+void setNonBlocking(int fd);
 
 #endif

@@ -3,6 +3,12 @@
 #include "Request.hpp"
 #include <algorithm>
 #include<sys/wait.h>
+
+#include "CgiProcess.hpp"
+
+
+class CgiProcess;
+
 class BadDirectoryException : public std::exception
 {
 public:
@@ -59,8 +65,9 @@ private:
     unsigned int bufferSize;
 };
 void handleDelete(Response &resp);
-void handleGet(Response &resp);
+int handleGet(Response &resp, int clientFd, int epollFd, map<int, CgiProcess*> &cgis);
 void setCodeStatus(Response &resp, int error);
 void getContentType(string &real_path, Response &resp);
 int handlePost(Response &resp, int clientSocket);
+string checkCgiPath(Response &resp);
 #endif
