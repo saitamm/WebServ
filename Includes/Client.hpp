@@ -33,15 +33,6 @@ public:
     void ParseHttpRequest(Client &client,int clientSocket ,vector<ConfigFile> &serv);
     void setNewSessionId(string &id);
     string &getSession(void);
-    void setevents(epoll_event &event)
-    {
-        _event = event;
-    }
-    epoll_event &getevents(void)
-    {
-        return _event;
-    }
-
 private:
     Client(const Client &copy) ;
     Request *_req;
@@ -50,7 +41,6 @@ private:
     string _buffer;
     ClientStatus _status;
     static vector<string> _session;
-    epoll_event _event;
 };
 int allowMethod(Location loc, string method);
 // void printRequest(Request req);

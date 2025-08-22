@@ -74,10 +74,11 @@ void SendResponse(Response &resp, int clientSocket)
         // cout << response.str() << endl;
         // cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
         // cout << "Response to be sent:\n" << final_resp << endl;
-        if (send(clientSocket, response.str().c_str(), response.str().size(), 0) == -1)
+        int bytesend;
+        if ((bytesend = send(clientSocket, response.str().c_str(), response.str().size(), 0)) == -1)
             cerr << "error Send \n";
         else
-            cout << "Response sent successfully to client socket: " << clientSocket << endl;
+            cout << "Response sent successfully to client socket: " << bytesend << endl;
         resp.setResponseStatus(Finish);
     }
     else
@@ -97,11 +98,11 @@ void SendResponse(Response &resp, int clientSocket)
             // cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
             // cout << response.str() << endl;
             // cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
-
-            if (send(clientSocket, response.str().c_str(), response.str().size(), 0) == -1)
-                cerr << "error Send first chunk\n";
+            int bytesend;
+            if ((bytesend = send(clientSocket, response.str().c_str(), response.str().size(), 0)) == -1)
+                cerr << "error Send \n";
             else
-                cout << "First chunk sent successfully to client socket: " << clientSocket << endl;
+                cout << "First chunk sent successfully to client socket: " << bytesend << endl;
             resp.setResponseStatus(chunked); // Set to chunked to continue reading
         }
         else if (resp.getResponseStatus() == chunked)
@@ -109,17 +110,20 @@ void SendResponse(Response &resp, int clientSocket)
             ostringstream response;
             response << hex << resp.getBody().size() << "\r\n";
             response << resp.getBody() << "\r\n";
-            send(clientSocket, response.str().c_str(), response.str().size(), 0);
-            cout << "Chunk sent successfully to client socket: " << clientSocket << endl;
+            int bytesend;
+            if ((bytesend = send(clientSocket, response.str().c_str(), response.str().size(), 0)) == -1)
+                cerr << "error Send \n";
+            cout << "Chunk sent successfully to client socket: " << bytesend << endl;
         }
         else if (resp.getResponseStatus() == Last)
         {
             ostringstream response;
             response << "0\r\n\r\n";
-            if (send(clientSocket, response.str().c_str(), response.str().size(), 0) == -1)
-                cerr << "error Send terminating chunk\n";
+            int bytesend;
+            if ((bytesend = send(clientSocket, response.str().c_str(), response.str().size(), 0)) == -1)
+                cerr << "error Send \n";
             else
-                cout << "Last chunk sent successfully to client socket: " << clientSocket << endl;
+                cout << "Last chunk sent successfully to client socket: " << bytesend << endl;
             resp.setResponseStatus(Finish);
         }
     }
@@ -142,7 +146,6 @@ void handleClientRequest(map<int, Client *> &clients, int clientSocket, vector<C
         clients[clientSocket]->ParseHttpRequest(*clients[clientSocket], clientSocket, *servers);
         if (clients[clientSocket]->getStatus() == Processing || clients[clientSocket]->getStatus() == Sending)
         {
-            clients[clientSocket]->getevents().events = EPOLLOUT;
             clients[clientSocket]->buildResponse();
         }
     }
@@ -157,7 +160,6 @@ void handleClientRequest(map<int, Client *> &clients, int clientSocket, vector<C
     }
     if (clients[clientSocket]->getStatus() == Sending)
     {
-        cout << "------------------------\n";
         SendResponse(*clients[clientSocket]->getResp(), clientSocket);
         clients[clientSocket]->setNewSessionId(clients[clientSocket]->getResp()->getSessionId());
         if (clients[clientSocket]->getResp()->getResponseStatus() == Finish)
