@@ -41,7 +41,7 @@ public:
     void setStatus(int stat);
     void setRequest(Request &req);
     void setContentType(string content);
-    void setBodyResp(string &body);
+    void setBodyResp(const string &body);
     void setType(const string &type);
     void initStatusCode(void);
     size_t getTotalReceived(void);
@@ -95,4 +95,5 @@ void getContentType(string &real_path, Response &resp);
 void NonChunkedBody(Response &resp, int clientSocket);
 int ChunkedBody(Response &resp, int clientSocket);
 int SupportUpload(Response &resp);
+size_t getFileSize(const std::string &path);
 #endif

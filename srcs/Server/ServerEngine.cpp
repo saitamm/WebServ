@@ -54,11 +54,21 @@ void generateUser(Response &resp)
         resp.setSessionId(resp.getRequest()->getCookie());
     }
 }
+size_t getFileSize(const std::string &path)
+{
+    struct stat st;
+    if (stat(path.c_str(), &st) == 0)
+    {
+        return st.st_size;
+    }
+    return 0;
+}
+
 void SendResponse(Response &resp, int clientSocket)
 {
     if (resp.getResponseStatus() == Nonchunked)
     {
-        ostringstream response;
+        stringstream response;
         response << "HTTP/1.1 " << resp.getStatus() << " " << resp.getStatusValue(resp.getStatus()) << "\r\n";
         response << "Content-type: " << resp.getType() << "\r\n";
         if (resp.getRequest()->getRedirectionStatus())
@@ -69,10 +79,6 @@ void SendResponse(Response &resp, int clientSocket)
         response << "Set-Cookie: user=" << resp.getSessionId() << "\r\n";
         response << "Content-Length: " << resp.getBody().size() << "\r\n\r\n";
         response << resp.getBody();
-
-        // cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
-        // cout << response.str() << endl;
-        // cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
         // cout << "Response to be sent:\n" << final_resp << endl;
         int bytesend;
         if ((bytesend = send(clientSocket, response.str().c_str(), response.str().size(), 0)) == -1)
@@ -85,39 +91,96 @@ void SendResponse(Response &resp, int clientSocket)
     {
         if (resp.getResponseStatus() == First)
         {
-            ostringstream response;
+            stringstream response;
             response << "HTTP/1.1 " << resp.getStatus() << " " << resp.getStatusValue(resp.getStatus()) << "\r\n";
             response << "Content-type: " << resp.getType() << "\r\n";
-
+            size_t size = getFileSize(resp.getRequest()->getConfigFile().getRoot() + resp.getRequest()->getUri());
+            response << "Content-Length: " << size << "\r\n";
             generateUser(resp);
+            cout << "-------"<< resp.getSessionId() << "-------\n";
             response << "Set-Cookie: user=" << resp.getSessionId() << "\r\n";
-            response << "Connection: keep-alive\r\n";
-            response << "Transfer-Encoding: chunked\r\n\r\n";
-            response << hex << resp.getBody().size() << "\r\n";
-            response << resp.getBody() << "\r\n";
-            // cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
-            // cout << response.str() << endl;
-            // cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
-            int bytesend;
-            if ((bytesend = send(clientSocket, response.str().c_str(), response.str().size(), 0)) == -1)
-                cerr << "error Send \n";
-            else
-                cout << "First chunk sent successfully to client socket: " << bytesend << endl;
-            resp.setResponseStatus(chunked); // Set to chunked to continue reading
+            response << "Connection: close\r\n\r\n";
+            // response << "Transfer-Encoding: chunked\r\n\r\n";
+            cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
+            cout << response.str() << endl;
+            cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
+            string out = response.str();
+            size_t totalSent = 0;
+            while (totalSent < out.size())
+            {
+                ssize_t bytes = send(clientSocket, out.c_str() + totalSent, out.size() - totalSent, MSG_NOSIGNAL);
+                if (bytes > 0)
+                {
+                    totalSent += bytes;
+                    cout << "first chunk sent successfully to client socket: " << totalSent << endl;
+                }
+                else if (bytes == 0)
+                {
+                    cout << "Connection closed by peer\n";
+                    break;
+                }
+                else // bytes < 0
+                {
+                    if (errno == EINTR)
+                    {
+                        // Interrupted by signal, retry
+                        continue;
+                    }
+                    else if (errno == EAGAIN || errno == EWOULDBLOCK)
+                    {
+                        // Socket is non-blocking and not ready, can retry later
+                        // Optionally, use select()/poll()/epoll() to wait
+                        continue;
+                    }
+                    else
+                    {
+                        cout << "Send error: " << strerror(errno) << " (errno=" << errno << ")\n";
+                        break;
+                    }
+                }
+            }
+            resp.setResponseStatus(chunked);
         }
         else if (resp.getResponseStatus() == chunked)
         {
-            ostringstream response;
-            response << hex << resp.getBody().size() << "\r\n";
-            response << resp.getBody() << "\r\n";
-            int bytesend;
-            if ((bytesend = send(clientSocket, response.str().c_str(), response.str().size(), 0)) == -1)
-                cerr << "error Send \n";
-            cout << "Chunk sent successfully to client socket: " << bytesend << endl;
+            cout << ":::::::::::::::::::::::::::::::::::::::\n";
+            size_t totalSent = 0;
+            while (totalSent < resp.getBody().size())
+            {
+                cout << "-----------------------------\n";
+                ssize_t bytes = send(clientSocket, resp.getBody().c_str() + totalSent,resp.getBody().size() - totalSent, MSG_NOSIGNAL);
+                if (bytes > 0)
+                {
+                    totalSent += bytes;
+                    cout << "chunk sent successfully to client socket: " << totalSent << endl;
+                }
+                else if (bytes == 0)
+                {
+                    cout << "Connection closed by peer\n";
+                    break;
+                }
+                else // bytes < 0
+                {
+                    if (errno == EINTR)
+                    {
+                        // Interrupted by signal, retry
+                        continue;
+                    }
+                    else if (errno == EAGAIN || errno == EWOULDBLOCK)
+                    {
+                        continue;
+                    }
+                    else
+                    {
+                        cout << "Send error: " << strerror(errno) << " (errno=" << errno << ")\n";
+                        break;
+                    }
+                }
+            }
         }
         else if (resp.getResponseStatus() == Last)
         {
-            ostringstream response;
+            stringstream response;
             response << "0\r\n\r\n";
             int bytesend;
             if ((bytesend = send(clientSocket, response.str().c_str(), response.str().size(), 0)) == -1)
@@ -166,7 +229,6 @@ void handleClientRequest(map<int, Client *> &clients, int clientSocket, vector<C
             clients[clientSocket]->setStatus(Finished);
         if (clients[clientSocket]->getStatus() == Finished)
         {
-
             delete clients[clientSocket];
             clients.erase(clientSocket);
             close(clientSocket);
