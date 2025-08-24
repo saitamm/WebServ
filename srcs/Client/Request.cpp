@@ -95,6 +95,7 @@ void Request::ParseHeader(string &Header)
             if (_cookie[0] == '=')
                 _cookie = _cookie.substr(1);
             _cookie = _cookie.substr(0, _cookie.find('P'));
+            trim(_cookie, "\n\t\r ;");
         }
     }
     if (this->_host.empty())

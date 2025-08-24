@@ -98,6 +98,7 @@ int main(int ac, char **av)
 {
      if (ac != 2)
           return (printErr("ERROR: ./Webserv <file.conf>"));
+     signal(SIGPIPE, SIG_IGN);
      ConfigFile config;
      vector<ConfigFile> *servers;
      config.initDefaultError();
@@ -127,8 +128,8 @@ int main(int ac, char **av)
                          events[fd].data.fd = clientSocket;
                          events[fd].events = EPOLLIN;
                          epoll_ctl(epollFd, EPOLL_CTL_ADD, clientSocket, &events[fd]);
-                         cout << "New client connected on server port " << openedServers[fd].getPort()
-                         << ": socket = " << clientSocket << endl;
+                         // cout << "New client connected on server port " << openedServers[fd].getPort()
+                         //      << ": socket = " << clientSocket << endl;
                     }
                     else
                     {

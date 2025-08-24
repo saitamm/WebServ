@@ -41,6 +41,24 @@ void getContentType(string &real_path, Response &resp)
 void generateResponse(Response &resp, string &real_path)
 {
     getContentType(real_path, resp);
+    size_t size = getFileSize(real_path);
+    if (size < 5999999)
+    {
+        resp.setChunkFile(real_path);
+        if (!resp.getChunkFile().is_open())
+        {
+            cerr << "Failed to open chunk file: " << real_path << endl;
+            setCodeStatus(resp, 500);
+            resp.setResponseStatus(Nonchunked);
+            return;
+        }
+        resp.setStatus(200);
+        stringstream buffer;
+        buffer << resp.getChunkFile().rdbuf();
+        resp.setBodyResp(buffer.str());
+        resp.getChunkFile().close();
+        return;
+    }
     if (resp.getResponseStatus() == Nonchunked)
     {
         resp.setChunkFile(real_path);
@@ -52,22 +70,17 @@ void generateResponse(Response &resp, string &real_path)
             return;
         }
         resp.setStatus(200);
-        char buffer[2048];
-        resp.getChunkFile().read(buffer, sizeof(buffer));
-        string line(buffer, resp.getChunkFile().gcount());
-        resp.setBodyResp(line);
         resp.setResponseStatus(First);
         return;
     }
     resp.setStatus(200);
-    char buffer[2048];
+    char buffer[8192];
     resp.getChunkFile().read(buffer, sizeof(buffer));
     string line(buffer, resp.getChunkFile().gcount());
     resp.setBodyResp(line);
     resp.setResponseStatus(chunked);
     if (line.size() == 0)
     {
-        cout << ":::::::::::::::::::::::::::::::::::::::::::\n";
         resp.setResponseStatus(Last);
         resp.getChunkFile().close();
         return;
@@ -125,7 +138,6 @@ void handleGet(Response &resp)
 {
     string real_path = resp.getRequest()->getConfigFile().getRoot() + resp.getRequest()->getUri();
     struct stat path;
-    cout << "thiis is rha path =" << real_path <<endl;
     if (stat(real_path.c_str(), &path) == -1)
     {
         setCodeStatus(resp, 404);
