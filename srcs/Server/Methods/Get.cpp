@@ -95,6 +95,7 @@ void checkCgi(Response &resp, string &real_path, int clientFd, int epollFd, map<
         char *argv[] = {strdup(arg.c_str()), strdup(real_path.c_str()), NULL};
         char *envp[] = {strdup("REQUEST_METHOD=GET"), strdup(("SCRIPT_FILENAME=" + real_path).c_str()), NULL};
         execve(arg.c_str(), argv, envp);
+        setCodeStatus(resp, 500);
         exit(1);
     }
    else

@@ -11,6 +11,7 @@ public:
     int clientFd;
     int pid;
     int pipeFd;
+    bool finished;
     time_t start;
     std::string scriptPath;
     std::stringstream output;

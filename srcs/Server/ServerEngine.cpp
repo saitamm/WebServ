@@ -88,7 +88,7 @@ void handleClientRequest(map<int, Client *> &clients, int clientSocket, vector<C
         clients[clientSocket]->getResp()->initStatusCode();
         clients[clientSocket]->ParseHttpRequest(*clients[clientSocket], clientSocket, servers->at(0));
         if (clients[clientSocket]->getStatus() == Body || clients[clientSocket]->getStatus() == Processing)
-            clients[clientSocket]->buildResponse(clientSocket, clientSocket, epollFd, cgis);
+            clients[clientSocket]->buildResponse(clientSocket, epollFd, cgis);
     }
     catch (const std::exception &e)
     {
@@ -101,6 +101,8 @@ void handleClientRequest(map<int, Client *> &clients, int clientSocket, vector<C
     }
     if (clients[clientSocket]->getStatus() == Sending)
     {
+        cout << "i am hereeeeeeeeeeeeeeeeeeeeeeeeeeeee\n";
+
         SendResponse(*clients[clientSocket]->getResp(), clientSocket);
         clients[clientSocket]->setStatus(Finished);
         if (clients[clientSocket]->getStatus() == Finished)

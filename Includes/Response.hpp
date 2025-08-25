@@ -68,6 +68,6 @@ void handleDelete(Response &resp);
 int handleGet(Response &resp, int clientFd, int epollFd, map<int, CgiProcess*> &cgis);
 void setCodeStatus(Response &resp, int error);
 void getContentType(string &real_path, Response &resp);
-int handlePost(Response &resp, int clientSocket);
+int handlePost(Response &resp, int clientSocket, int epollFd, map<int, CgiProcess*> &cgis);
 string checkCgiPath(Response &resp);
 #endif

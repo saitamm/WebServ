@@ -85,7 +85,9 @@ int ChunkedBody(Response &resp, int clientSocket)
             char buf[BufferSize - size];
             bytesRead = recv(clientSocket, buf, sizeof(buf), 0);
             if (bytesRead == 0)
+            {
                 throw BadRequestException();
+            }
             resp.getFile().write(buf, bytesRead);
             resp.getFile().flush();
         }
@@ -102,7 +104,9 @@ int ChunkedBody(Response &resp, int clientSocket)
         size_t read = min(resp.getBufferSize() - resp.getReceived(), (unsigned int)sizeof(buff));
         bytesRead = recv(clientSocket, buff, read, 0);
         if (bytesRead <= 0)
+        {
             throw BadRequestException();
+        }
         resp.getFile().write(buff, bytesRead);
         resp.getFile().flush();
         resp.setReceived(bytesRead);
@@ -123,14 +127,14 @@ map<string, string> CgiEnv(Response &resp, string &path)
     map<string, string> env;
     env["REQUEST_METHOD"] = "POST";
     env["SCRIPT_FILENAME"] = path;
-    try
-    {
-        env["QUERY_STRING"] = resp.getRequest()->getQuery();
-    }
-    catch (exception &e)
-    {
-        cout << e.what() << endl;
-    }
+    // try
+    // {
+    //     env["QUERY_STRING"] = resp.getRequest()->getQuery();
+    // }
+    // catch (exception &e)
+    // {
+    //     cout << e.what() << endl;
+    // }
     env["SERVER_NAME"] = resp.getRequest()->getConfigFile().getName();
     std::stringstream ss;
     ss << resp.getRequest()->getConfigFile().getPort();
@@ -142,7 +146,7 @@ map<string, string> CgiEnv(Response &resp, string &path)
     return env;
 }
 
-void executeCgi(Response &resp)
+void executeCgi(Response& resp, int clientFd, int epollFd, map<int, CgiProcess*> &cgis)
 {
     string path;
     path = resp.getFileName();
@@ -186,8 +190,6 @@ void executeCgi(Response &resp)
     }
     else if (pid > 0)
     {
-        int timeout = 13; // seconds
-        time_t start = time(NULL);
         close(fd_in[0]);
         close(fd_out[1]);
         resp.getFile().seekg(0, std::ios::beg);
@@ -199,79 +201,108 @@ void executeCgi(Response &resp)
             write(fd_in[1], buf, resp.getFile().gcount());
         }
         close(fd_in[1]);
-        char buffer[1024];
-        string cgiOutput;
-        while (true) {
-            ssize_t bytesRead = read(fd_out[0], buffer, sizeof(buffer));
-            if (bytesRead > 0) {
-                cgiOutput.append(buffer, bytesRead);
-            }
-
-            // check timeout
-            if (time(NULL) - start > timeout) {
-                cerr << "[CGI] Timeout, killing process\n";
-                kill(pid, SIGKILL);
-                waitpid(pid, NULL, 0);
-                setCodeStatus(resp, 500);
-                break;
-            }
-
-            // check if child finished
-            int status;
-            pid_t result = waitpid(pid, &status, WNOHANG);
-            if (result == pid) {
-                // child exited
-                break;
-            }
-        }
-        close(fd_out[0]);
-        resp.getFile().close();
-        resp.getFile().open(resp.getFileName().c_str(), std::ios::out | std::ios::trunc | std::ios::binary);
-        resp.getFile().write(cgiOutput.data(), cgiOutput.size());
-        resp.getFile().flush();
-        setCodeStatus(resp, 200);
-        if (resp.getFile().is_open())
-            resp.getFile().close();
+        setNonBlocking(fd_out[0]);
+        epoll_event ev;
+        memset(&ev, 0, sizeof(ev));
+        ev.data.fd = fd_out[0];
+        ev.events = EPOLLIN | EPOLLHUP;
+        epoll_ctl(epollFd, EPOLL_CTL_ADD, fd_out[0], &ev);
+        CgiProcess *proc = new CgiProcess(clientFd, path);
+        proc->pid = pid;
+        proc->pipeFd = fd_out[0];
+        proc->start = time(NULL);
+        cgis[fd_out[0]] = proc;
     }
 }
 
-// void executeCgi(Response& resp)
-// {
-//     int fd[2];
-//     if (pipe(fd) == -1)
-//     {
-//         setCodeStatus(resp, 500);
-//         return;
-//     }
-//     pid_t pid = fork();
-//     if (pid < 0)
-//     {
-//         setCodeStatus(resp, 500);
-//         return;
-//     }
-//     if (pid == 0)
-//     {
-//         dup2(fd[1], STDOUT_FILENO);
-//         close(fd[1]);
-//         close(fd[0]);
-//     }
-// }
+    // void executeCgi(Response& resp, int clientFd, int epollFd, map<int, CgiProcess*> &cgis)
+    // {
+    //     int fd[2];
+    //    // string path = resp.getRequest()->getConfigFile().getRoot() + resp.getRequest()->getUri();
+    //    string path = resp.getFileName(); 
+    //    if (pipe(fd) == -1)
+    //     {
+    //         setCodeStatus(resp, 500);
+    //         return;
+    //     }
+    //     pid_t pid = fork();
+    //     if (pid < 0)
+    //     {
+    //         setCodeStatus(resp, 500);
+    //         return;
+    //     }
+    //     if (pid == 0)
+    //     {
+    //         dup2(fd[1], STDOUT_FILENO);
+    //         close(fd[1]);
+    //         close(fd[0]);
+    //         string cgiPath = checkCgiPath(resp);
+    //         map<string, string>env = CgiEnv(resp, path);
+    //         vector<char *> envp;
+    //         for (map<string, string>::iterator it = env.begin(); it != env.end(); ++it)
+    //         {
+    //             std::string entry = it->first + "=" + it->second;
+    //             envp.push_back(strdup(entry.c_str()));
+    //         }
+    //         envp.push_back(NULL);
+    //         char *argv[] = {strdup(cgiPath.c_str()), (char *)path.c_str(), NULL};
+    //         execve(cgiPath.c_str(), argv, envp.data());
+    //         perror("execve failed");
+    //         exit(1);
+    //     }
+    //     else
+    //     {
+    //         close(fd[1]);
+    //         setNonBlocking(fd[0]);
+    //         epoll_event ev;
+    //         memset(&ev, 0, sizeof(ev));
+    //         ev.data.fd = fd[0];
+    //         ev.events = EPOLLIN | EPOLLHUP;
+    //         epoll_ctl(epollFd, EPOLL_CTL_ADD, fd[0], &ev);
+    //         CgiProcess *proc = new CgiProcess(clientFd, path);
+    //         proc->pid = pid;
+    //         proc->pipeFd = fd[0];
+    //         proc->start = time(NULL);
+    //         cgis[fd[0]] = proc;
+    //     }
+    // }
 
-int handlePost(Response &resp, int clientSocket)
-{
-    if (SupportUpload(resp))
+    int handlePost(Response & resp, int clientSocket, int epollFd, map<int, CgiProcess *> &cgis)
     {
-        setCodeStatus(resp, 403);
-        return (1);
-    }
-    if (!resp.getRequest()->getLocation()->getCgi_pass().empty())
-    {
+        if (SupportUpload(resp))
+        {
+            setCodeStatus(resp, 403);
+            return (1);
+        }
+        if (!resp.getRequest()->getLocation()->getCgi_pass().empty())
+        {
+            if (resp.getRequest()->getHeadvalue("Transfer-Encoding").empty())
+            {
+                NonChunkedBody(resp, clientSocket);
+                if (resp.getTotalReceived() == resp.getRequest()->getContentLength())
+                {
+                    executeCgi(resp, clientSocket, epollFd, cgis);
+                    return (2);
+                }
+            }
+            else
+            {
+                if (ChunkedBody(resp, clientSocket))
+                {
+                    executeCgi(resp, clientSocket, epollFd, cgis);
+                    return (2);
+                }
+            }
+            return (0);
+        }
         if (resp.getRequest()->getHeadvalue("Transfer-Encoding").empty())
         {
             NonChunkedBody(resp, clientSocket);
             if (resp.getTotalReceived() == resp.getRequest()->getContentLength())
             {
-                executeCgi(resp);
+                if (resp.getFile().is_open())
+                    resp.getFile().close();
+                setCodeStatus(resp, 200);
                 return (1);
             }
         }
@@ -279,32 +310,11 @@ int handlePost(Response &resp, int clientSocket)
         {
             if (ChunkedBody(resp, clientSocket))
             {
-                executeCgi(resp);
+                if (resp.getFile().is_open())
+                    resp.getFile().close();
+                setCodeStatus(resp, 200);
                 return (1);
             }
         }
         return (0);
     }
-    if (resp.getRequest()->getHeadvalue("Transfer-Encoding").empty())
-    {
-        NonChunkedBody(resp, clientSocket);
-        if (resp.getTotalReceived() == resp.getRequest()->getContentLength())
-        {
-            if (resp.getFile().is_open())
-                resp.getFile().close();
-            setCodeStatus(resp, 200);
-            return (1);
-        }
-    }
-    else
-    {
-        if (ChunkedBody(resp, clientSocket))
-        {
-            if (resp.getFile().is_open())
-                resp.getFile().close();
-            setCodeStatus(resp, 200);
-            return (1);
-        }
-    }
-    return (0);
-}
