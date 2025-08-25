@@ -74,12 +74,12 @@ void generateResponse(Response &resp, string &real_path)
         return;
     }
     resp.setStatus(200);
-    char buffer[8192];
+    char buffer[1024];
     resp.getChunkFile().read(buffer, sizeof(buffer));
     string line(buffer, resp.getChunkFile().gcount());
-    resp.setBodyResp(line);
+    resp.setBodyResp(resp.getRestSend() + line);
     resp.setResponseStatus(chunked);
-    if (line.size() == 0)
+    if (line.size() == 0 && resp.getRestSend().empty())
     {
         resp.setResponseStatus(Last);
         resp.getChunkFile().close();
