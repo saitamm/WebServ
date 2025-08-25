@@ -133,7 +133,7 @@ void Client::ParseHttpRequest(Client &client, int clientSocket, vector<ConfigFil
             if (!_resp->getFile().is_open())
             {
                 setCodeStatus(*this->_resp, 500);
-                cout << "this is my file name: " << _resp->getFileName() << endl;   
+                // cout << "this is my file name: " << _resp->getFileName() << endl;   
                 _status = Processing;
                 return;
             }

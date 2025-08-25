@@ -1,5 +1,5 @@
 #include "../../Includes/Client.hpp"
-// check this fucntion because the body is not necessery set here
+
 void setCodeStatus(Response &resp, int error)
 {
     if (resp.getRequest()->getRedirectionStatus())
@@ -64,102 +64,73 @@ size_t getFileSize(const std::string &path)
     return 0;
 }
 
-void SendResponse(Response &resp, int clientSocket)
+void NonchunkedResponse(Response &resp, int clientSocket)
 {
-    if (resp.getResponseStatus() == Nonchunked)
+    stringstream response;
+    response << "HTTP/1.1 " << resp.getStatus() << " " << resp.getStatusValue(resp.getStatus()) << "\r\n";
+    response << "Content-type: " << resp.getType() << "\r\n";
+    if (resp.getRequest()->getRedirectionStatus())
+    {
+        response << "Location: " << resp.getRequest()->getLocation()->getRetur().begin()->second << "\r\n";
+    }
+    generateUser(resp);
+    response << "Set-Cookie: user=" << resp.getSessionId() << "\r\n";
+    response << "Content-Length: " << resp.getBody().size() << "\r\n\r\n";
+
+    response << resp.getBody();
+    int bytesend;
+    bytesend = send(clientSocket, response.str().c_str(), response.str().size(), MSG_NOSIGNAL);
+    if (bytesend != (int)response.str().size() && bytesend != -1)
+    {
+        resp.setRestSend(response.str().substr(bytesend));
+        return;
+    }
+    resp.setResponseStatus(Finish);
+}
+
+void chunkedResponse(Response &resp, int clientSocket)
+{
+    if (resp.getResponseStatus() == First)
     {
         stringstream response;
         response << "HTTP/1.1 " << resp.getStatus() << " " << resp.getStatusValue(resp.getStatus()) << "\r\n";
         response << "Content-type: " << resp.getType() << "\r\n";
-        if (resp.getRequest()->getRedirectionStatus())
-        {
-            response << "Location: " << resp.getRequest()->getLocation()->getRetur().begin()->second << "\r\n";
-        }
+        response << "Transfer-Encoding: chunked\r\n";
         generateUser(resp);
         response << "Set-Cookie: user=" << resp.getSessionId() << "\r\n";
-        response << "Content-Length: " << resp.getBody().size() << "\r\n\r\n";
-
-        response << resp.getBody();
-        // cout << "Response to be sent:\n" << final_resp << endl;
+        response << "Connection: close\r\n\r\n";
         int bytesend;
-        if ((bytesend = send(clientSocket, response.str().c_str(), response.str().size(), MSG_NOSIGNAL)) == -1)
-            cout << "error Send \n";
-        else
-            cout << "Response sent successfully to client socket: " << bytesend << endl;
+        bytesend = send(clientSocket, response.str().c_str(), response.str().size(), MSG_NOSIGNAL);
+        if (bytesend != (int)response.str().size() && bytesend != -1)
+            resp.setRestSend(response.str().substr(bytesend));
+        resp.setResponseStatus(chunked);
+    }
+    else if (resp.getResponseStatus() == chunked)
+    {
+        stringstream response;
+        response << std::hex << resp.getBody().size() << "\r\n";
+        response << resp.getBody() << "\r\n";
+        string responseStr = response.str();
+        int bytesend;
+        bytesend = send(clientSocket, responseStr.c_str(), responseStr.size(), 0);
+        if (bytesend != (int)response.str().size() && bytesend != -1)
+            resp.setRestSend(response.str().substr(bytesend));
+    }
+    else if (resp.getResponseStatus() == Last)
+    {
+        stringstream response;
+        response << "0\r\n\r\n";
+        int bytesend;
+        bytesend = send(clientSocket, response.str().c_str(), response.str().size(), MSG_NOSIGNAL);
         resp.setResponseStatus(Finish);
     }
+}
+void SendResponse(Response &resp, int clientSocket)
+{
+    if (resp.getResponseStatus() == Nonchunked)
+        NonchunkedResponse(resp, clientSocket);
     else
-    {
-        if (resp.getResponseStatus() == First)
-        {
-            stringstream response;
-            response << "HTTP/1.1 " << resp.getStatus() << " " << resp.getStatusValue(resp.getStatus()) << "\r\n";
-            response << "Content-type: " << resp.getType() << "\r\n";
-            response << "Transfer-Encoding: chunked\r\n";
-            size_t size = getFileSize(resp.getRequest()->getConfigFile().getRoot() + resp.getRequest()->getUri());
-            response << "Content-Length: " << size << "\r\n";
-            generateUser(resp);
-            response << "Set-Cookie: user=" << resp.getSessionId() << "\r\n";
-            response << "Connection: close\r\n\r\n";
-            int bytesend;
-            bytesend = send(clientSocket, response.str().c_str(), response.str().size(), MSG_NOSIGNAL);
-            if (bytesend == -1)
-            {
-                cout << "error Send \n";
-                resp.setRestSend(response.str().substr(bytesend));
-            }
-            else
-            {
-                if (bytesend == (int)response.str().size())
-                    cout << "First chunk sent successfully to client socket: " << bytesend << endl;
-                else
-                {
-                    resp.setRestSend(response.str().substr(bytesend));
-                    cout << "Partial first chunk sent successfully to client socket: " << bytesend << endl;
-                }
-            }
-            resp.setResponseStatus(chunked);
-        }
-        else if (resp.getResponseStatus() == chunked)
-        {
-            cout << ":::::::::::::::::::::::::::::::::::::::\n";
-            stringstream response;
-            response << std::hex << resp.getBody().size() << "\r\n";
-            response << resp.getBody() << "\r\n";
-            string responseStr = response.str();
-            int bytesend;
-            bytesend = send(clientSocket, responseStr.c_str(), responseStr.size(), 0);
-            if (bytesend == -1)
-            {
-                resp.setRestSend(response.str().substr(bytesend));
-                cout << "error Send \n";
-            }
-            else
-            {
-                if (bytesend == (int)response.str().size())
-                    cout << " chunk sent successfully to client socket: " << bytesend << endl;
-                else
-                {
-                    resp.setRestSend(response.str().substr(bytesend));
-                    cout << "Partial  chunk sent successfully to client socket: " << bytesend << endl;
-                }
-            }
-        }
-        else if (resp.getResponseStatus() == Last)
-        {
-            stringstream response;
-            response << "0\r\n\r\n";
-            int bytesend;
-            if ((bytesend = send(clientSocket, response.str().c_str(), response.str().size(), MSG_NOSIGNAL)) == -1)
-            {
-                resp.setRestSend(response.str().substr(bytesend));
-                cout << "error Send \n";
-            }
-            else
-                cout << "Last chunk sent successfully to client socket: " << bytesend << endl;
-            resp.setResponseStatus(Finish);
-        }
-    }
+        chunkedResponse(resp, clientSocket);
 }
 int allowMethod(Location loc, string method)
 {

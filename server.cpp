@@ -1,7 +1,6 @@
 #include "Includes/Client.hpp"
 #include <iostream>
 
-
 int Client::epollFd = -1;
 int create_server_socket(vector<ConfigFile> *servers)
 {
@@ -129,22 +128,13 @@ int main(int ac, char **av)
                          if (clients.find(clientSocket) == clients.end())
                               clients[clientSocket] = new Client();
                          clients[clientSocket]->setEpollFd(epollFd);
-                         // memset(&events[fd], 0, sizeof(events[fd]));
-                         // events[fd].data.fd = clientSocket;
-                         // events[fd].events = EPOLLIN;
                          clients[clientSocket]->getEvent().data.fd = clientSocket;
                          clients[clientSocket]->getEvent().events = EPOLLIN;
                          epoll_ctl(epollFd, EPOLL_CTL_ADD, clientSocket, &clients[clientSocket]->getEvent());
-                         cout << "New client connected on server port " << openedServers[fd].getPort()
-                              << ": socket = " << clientSocket << endl;
                     }
                     else
                     {
                          handleClientRequest(clients, fd, servers);
-                         // delete clients[fd];
-                         // clients.erase(fd);
-                         // close(fd);
-                         // because we are not deleting the client here, we need to handle the response and status (test large body)
                     }
                }
           }
