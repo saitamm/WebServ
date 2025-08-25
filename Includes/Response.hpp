@@ -65,6 +65,8 @@ public:
         }
     }
     fstream &getChunkFile(void) { return _chunkFile; }
+    string &getRestSend(void) { return _restSend; }
+    void setRestSend(const string &rest) { _restSend = rest; }
 
 private:
     string _ContentType;
@@ -86,6 +88,7 @@ private:
     // Chunked Response
     ResponseStatus _status;
     fstream _chunkFile;
+    string _restSend;
 };
 void handleDelete(Response &resp);
 void handleGet(Response &resp);

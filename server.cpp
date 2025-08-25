@@ -1,6 +1,8 @@
 #include "Includes/Client.hpp"
 #include <iostream>
 
+
+int Client::epollFd = -1;
 int create_server_socket(vector<ConfigFile> *servers)
 {
      int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
@@ -124,18 +126,20 @@ int main(int ac, char **av)
                     if (openedServers.find(fd) != openedServers.end())
                     {
                          int clientSocket = accept(fd, NULL, NULL);
-                         memset(&events[fd], 0, sizeof(events[fd]));
-                         events[fd].data.fd = clientSocket;
-                         events[fd].events = EPOLLIN;
-                         epoll_ctl(epollFd, EPOLL_CTL_ADD, clientSocket, &events[fd]);
-                         // cout << "New client connected on server port " << openedServers[fd].getPort()
-                         //      << ": socket = " << clientSocket << endl;
+                         if (clients.find(clientSocket) == clients.end())
+                              clients[clientSocket] = new Client();
+                         clients[clientSocket]->setEpollFd(epollFd);
+                         // memset(&events[fd], 0, sizeof(events[fd]));
+                         // events[fd].data.fd = clientSocket;
+                         // events[fd].events = EPOLLIN;
+                         clients[clientSocket]->getEvent().data.fd = clientSocket;
+                         clients[clientSocket]->getEvent().events = EPOLLIN;
+                         epoll_ctl(epollFd, EPOLL_CTL_ADD, clientSocket, &clients[clientSocket]->getEvent());
+                         cout << "New client connected on server port " << openedServers[fd].getPort()
+                              << ": socket = " << clientSocket << endl;
                     }
                     else
                     {
-                         // cout << "------------------------------\n";
-                         if (clients.find(fd) == clients.end())
-                              clients[fd] = new Client();
                          handleClientRequest(clients, fd, servers);
                          // delete clients[fd];
                          // clients.erase(fd);

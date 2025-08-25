@@ -78,11 +78,12 @@ void SendResponse(Response &resp, int clientSocket)
         generateUser(resp);
         response << "Set-Cookie: user=" << resp.getSessionId() << "\r\n";
         response << "Content-Length: " << resp.getBody().size() << "\r\n\r\n";
+
         response << resp.getBody();
         // cout << "Response to be sent:\n" << final_resp << endl;
         int bytesend;
-        if ((bytesend = send(clientSocket, response.str().c_str(), response.str().size(), 0)) == -1)
-            cerr << "error Send \n";
+        if ((bytesend = send(clientSocket, response.str().c_str(), response.str().size(), MSG_NOSIGNAL)) == -1)
+            cout << "error Send \n";
         else
             cout << "Response sent successfully to client socket: " << bytesend << endl;
         resp.setResponseStatus(Finish);
@@ -94,49 +95,27 @@ void SendResponse(Response &resp, int clientSocket)
             stringstream response;
             response << "HTTP/1.1 " << resp.getStatus() << " " << resp.getStatusValue(resp.getStatus()) << "\r\n";
             response << "Content-type: " << resp.getType() << "\r\n";
+            response << "Transfer-Encoding: chunked\r\n";
             size_t size = getFileSize(resp.getRequest()->getConfigFile().getRoot() + resp.getRequest()->getUri());
             response << "Content-Length: " << size << "\r\n";
             generateUser(resp);
-            cout << "-------"<< resp.getSessionId() << "-------\n";
             response << "Set-Cookie: user=" << resp.getSessionId() << "\r\n";
             response << "Connection: close\r\n\r\n";
-            // response << "Transfer-Encoding: chunked\r\n\r\n";
-            cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
-            cout << response.str() << endl;
-            cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
-            string out = response.str();
-            size_t totalSent = 0;
-            while (totalSent < out.size())
+            int bytesend;
+            bytesend = send(clientSocket, response.str().c_str(), response.str().size(), MSG_NOSIGNAL);
+            if (bytesend == -1)
             {
-                ssize_t bytes = send(clientSocket, out.c_str() + totalSent, out.size() - totalSent, MSG_NOSIGNAL);
-                if (bytes > 0)
+                cout << "error Send \n";
+                resp.setRestSend(response.str().substr(bytesend));
+            }
+            else
+            {
+                if (bytesend == (int)response.str().size())
+                    cout << "First chunk sent successfully to client socket: " << bytesend << endl;
+                else
                 {
-                    totalSent += bytes;
-                    cout << "first chunk sent successfully to client socket: " << totalSent << endl;
-                }
-                else if (bytes == 0)
-                {
-                    cout << "Connection closed by peer\n";
-                    break;
-                }
-                else // bytes < 0
-                {
-                    if (errno == EINTR)
-                    {
-                        // Interrupted by signal, retry
-                        continue;
-                    }
-                    else if (errno == EAGAIN || errno == EWOULDBLOCK)
-                    {
-                        // Socket is non-blocking and not ready, can retry later
-                        // Optionally, use select()/poll()/epoll() to wait
-                        continue;
-                    }
-                    else
-                    {
-                        cout << "Send error: " << strerror(errno) << " (errno=" << errno << ")\n";
-                        break;
-                    }
+                    resp.setRestSend(response.str().substr(bytesend));
+                    cout << "Partial first chunk sent successfully to client socket: " << bytesend << endl;
                 }
             }
             resp.setResponseStatus(chunked);
@@ -144,37 +123,25 @@ void SendResponse(Response &resp, int clientSocket)
         else if (resp.getResponseStatus() == chunked)
         {
             cout << ":::::::::::::::::::::::::::::::::::::::\n";
-            size_t totalSent = 0;
-            while (totalSent < resp.getBody().size())
+            stringstream response;
+            response << std::hex << resp.getBody().size() << "\r\n";
+            response << resp.getBody() << "\r\n";
+            string responseStr = response.str();
+            int bytesend;
+            bytesend = send(clientSocket, responseStr.c_str(), responseStr.size(), 0);
+            if (bytesend == -1)
             {
-                cout << "-----------------------------\n";
-                ssize_t bytes = send(clientSocket, resp.getBody().c_str() + totalSent,resp.getBody().size() - totalSent, MSG_NOSIGNAL);
-                if (bytes > 0)
+                resp.setRestSend(response.str().substr(bytesend));
+                cout << "error Send \n";
+            }
+            else
+            {
+                if (bytesend == (int)response.str().size())
+                    cout << " chunk sent successfully to client socket: " << bytesend << endl;
+                else
                 {
-                    totalSent += bytes;
-                    cout << "chunk sent successfully to client socket: " << totalSent << endl;
-                }
-                else if (bytes == 0)
-                {
-                    cout << "Connection closed by peer\n";
-                    break;
-                }
-                else // bytes < 0
-                {
-                    if (errno == EINTR)
-                    {
-                        // Interrupted by signal, retry
-                        continue;
-                    }
-                    else if (errno == EAGAIN || errno == EWOULDBLOCK)
-                    {
-                        continue;
-                    }
-                    else
-                    {
-                        cout << "Send error: " << strerror(errno) << " (errno=" << errno << ")\n";
-                        break;
-                    }
+                    resp.setRestSend(response.str().substr(bytesend));
+                    cout << "Partial  chunk sent successfully to client socket: " << bytesend << endl;
                 }
             }
         }
@@ -183,8 +150,11 @@ void SendResponse(Response &resp, int clientSocket)
             stringstream response;
             response << "0\r\n\r\n";
             int bytesend;
-            if ((bytesend = send(clientSocket, response.str().c_str(), response.str().size(), 0)) == -1)
-                cerr << "error Send \n";
+            if ((bytesend = send(clientSocket, response.str().c_str(), response.str().size(), MSG_NOSIGNAL)) == -1)
+            {
+                resp.setRestSend(response.str().substr(bytesend));
+                cout << "error Send \n";
+            }
             else
                 cout << "Last chunk sent successfully to client socket: " << bytesend << endl;
             resp.setResponseStatus(Finish);
@@ -206,7 +176,8 @@ void handleClientRequest(map<int, Client *> &clients, int clientSocket, vector<C
     try
     {
         clients[clientSocket]->getResp()->initStatusCode();
-        clients[clientSocket]->ParseHttpRequest(*clients[clientSocket], clientSocket, *servers);
+        if (clients[clientSocket]->getEvent().events == EPOLLIN)
+            clients[clientSocket]->ParseHttpRequest(*clients[clientSocket], clientSocket, *servers);
         if (clients[clientSocket]->getStatus() == Processing || clients[clientSocket]->getStatus() == Sending)
         {
             clients[clientSocket]->buildResponse();
@@ -223,6 +194,8 @@ void handleClientRequest(map<int, Client *> &clients, int clientSocket, vector<C
     }
     if (clients[clientSocket]->getStatus() == Sending)
     {
+        clients[clientSocket]->getEvent().events = EPOLLOUT;
+        epoll_ctl(clients[clientSocket]->getEpollFd(), EPOLL_CTL_MOD, clientSocket, &clients[clientSocket]->getEvent());
         SendResponse(*clients[clientSocket]->getResp(), clientSocket);
         clients[clientSocket]->setNewSessionId(clients[clientSocket]->getResp()->getSessionId());
         if (clients[clientSocket]->getResp()->getResponseStatus() == Finish)

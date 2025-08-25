@@ -7,6 +7,7 @@ Client::Client()
     _status = Heading;
     _req = new Request();
     _resp = new Response();
+    memset(&_event, 0, sizeof(_event));
 }
 
 Client::~Client()
