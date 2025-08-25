@@ -29,7 +29,7 @@ public:
     int getFd(void) const;
     string &getbuff(void) { return (_buffer); }
     Request *getRequest(void){return(_req);};
-    void buildResponse(int clientSocket, int clientFd, int epollFd, map<int, CgiProcess*> &cgis);
+    void buildResponse(int clientSocket, int epollFd, map<int, CgiProcess*> &cgis);
     void setStatus(const ClientStatus &status) { _status = status; }
     ClientStatus getStatus(void) const { return _status; }
     void ParseHttpRequest(Client &client,int clientSocket ,ConfigFile &serv);

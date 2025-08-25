@@ -15,6 +15,7 @@ string &Request::getQuery(void)
 {
     if (_url.size() == 2)
         return (_url[1]);
+    cout << "\n\n HEY \n\n";
     throw BadRequestException();
 }
 string &Request::getCtype(void) { return (_head["Content-Type"]); }

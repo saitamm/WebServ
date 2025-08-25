@@ -65,7 +65,7 @@ void Client::setBuff(string &buff, size_t &readbyte)
     _buffer.append(buff, readbyte);
 }
 
-void Client::buildResponse(int clientSocket, int clientFd, int epollFd, map<int, CgiProcess*> &cgis)
+void Client::buildResponse(int clientFd, int epollFd, map<int, CgiProcess*> &cgis)
 {
    
     this->_resp->setRequest(*this->_req);
@@ -85,8 +85,11 @@ void Client::buildResponse(int clientSocket, int clientFd, int epollFd, map<int,
     {
         if(handleGet(*this->_resp, clientFd, epollFd, cgis) == 0)
             _status = Sending;
-        else 
+        else
+        {
             _status = WaitingCGI;
+            cout << "i am here waiting for cgi-----------------\n";
+        }
         return;
     }
     if (this->_req->getMethod() == "POST" && (_status == Body || _status == Processing))
@@ -110,10 +113,16 @@ void Client::buildResponse(int clientSocket, int clientFd, int epollFd, map<int,
             }
             _status = Processing;
         }
-        if (handlePost(*this->_resp, clientSocket))
+        int retur = handlePost(*this->_resp, clientFd, epollFd, cgis);
+        if (retur == 1)
         {
             _status = Sending;
             cout << "Post request handled successfully." << endl;
+        }
+        else if (retur == 2)
+        {
+            _status = WaitingCGI;
+            cout << "Waiting for cgi-----------\n";
         }
         return;
     }

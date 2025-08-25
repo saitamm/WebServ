@@ -93,6 +93,28 @@ int openSocket(vector<ConfigFile> *servers, int epollFd, map<int, ConfigFile> &o
      return 0;
 }
 
+void sendCleanUp(Response &resp, int epollFd, CgiProcess *proc, std::map<int, Client *> &clients, std::map<int, CgiProcess *> &cgis)
+{
+     epoll_ctl(epollFd, EPOLL_CTL_DEL, proc->pipeFd, NULL);
+     close(proc->pipeFd);
+
+     std::map<int, Client *>::iterator it = clients.find(proc->clientFd);
+     if (it != clients.end())
+     {
+          Client *client = it->second;
+          SendResponse(resp, proc->clientFd);
+          client->setStatus(Finished);
+
+          close(proc->clientFd);         // Close client socket
+          delete client;                 // Safe deletion
+          clients.erase(proc->clientFd); // Remove from map
+     }
+
+     // Remove CGI process from map
+     cgis.erase(proc->pipeFd);
+     delete proc;
+}
+
 int main(int ac, char **av)
 {
      if (ac != 2)
@@ -114,98 +136,115 @@ int main(int ac, char **av)
           const int MAX_EVENTS = 1000;
           epoll_event events[MAX_EVENTS];
           map<int, Client *> clients;
+          std::vector<int> clientsToDelete;
           while (1)
           {
-               int n = epoll_wait(epollFd, events, MAX_EVENTS, -1); // blocks until at least one connection is ready
+               int n = epoll_wait(epollFd, events, MAX_EVENTS, -1);
                for (int i = 0; i < n; ++i)
                {
                     int fd = events[i].data.fd;
+
+                    // New client connection
                     if (openedServers.find(fd) != openedServers.end())
                     {
                          int clientSocket = accept(fd, NULL, NULL);
-                         setNonBlocking(clientSocket); // ensure the socket won't block reads/write
+                         setNonBlocking(clientSocket);
+
                          epoll_event clientEvent;
                          memset(&clientEvent, 0, sizeof(clientEvent));
                          clientEvent.data.fd = clientSocket;
-                         clientEvent.events = EPOLLIN; // epoll knows when new clients are connecting
+                         clientEvent.events = EPOLLIN;
                          epoll_ctl(epollFd, EPOLL_CTL_ADD, clientSocket, &clientEvent);
 
-                         cout << "New client connected on server port " << openedServers[fd].getPort()
-                              << ": socket = " << clientSocket << endl;
+                         std::cout << "New client connected on server port " << openedServers[fd].getPort()
+                                   << ": socket = " << clientSocket << std::endl;
+                         continue;
                     }
-                    else if (cgis.find(fd) != cgis.end())
+
+                    // CGI output
+                    if (cgis.find(fd) != cgis.end())
                     {
                          CgiProcess *proc = cgis[fd];
                          char buffer[1024];
-                         ssize_t bytesRead = read(fd, buffer, sizeof(buffer));
-
+                         ssize_t bytesRead = read(proc->pipeFd, buffer, sizeof(buffer));
                          if (bytesRead > 0)
                               proc->output.write(buffer, bytesRead);
 
                          int status;
                          pid_t result = waitpid(proc->pid, &status, WNOHANG);
 
-                         if (result == proc->pid)
+                         if (result == proc->pid || difftime(time(NULL), proc->start) > 5)
                          {
-                              cout << "******************" << clients[proc->clientFd]->getRequest() << endl;
-                              Response &resp = *clients[proc->clientFd]->getResp();
-                              resp.setRequest(*clients[proc->clientFd]->getRequest());
-                              std::string outStr = proc->output.str();
-                              resp.setBodyResp(outStr);
-                              cout << "******************** " << resp.getBody() << endl;
-                              resp.setStatus(200);
-                              resp.setType("text/html");
-                              
-                              close(proc->pipeFd);
-                              epoll_ctl(epollFd, EPOLL_CTL_DEL, proc->pipeFd, NULL);
-                              
-                              cerr << "[CGI] Finished for client fd=" << proc->clientFd << endl;
-                              
-                              SendResponse(resp, proc->clientFd);
-                              delete proc;
-                              cgis.erase(fd);
-                         }
-                         else if (difftime(time(NULL), proc->start) > 5)
-                         {
-                              cerr << "[CGI] Timeout, killing pid=" << proc->pid << endl;
-                              kill(proc->pid, SIGKILL);
-                              waitpid(proc->pid, NULL, 0);
+                              Client *client = clients[proc->clientFd];
+                              Response &resp = *client->getResp();
+                              resp.setRequest(*client->getRequest());
 
-                              Response &resp = *clients[proc->clientFd]->getResp();
-                              setCodeStatus(resp, 500);
+                              if (result == proc->pid)
+                              {
+                                   if (WIFEXITED(status))
+                                   {
+                                        int exitCode = WEXITSTATUS(status);
+                                        if (exitCode == 0)
+                                        {
+                                             std::string outStr = proc->output.str();
+                                             if (resp.getRequest()->getMethod() == "POST")
+                                             {
+                                                  resp.getFile().close();
+                                                  resp.getFile().open(resp.getFileName().c_str(), ios::out | ios::trunc | ios::binary);
+                                                  resp.getFile().write(outStr.data(), outStr.size());
+                                                  resp.getFile().flush();
+                                                  if (resp.getFile().is_open())
+                                                       resp.getFile().close();
+                                                  resp.setStatus(200);
+                                             }
+                                             else
+                                             {
+                                                  resp.setBodyResp(outStr);
+                                                  resp.setStatus(200);
+                                                  resp.setType("text/html");
+                                             }
+                                        }
+                                        else
+                                        {
+                                             std::cerr << "CGI exited with error code " << exitCode << std::endl;
+                                             setCodeStatus(resp, 500);
+                                        }
+                                   }
+                                   else if (WIFSIGNALED(status))
+                                   {
+                                        int sig = WTERMSIG(status);
+                                        std::cerr << "CGI killed by signal " << sig << std::endl;
+                                        setCodeStatus(resp, 500);
+                                   }
+                              }
+                              else
+                              {
+                                   std::cerr << "[CGI] Timeout, killing pid=" << proc->pid << std::endl;
+                                   kill(proc->pid, SIGKILL);
+                                   waitpid(proc->pid, NULL, 0);
+                                   setCodeStatus(resp, 500);
+                              }
 
-                              close(proc->pipeFd);
-                              epoll_ctl(epollFd, EPOLL_CTL_DEL, proc->pipeFd, NULL);
-                              SendResponse(resp, proc->clientFd);
-                              delete proc;
-                              cgis.erase(fd);
+                              // Cleanup and send response safely
+                              sendCleanUp(resp, epollFd, proc, clients, cgis);
                          }
+                         continue;
                     }
 
-                    else
+                    // Normal client request
+                    if (events[i].events & (EPOLLHUP | EPOLLRDHUP))
                     {
-                         if (events[i].events & (EPOLLHUP | EPOLLRDHUP)) // EPOLLHUP: Full connection closed | EPOLLRDHUP: No more data to read
-                         {
-                              cerr << "Client disconnected: fd=" << fd << endl;
-                              close(fd);
-                              delete clients[fd];
-                              clients.erase(fd);
-
-                              continue;
-                         }
-                         if (clients.find(fd) == clients.end())
-                              clients[fd] = new Client();
-                         handleClientRequest(clients, fd, servers, epollFd, cgis);
-                         // if (clients[fd]->getStatus() == WaitingCGI)
-                         // {
-                         //      delete clients[fd];
-                         //      clients.erase(fd);
-                         //      close(fd);
-                         // }
-                         // delete clients[fd];
-                         // clients.erase(fd);
-                         // close(fd);
+                         std::cerr << "Client disconnected: fd=" << fd << std::endl;
+                         close(fd);
+                         delete clients[fd];
+                         clients.erase(fd);
+                         continue;
                     }
+
+                    if (clients.find(fd) == clients.end())
+                         clients[fd] = new Client();
+
+                    handleClientRequest(clients, fd, servers, epollFd, cgis);
                }
           }
           for (map<int, ConfigFile>::iterator it = openedServers.begin(); it != openedServers.end(); ++it)
