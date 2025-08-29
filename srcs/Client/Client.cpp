@@ -143,11 +143,12 @@ void Client::ParseHttpRequest(Client &client, int clientSocket, vector<ConfigFil
         {
             setCodeStatus(*_resp, 403);
             _status = Processing;
+            return;
         }
         if (_resp->getRequest()->getHeadvalue("Transfer-Encoding").empty())
         {
             NonChunkedBody(*_resp, clientSocket);
-            if (_resp->getTotalReceived() == _resp->getRequest()->getContentLength())
+            if  (_resp->getTotalReceived() == _resp->getRequest()->getContentLength())
             {
                 if (_resp->getFile().is_open())
                     _resp->getFile().close();
