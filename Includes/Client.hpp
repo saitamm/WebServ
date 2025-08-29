@@ -37,6 +37,7 @@ public:
     static int getEpollFd(void) { return (epollFd); }
     static void setEpollFd(int fd) { epollFd = fd; }
     
+    void setNonBlocking(int fd);
 private:
     Client(const Client &copy) ;
     Request *_req;

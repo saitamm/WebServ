@@ -4,6 +4,7 @@ void setCodeStatus(Response &resp, int error)
 {
     if (resp.getRequest()->getRedirectionStatus())
     {
+        cout << "---------------------------------" << resp.getRequest()->getRedirectionStatus() << "\n";
         resp.setStatus(resp.getRequest()->getLocation()->getRetur().begin()->first);
         return;
     }
@@ -71,7 +72,13 @@ void NonchunkedResponse(Response &resp, int clientSocket)
     response << "Content-type: " << resp.getType() << "\r\n";
     if (resp.getRequest()->getRedirectionStatus())
     {
-        response << "Location: " << resp.getRequest()->getLocation()->getRetur().begin()->second << "\r\n";
+        Location *loc = resp.getRequest()->getLocation();
+        if (loc)
+        {
+            const map<int, string> &returMap = loc->getRetur();
+            if (!returMap.empty())
+                response << "Location: " << returMap.begin()->second << "\r\n";
+        }
     }
     generateUser(resp);
     response << "Set-Cookie: user=" << resp.getSessionId() << "\r\n";
