@@ -36,6 +36,7 @@ public:
     fstream &getFile(void );
     unsigned int getReceived(void);
     unsigned int getBufferSize(void);
+    string &getFileName(void) { return _filename; }
     string &getSessionId(void);
     // setters
     void setStatus(int stat);
@@ -51,7 +52,6 @@ public:
     void setBufferSize(unsigned int size);
     void setSessionId(string  &user);
     void setFileName(const string &filename) { _filename = filename; }
-    string &getFileName(void) { return _filename; }
 
     //Test
     void setResponseStatus(ResponseStatus status) { _status = status; }

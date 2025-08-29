@@ -123,7 +123,7 @@ void checkCgi(Response &resp, string &real_path)
             output.write(buffer, bytesRead);
         }
         close(fd[0]);
-
+        cout << "======================= "<< buffer << endl;
         int status;
         waitpid(pid, &status, 0);
 
@@ -163,6 +163,10 @@ void handleGet(Response &resp)
         {
             if (resp.getRequest()->getLocation()->getAuto_idx() != "on")
             {
+                cout << "wa ra khasek tkoun hna" << resp.getRequest()->getLocation()->getPath()<< "\n";
+                cout << "wa ra khasek tkoun hna" << resp.getRequest()->getLocation()->getAuto_idx()<< "\n";
+                std::cout << "Request location address: " << resp.getRequest()->getLocation() << "\n";
+
                 if (resp.getRequest()->getConfigFile().getIndex().empty())
                 {
                     return setCodeStatus(resp, 404);
