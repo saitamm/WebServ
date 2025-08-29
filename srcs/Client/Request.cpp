@@ -11,12 +11,11 @@ Request::~Request() {}
 string &Request::getHost(void) { return (_host); }
 string &Request::getMethod(void) { return (_method); }
 string &Request::getUri(void) { return (_url[0]); }
-string &Request::getQuery(void)
+string Request::getQuery(void)
 {
     if (_url.size() == 2)
         return (_url[1]);
-    cout << "\n\n HEY \n\n";
-    throw BadRequestException();
+    return "";
 }
 string &Request::getCtype(void) { return (_head["Content-Type"]); }
 Location *Request::getLocation(void) { return (_locat); }
