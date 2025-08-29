@@ -126,8 +126,7 @@ void chunkedResponse(Response &resp, int clientSocket)
     {
         stringstream response;
         response << "0\r\n\r\n";
-        int bytesend;
-        bytesend = send(clientSocket, response.str().c_str(), response.str().size(), MSG_NOSIGNAL);
+        send(clientSocket, response.str().c_str(), response.str().size(), MSG_NOSIGNAL);
         resp.setResponseStatus(Finish);
     }
 }

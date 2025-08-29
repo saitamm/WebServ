@@ -95,6 +95,7 @@ int handleGet(Response &resp, int clientFd, int epollFd, map<int, CgiProcess*> &
     struct stat path;
     if (stat(real_path.c_str(), &path) == -1)
     {
+        cout << "i am hereeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\n";
         setCodeStatus(resp, 404);
         return 0;
     }

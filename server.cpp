@@ -156,8 +156,8 @@ int main(int ac, char **av)
                close(it->first);
      }
 
-catch (exception &e)
-{
-     cout << e.what() << endl;
-}
+     catch (exception &e)
+     {
+          cout << e.what() << endl;
+     }
 }

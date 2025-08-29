@@ -70,7 +70,11 @@ void Client::buildResponse(int clientFd, int epollFd, map<int, CgiProcess *> &cg
     if (this->_req->getMethod() == "GET")
     {
         if (handleGet(*this->_resp, clientFd, epollFd, cgis) == 0)
+        {
+            cout << "WAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n";
             _status = Sending;
+
+        }
         else
         {
             _status = WaitingCGI;
