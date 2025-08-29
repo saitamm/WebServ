@@ -47,7 +47,7 @@ public:
     string &getMethod(void);
     string &getHost(void);
     string &getUri(void);
-    string &getQuery(void);
+    string getQuery(void);
     string &getCtype(void);
     Location *getLocation(void);
     unsigned long long &getContentLength(void);

@@ -50,8 +50,8 @@ int printErr(const string &err)
 
 void setNonBlocking(int fd)
 {
-     int flags = fcntl(fd, F_GETFL, 0);
-     fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+     if (fcntl(fd, F_SETFL, O_NONBLOCK | FD_CLOEXEC) == -1)
+          throw std::runtime_error("fcntl failed to set O_NONBLOCK | FD_CLOEXEC");
 }
 
 int openSocket(vector<ConfigFile> *servers, int epollFd, map<int, ConfigFile> &openedServers)
@@ -88,7 +88,7 @@ int openSocket(vector<ConfigFile> *servers, int epollFd, map<int, ConfigFile> &o
           epoll_event event;
           memset(&event, 0, sizeof(event));
           event.data.fd = serverSocket;
-          event.events = EPOLLIN;
+          event.events = EPOLLIN; // ready to accept new clients
           epoll_ctl(epollFd, EPOLL_CTL_ADD, serverSocket, &event);
           openedServers[serverSocket] = servers->at(i);
      }
@@ -99,10 +99,10 @@ int main(int ac, char **av)
 {
      if (ac != 2)
           return (printErr("ERROR: ./Webserv <file.conf>"));
-     signal(SIGPIPE, SIG_IGN);
      ConfigFile config;
      vector<ConfigFile> *servers;
      config.initDefaultError();
+     map<int, CgiProcess *> cgis;
      try
      {
           map<int, ConfigFile> openedServers;
@@ -116,6 +116,7 @@ int main(int ac, char **av)
           const int MAX_EVENTS = 1000;
           epoll_event events[MAX_EVENTS];
           map<int, Client *> clients;
+          std::vector<int> clientsToDelete;
           while (1)
           {
                int n = epoll_wait(epollFd, events, MAX_EVENTS, -1);
@@ -125,21 +126,33 @@ int main(int ac, char **av)
                     if (openedServers.find(fd) != openedServers.end())
                     {
                          int clientSocket = accept(fd, NULL, NULL);
+
                          if (clients.find(clientSocket) == clients.end())
                               clients[clientSocket] = new Client();
                          clients[clientSocket]->setEpollFd(epollFd);
                          clients[clientSocket]->getEvent().data.fd = clientSocket;
                          clients[clientSocket]->getEvent().events = EPOLLIN;
                          epoll_ctl(epollFd, EPOLL_CTL_ADD, clientSocket, &clients[clientSocket]->getEvent());
+                         continue;
                     }
-                    else
+                    if (cgis.find(fd) != cgis.end())
                     {
-                         handleClientRequest(clients, fd, servers);
+                         CgiEvent(fd, epollFd, clients, cgis);
+                         continue;
                     }
+                    if (events[i].events & (EPOLLHUP | EPOLLRDHUP))
+                    {
+                         std::cerr << "Client disconnected: fd=" << fd << std::endl;
+                         close(fd);
+                         delete clients[fd];
+                         clients.erase(fd);
+                         continue;
+                    }
+                    handleClientRequest(clients, fd, servers, epollFd, cgis);
                }
+               for (map<int, ConfigFile>::iterator it = openedServers.begin(); it != openedServers.end(); ++it)
+                    close(it->first);
           }
-          for (map<int, ConfigFile>::iterator it = openedServers.begin(); it != openedServers.end(); ++it)
-               close(it->first);
      }
      catch (exception &e)
      {

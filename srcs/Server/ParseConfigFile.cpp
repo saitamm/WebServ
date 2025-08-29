@@ -86,8 +86,26 @@ void ParseLocation(string &key, string &value, string &new_line, Location &curr_
         curr_loc.setLoc_idx(value);
     else if (key == "upload_store")
         curr_loc.setUp_store(value);
+    else if (key == "cgi_extensions")
+    {
+        stringstream ss(value);
+        string ext;
+        while(ss >> ext)
+        {
+            set<string> pass = curr_loc.getCgi_ext();
+            curr_loc.setCgi_ext(ext);
+        }
+    }   
     else if (key == "cgi_pass")
-        curr_loc.setCgi_pass(value);
+    {   
+        stringstream ss(value);
+        string cgi;
+        while(ss >> cgi)
+        {
+            set<string> pass = curr_loc.getCgi_pass();
+            curr_loc.setCgi_pass(cgi);
+        }
+    }
     else if (key == "return")
     {
         stringstream ss(value);
