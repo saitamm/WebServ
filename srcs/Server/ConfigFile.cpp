@@ -202,10 +202,26 @@ const set<string> &Location::getCgi_pass() const
     return cgi_pass;
 }
 
+void Location::setCgi_ext(const string &ext)
+{
+    if (ext == ".py" || ext == ".sh" || ext == ".php" || ext == ".pl")
+        cgi_extensions.insert(ext);
+    else
+    {
+        cout << "HELLOOOOO\n";
+        throw ErrorConfigFileException();
+    }
+}
+
+
+const set<string> &Location::getCgi_ext() const
+{
+    return cgi_extensions;
+}
+
 void Location::setCgi_pass(const string &path)
 {
-    cout << path << endl;
-    if (path == "/usr/bin/python3" || path == "/usr/bin/bash")
+    if (path == "/usr/bin/python3" || path == "/usr/bin/bash" || path == "/usr/bin/php" || path == "/usr/bin/perl")
         cgi_pass.insert(path);
     else
     {

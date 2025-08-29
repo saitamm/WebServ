@@ -48,8 +48,8 @@ int printErr(const string &err)
 
 void setNonBlocking(int fd)
 {
-     int flags = fcntl(fd, F_GETFL, 0);
-     fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+     if (fcntl(fd, F_SETFL, O_NONBLOCK | FD_CLOEXEC) == -1)
+          throw std::runtime_error("fcntl failed to set O_NONBLOCK | FD_CLOEXEC");
 }
 
 int openSocket(vector<ConfigFile> *servers, int epollFd, map<int, ConfigFile> &openedServers)
@@ -93,28 +93,6 @@ int openSocket(vector<ConfigFile> *servers, int epollFd, map<int, ConfigFile> &o
      return 0;
 }
 
-void sendCleanUp(Response &resp, int epollFd, CgiProcess *proc, std::map<int, Client *> &clients, std::map<int, CgiProcess *> &cgis)
-{
-     epoll_ctl(epollFd, EPOLL_CTL_DEL, proc->pipeFd, NULL);
-     close(proc->pipeFd);
-
-     std::map<int, Client *>::iterator it = clients.find(proc->clientFd);
-     if (it != clients.end())
-     {
-          Client *client = it->second;
-          SendResponse(resp, proc->clientFd);
-          client->setStatus(Finished);
-
-          close(proc->clientFd);         // Close client socket
-          delete client;                 // Safe deletion
-          clients.erase(proc->clientFd); // Remove from map
-     }
-
-     // Remove CGI process from map
-     cgis.erase(proc->pipeFd);
-     delete proc;
-}
-
 int main(int ac, char **av)
 {
      if (ac != 2)
@@ -143,8 +121,6 @@ int main(int ac, char **av)
                for (int i = 0; i < n; ++i)
                {
                     int fd = events[i].data.fd;
-
-                    // New client connection
                     if (openedServers.find(fd) != openedServers.end())
                     {
                          int clientSocket = accept(fd, NULL, NULL);
@@ -161,77 +137,12 @@ int main(int ac, char **av)
                          continue;
                     }
 
-                    // CGI output
                     if (cgis.find(fd) != cgis.end())
                     {
-                         CgiProcess *proc = cgis[fd];
-                         char buffer[1024];
-                         ssize_t bytesRead = read(proc->pipeFd, buffer, sizeof(buffer));
-                         if (bytesRead > 0)
-                              proc->output.write(buffer, bytesRead);
-
-                         int status;
-                         pid_t result = waitpid(proc->pid, &status, WNOHANG);
-
-                         if (result == proc->pid || difftime(time(NULL), proc->start) > 5)
-                         {
-                              Client *client = clients[proc->clientFd];
-                              Response &resp = *client->getResp();
-                              resp.setRequest(*client->getRequest());
-
-                              if (result == proc->pid)
-                              {
-                                   if (WIFEXITED(status))
-                                   {
-                                        int exitCode = WEXITSTATUS(status);
-                                        if (exitCode == 0)
-                                        {
-                                             std::string outStr = proc->output.str();
-                                             if (resp.getRequest()->getMethod() == "POST")
-                                             {
-                                                  resp.getFile().close();
-                                                  resp.getFile().open(resp.getFileName().c_str(), ios::out | ios::trunc | ios::binary);
-                                                  resp.getFile().write(outStr.data(), outStr.size());
-                                                  resp.getFile().flush();
-                                                  if (resp.getFile().is_open())
-                                                       resp.getFile().close();
-                                                  resp.setStatus(200);
-                                             }
-                                             else
-                                             {
-                                                  resp.setBodyResp(outStr);
-                                                  resp.setStatus(200);
-                                                  resp.setType("text/html");
-                                             }
-                                        }
-                                        else
-                                        {
-                                             std::cerr << "CGI exited with error code " << exitCode << std::endl;
-                                             setCodeStatus(resp, 500);
-                                        }
-                                   }
-                                   else if (WIFSIGNALED(status))
-                                   {
-                                        int sig = WTERMSIG(status);
-                                        std::cerr << "CGI killed by signal " << sig << std::endl;
-                                        setCodeStatus(resp, 500);
-                                   }
-                              }
-                              else
-                              {
-                                   std::cerr << "[CGI] Timeout, killing pid=" << proc->pid << std::endl;
-                                   kill(proc->pid, SIGKILL);
-                                   waitpid(proc->pid, NULL, 0);
-                                   setCodeStatus(resp, 500);
-                              }
-
-                              // Cleanup and send response safely
-                              sendCleanUp(resp, epollFd, proc, clients, cgis);
-                         }
+                         CgiEvent(fd, epollFd, clients, cgis);
                          continue;
                     }
 
-                    // Normal client request
                     if (events[i].events & (EPOLLHUP | EPOLLRDHUP))
                     {
                          std::cerr << "Client disconnected: fd=" << fd << std::endl;
@@ -240,10 +151,8 @@ int main(int ac, char **av)
                          clients.erase(fd);
                          continue;
                     }
-
                     if (clients.find(fd) == clients.end())
                          clients[fd] = new Client();
-
                     handleClientRequest(clients, fd, servers, epollFd, cgis);
                }
           }
