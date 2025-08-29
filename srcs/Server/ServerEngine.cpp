@@ -2,9 +2,6 @@
 
 void setCodeStatus(Response &resp, int error)
 {
-    std::cout << "resp ptr = " << &resp << std::endl;
-    std::cout << "request ptr = " << resp.getRequest() << std::endl;
-
     if (resp.getRequest()->getRedirectionStatus())
     {
         resp.setStatus(resp.getRequest()->getLocation()->getRetur().begin()->first);

@@ -126,13 +126,14 @@ int main(int ac, char **av)
                     if (openedServers.find(fd) != openedServers.end())
                     {
                          int clientSocket = accept(fd, NULL, NULL);
-
+                         setNonBlocking(clientSocket);
                          if (clients.find(clientSocket) == clients.end())
                               clients[clientSocket] = new Client();
                          clients[clientSocket]->setEpollFd(epollFd);
                          clients[clientSocket]->getEvent().data.fd = clientSocket;
                          clients[clientSocket]->getEvent().events = EPOLLIN;
                          epoll_ctl(epollFd, EPOLL_CTL_ADD, clientSocket, &clients[clientSocket]->getEvent());
+                         cout << "New connection accepted: fd=" << clientSocket << endl;
                          continue;
                     }
                     if (cgis.find(fd) != cgis.end())
@@ -150,12 +151,13 @@ int main(int ac, char **av)
                     }
                     handleClientRequest(clients, fd, servers, epollFd, cgis);
                }
-               for (map<int, ConfigFile>::iterator it = openedServers.begin(); it != openedServers.end(); ++it)
-                    close(it->first);
           }
+          for (map<int, ConfigFile>::iterator it = openedServers.begin(); it != openedServers.end(); ++it)
+               close(it->first);
      }
-     catch (exception &e)
-     {
-          cout << e.what() << endl;
-     }
+
+catch (exception &e)
+{
+     cout << e.what() << endl;
+}
 }
