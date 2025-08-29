@@ -13,13 +13,18 @@ gfhgfhgf;
 #     s.close()
 =======
 #!/usr/bin/env python3
-import sys
+import os
 
+<<<<<<< HEAD
 # Read the entire POST body from stdin
 body = sys.stdin.read()
 >>>>>>> origin/keltoum
 
 # Output HTTP headers first
+=======
+>>>>>>> origin/keltoum
 print("Content-Type: text/plain\n")
-print("===HELLO WORLD ===")
-print(body)
+print("About to crash...")
+
+# Force segfault by killing self with SIGSEGV
+os.kill(os.getpid(), 11)  

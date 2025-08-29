@@ -2,9 +2,11 @@
 
 void setCodeStatus(Response &resp, int error)
 {
+    std::cout << "resp ptr = " << &resp << std::endl;
+    std::cout << "request ptr = " << resp.getRequest() << std::endl;
+
     if (resp.getRequest()->getRedirectionStatus())
     {
-        cout << "---------------------------------" << resp.getRequest()->getRedirectionStatus() << "\n";
         resp.setStatus(resp.getRequest()->getLocation()->getRetur().begin()->first);
         return;
     }
@@ -149,16 +151,16 @@ int allowMethod(Location loc, string method)
     return (0);
 }
 
-void handleClientRequest(map<int, Client *> &clients, int clientSocket, vector<ConfigFile> *servers)
+void handleClientRequest(map<int, Client *> &clients, int clientSocket, vector<ConfigFile> *servers, int epollFd, map<int, CgiProcess*> &cgis)
 {
     try
     {
         clients[clientSocket]->getResp()->initStatusCode();
         if (clients[clientSocket]->getEvent().events == EPOLLIN)
-            clients[clientSocket]->ParseHttpRequest(*clients[clientSocket], clientSocket, *servers);
+            clients[clientSocket]->ParseHttpRequest(*clients[clientSocket], clientSocket, *servers, cgis);
         if (clients[clientSocket]->getStatus() == Processing || clients[clientSocket]->getStatus() == Sending)
         {
-            clients[clientSocket]->buildResponse();
+            clients[clientSocket]->buildResponse(clientSocket, epollFd, cgis);
         }
     }
     catch (const exception &e)

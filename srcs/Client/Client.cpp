@@ -45,8 +45,10 @@ int checkSize(unsigned long long size, size_t max_size)
         return (1);
     return (0);
 }
-void Client::buildResponse(void)
+void Client::buildResponse(int clientFd, int epollFd, map<int, CgiProcess *> &cgis)
 {
+
+    this->_resp->setRequest(*this->_req);
     if (!allowMethod(*this->_req->getLocation(), this->_req->getMethod()))
     {
         setCodeStatus(*this->getResp(), 405);
@@ -67,8 +69,13 @@ void Client::buildResponse(void)
     }
     if (this->_req->getMethod() == "GET")
     {
-        handleGet(*this->_resp);
-        _status = Sending;
+        if (handleGet(*this->_resp, clientFd, epollFd, cgis) == 0)
+            _status = Sending;
+        else
+        {
+            _status = WaitingCGI;
+            cout << "i am here waiting for cgi-----------------\n";
+        }
         return;
     }
     if (this->_req->getMethod() == "POST")
@@ -78,7 +85,7 @@ void Client::buildResponse(void)
     }
 }
 
-void Client::ParseHttpRequest(Client &client, int clientSocket, vector<ConfigFile> &serv)
+void Client::ParseHttpRequest(Client &client, int clientSocket, vector<ConfigFile> &serv, map<int, CgiProcess*> &cgis)
 {
     char buf[1024];
     ssize_t bytesRead;
@@ -133,7 +140,7 @@ void Client::ParseHttpRequest(Client &client, int clientSocket, vector<ConfigFil
             if (!_resp->getFile().is_open())
             {
                 setCodeStatus(*this->_resp, 500);
-                // cout << "this is my file name: " << _resp->getFileName() << endl;   
+                // cout << "this is my file name: " << _resp->getFileName() << endl;
                 _status = Processing;
                 return;
             }
@@ -148,10 +155,10 @@ void Client::ParseHttpRequest(Client &client, int clientSocket, vector<ConfigFil
         if (_resp->getRequest()->getHeadvalue("Transfer-Encoding").empty())
         {
             NonChunkedBody(*_resp, clientSocket);
-            if  (_resp->getTotalReceived() == _resp->getRequest()->getContentLength())
+            if (_resp->getTotalReceived() == _resp->getRequest()->getContentLength())
             {
                 if (_resp->getFile().is_open())
-                    _resp->getFile().close();
+                _resp->getFile().close();
                 setCodeStatus(*_resp, 200);
                 _status = Processing;
             }
@@ -161,11 +168,22 @@ void Client::ParseHttpRequest(Client &client, int clientSocket, vector<ConfigFil
             if (ChunkedBody(*_resp, clientSocket))
             {
                 if (_resp->getFile().is_open())
-                    _resp->getFile().close();
+                _resp->getFile().close();
                 setCodeStatus(*_resp, 200);
                 _status = Processing;
             }
         }
+        int retur = handlePost(*this->_resp, clientSocket, epollFd, cgis);
+        if (retur == 1)
+        {
+            _status = Sending;
+        }
+        else if (retur == 2)
+        {
+            _status = WaitingCGI;
+            cout << "Waiting for cgi-----------\n";
+        }
+        return;
     }
 }
 
@@ -174,5 +192,3 @@ void Client::setNewSessionId(string &id)
     if (find(_session.begin(), _session.end(), id) == _session.end())
         _session.push_back(id);
 }
-
-

@@ -2,20 +2,23 @@
 #define CLIENT_HPP
 
 #include "Response.hpp"
+#include <stdexcept>
 
 enum ClientStatus
 {
     CONNECTING,
     Heading,
     Body,
-    Reading,    
+    Reading,
     Processing,
+    WaitingCGI,
     Sending,
     Finished,
 };
+
 class ConfigFile;
 class Response;
-class Client    
+class Client
 {
 public:
     Client();
@@ -26,20 +29,21 @@ public:
     void setBuff(string &buff, size_t &readbyte);
     int getFd(void) const;
     string &getbuff(void) { return (_buffer); }
-    Request *getRequest(void){return(_req);};
-    void buildResponse(void);
-    void setStatus(const ClientStatus &status) { _status = status; }
-    ClientStatus getStatus(void) const { return _status; }
-    void ParseHttpRequest(Client &client,int clientSocket ,vector<ConfigFile> &serv);
+    Request *getRequest(void) { return (_req); };
+    void ParseHttpRequest(Client &client, int clientSocket, vector<ConfigFile> &serv, map<int, CgiProcess *> &cgis);
     void setNewSessionId(string &id);
     string &getSession(void);
     epoll_event &getEvent(void) { return (_event); }
     static int getEpollFd(void) { return (epollFd); }
     static void setEpollFd(int fd) { epollFd = fd; }
-    
+
     void setNonBlocking(int fd);
+    void buildResponse(int clientSocket, int epollFd, map<int, CgiProcess *> &cgis);
+    void setStatus(const ClientStatus &status) { _status = status; }
+    ClientStatus getStatus(void) const { return _status; }
+
 private:
-    Client(const Client &copy) ;
+    Client(const Client &copy);
     Request *_req;
     Response *_resp;
     int _fd;
@@ -47,12 +51,18 @@ private:
     ClientStatus _status;
     static vector<string> _session;
 
-    //Test
+    // Test
     epoll_event _event;
     static int epollFd;
 };
 int allowMethod(Location loc, string method);
-// void printRequest(Request req);
-void handleClientRequest(map<int, Client *> &clients, int clientSocket, vector<ConfigFile> *servers);
+void handleClientRequest(map<int, Client *> &clients, int clientSocket, vector<ConfigFile> *servers, int epollFd, map<int, CgiProcess *> &cgis);
+void SendResponse(Response &resp, int clientSocket);
+void setNonBlocking(int fd);
+void checkCgiGet(Response &resp, string &real_path, int clientFd, int epollFd, map<int, CgiProcess *> &cgis);
+void checkCgiPost(Response &resp, int clientFd, int epollFd, map<int, CgiProcess *> &cgis);
+void CgiEvent(int fd, int epollFd, map<int, Client *> &clients, map<int, CgiProcess *> &cgis);
+string getExt(Response &resp);
+bool isCgiExtension(const string &ext, Response &resp);
 
 #endif
