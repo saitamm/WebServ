@@ -39,7 +39,7 @@ void NonChunkedBody(Response &resp, int clientSocket)
     string Body;
     bytesRead = recv(clientSocket, buf, sizeof(buf), 0);
     if (bytesRead <= 0)
-        return ;
+        return;
     resp.getFile().write(buf, bytesRead);
     resp.getFile().flush();
     resp.setTotalReceived(bytesRead);
@@ -124,53 +124,12 @@ int ChunkedBody(Response &resp, int clientSocket)
 
 int handlePost(Response &resp, int clientSocket, int epollFd, map<int, CgiProcess *> &cgis)
 {
-    if (SupportUpload(resp))
-    {
-        setCodeStatus(resp, 403);
-        return (1);
-    }
     string ext = getExt(resp);
     if (!resp.getRequest()->getLocation()->getCgi_pass().empty() && isCgiExtension(ext, resp))
     {
-        if (resp.getRequest()->getHeadvalue("Transfer-Encoding").empty())
-        {
-            NonChunkedBody(resp, clientSocket);
-            if (resp.getTotalReceived() == resp.getRequest()->getContentLength())
-            {
-                checkCgiPost(resp, clientSocket, epollFd, cgis);
-                return (2);
-            }
-        }
-        else
-        {
-            if (ChunkedBody(resp, clientSocket))
-            {
-                checkCgiPost(resp, clientSocket, epollFd, cgis);
-                return (2);
-            }
-        }
-        return (0);
-    }
-    if (resp.getRequest()->getHeadvalue("Transfer-Encoding").empty())
-    {
-        NonChunkedBody(resp, clientSocket);
-        if (resp.getTotalReceived() == resp.getRequest()->getContentLength())
-        {
-            if (resp.getFile().is_open())
-                resp.getFile().close();
-            setCodeStatus(resp, 200);
-            return (1);
-        }
-    }
-    else
-    {
-        if (ChunkedBody(resp, clientSocket))
-        {
-            if (resp.getFile().is_open())
-                resp.getFile().close();
-            setCodeStatus(resp, 200);
-            return (1);
-        }
+        checkCgiPost(resp, clientSocket, epollFd, cgis);
+        return (2);
     }
     return (0);
 }
+

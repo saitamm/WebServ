@@ -80,12 +80,21 @@ void Client::buildResponse(int clientFd, int epollFd, map<int, CgiProcess *> &cg
     }
     if (this->_req->getMethod() == "POST")
     {
-        _status = Sending;
+        int retur = handlePost(*this->_resp, clientFd, epollFd, cgis);
+        if (retur == 0)
+        {
+            _status = Sending;
+        }
+        else if (retur == 2)
+        {
+            _status = WaitingCGI;
+            cout << "Waiting for cgi-----------\n";
+        }
         return;
     }
 }
 
-void Client::ParseHttpRequest(Client &client, int clientSocket, vector<ConfigFile> &serv, map<int, CgiProcess*> &cgis)
+void Client::ParseHttpRequest(Client &client, int clientSocket, vector<ConfigFile> &serv)
 {
     char buf[1024];
     ssize_t bytesRead;
@@ -137,10 +146,11 @@ void Client::ParseHttpRequest(Client &client, int clientSocket, vector<ConfigFil
             string Up = _resp->getRequest()->getConfigFile().getRoot() + "/" + _resp->getRequest()->getLocation()->getUp_store() + "/" + f;
             _resp->getFile().open(Up.c_str(), ios::out | ios::trunc | ios::binary);
             _resp->setFileName(Up);
+            cout << "this is my file name: " << _resp->getFileName() << endl;
             if (!_resp->getFile().is_open())
             {
                 setCodeStatus(*this->_resp, 500);
-                // cout << "this is my file name: " << _resp->getFileName() << endl;
+                cout << "this is my file name: " << _resp->getFileName() << endl;
                 _status = Processing;
                 return;
             }
@@ -158,7 +168,7 @@ void Client::ParseHttpRequest(Client &client, int clientSocket, vector<ConfigFil
             if (_resp->getTotalReceived() == _resp->getRequest()->getContentLength())
             {
                 if (_resp->getFile().is_open())
-                _resp->getFile().close();
+                    _resp->getFile().close();
                 setCodeStatus(*_resp, 200);
                 _status = Processing;
             }
@@ -168,21 +178,12 @@ void Client::ParseHttpRequest(Client &client, int clientSocket, vector<ConfigFil
             if (ChunkedBody(*_resp, clientSocket))
             {
                 if (_resp->getFile().is_open())
-                _resp->getFile().close();
+                    _resp->getFile().close();
                 setCodeStatus(*_resp, 200);
                 _status = Processing;
             }
         }
-        int retur = handlePost(*this->_resp, clientSocket, epollFd, cgis);
-        if (retur == 1)
-        {
-            _status = Sending;
-        }
-        else if (retur == 2)
-        {
-            _status = WaitingCGI;
-            cout << "Waiting for cgi-----------\n";
-        }
+
         return;
     }
 }

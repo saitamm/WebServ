@@ -154,7 +154,7 @@ void handleClientRequest(map<int, Client *> &clients, int clientSocket, vector<C
     {
         clients[clientSocket]->getResp()->initStatusCode();
         if (clients[clientSocket]->getEvent().events == EPOLLIN)
-            clients[clientSocket]->ParseHttpRequest(*clients[clientSocket], clientSocket, *servers, cgis);
+            clients[clientSocket]->ParseHttpRequest(*clients[clientSocket], clientSocket, *servers);
         if (clients[clientSocket]->getStatus() == Processing || clients[clientSocket]->getStatus() == Sending)
         {
             clients[clientSocket]->buildResponse(clientSocket, epollFd, cgis);

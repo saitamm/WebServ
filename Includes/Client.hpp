@@ -30,7 +30,7 @@ public:
     int getFd(void) const;
     string &getbuff(void) { return (_buffer); }
     Request *getRequest(void) { return (_req); };
-    void ParseHttpRequest(Client &client, int clientSocket, vector<ConfigFile> &serv, map<int, CgiProcess *> &cgis);
+    void ParseHttpRequest(Client &client, int clientSocket, vector<ConfigFile> &serv);
     void setNewSessionId(string &id);
     string &getSession(void);
     epoll_event &getEvent(void) { return (_event); }

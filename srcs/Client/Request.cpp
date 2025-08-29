@@ -49,7 +49,6 @@ void Request::ParseHeader(string &Header)
 
     string tmp1;
     stringstream line(Header);
-    cout << "______________" << Header << endl;
     line >> this->_method;
     if ((_method != "GET" && _method != "DELETE" && _method != "POST") || _method.empty())
         throw BadRequestException();
@@ -57,6 +56,8 @@ void Request::ParseHeader(string &Header)
     vector<string> res;
     line >> path;
     split(path, '?', this->_url);
+    if (this->_url[0].find("..") != string::npos)
+        throw BadRequestException();
     string Httpv;
     line >> Httpv;
     trim(Httpv, "\n\t\r ");
@@ -78,7 +79,6 @@ void Request::ParseHeader(string &Header)
         }
         else if (tmp == "Content-Length")
         {
-            // line >> tmp1
             tmp1 = input.substr(input.find(':') + 2);
         }
         else if (tmp == "Host")
