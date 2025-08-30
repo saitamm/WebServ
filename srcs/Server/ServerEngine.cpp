@@ -54,6 +54,7 @@ void generateUser(Response &resp)
         resp.setSessionId(resp.getRequest()->getCookie());
     }
 }
+
 size_t getFileSize(const std::string &path)
 {
     struct stat st;
@@ -130,6 +131,7 @@ void chunkedResponse(Response &resp, int clientSocket)
         resp.setResponseStatus(Finish);
     }
 }
+
 void SendResponse(Response &resp, int clientSocket)
 {
     if (resp.getResponseStatus() == Nonchunked)
@@ -137,6 +139,7 @@ void SendResponse(Response &resp, int clientSocket)
     else
         chunkedResponse(resp, clientSocket);
 }
+
 int allowMethod(Location loc, string method)
 {
     for (set<string>::const_iterator it = loc.getMethods().begin(); it != loc.getMethods().end(); ++it)

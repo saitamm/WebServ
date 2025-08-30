@@ -45,6 +45,7 @@ int checkSize(unsigned long long size, size_t max_size)
         return (1);
     return (0);
 }
+
 void Client::buildResponse(int clientFd, int epollFd, map<int, CgiProcess *> &cgis)
 {
 
@@ -73,7 +74,6 @@ void Client::buildResponse(int clientFd, int epollFd, map<int, CgiProcess *> &cg
         {
             cout << "WAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n";
             _status = Sending;
-
         }
         else
         {
@@ -89,7 +89,7 @@ void Client::buildResponse(int clientFd, int epollFd, map<int, CgiProcess *> &cg
     }
 }
 
-void Client::ParseHttpRequest(Client &client, int clientSocket, vector<ConfigFile> &serv, map<int, CgiProcess*> &cgis)
+void Client::ParseHttpRequest(Client &client, int clientSocket, vector<ConfigFile> &serv, map<int, CgiProcess *> &cgis)
 {
     char buf[1024];
     ssize_t bytesRead;
@@ -116,6 +116,7 @@ void Client::ParseHttpRequest(Client &client, int clientSocket, vector<ConfigFil
                 cout << "No matching location found for URI: " << client.getRequest()->getUri() << endl;
                 throw BadRequestException();
             }
+            cout << "--------------------->" << client.getRequest()->getLocation()->getAuto_idx() << endl;
             RedirectionRequest(*client.getRequest());
             _status = Body;
         }
@@ -131,6 +132,7 @@ void Client::ParseHttpRequest(Client &client, int clientSocket, vector<ConfigFil
         }
         if (_status == Body)
         {
+            cout << " what about HEREEEEEEEEEEEEEEEEEEEEEe\n";
             srand(time(0));
             stringstream ll;
             string type = _resp->getRequest()->getHeadvalue("Content-Type").substr(_resp->getRequest()->getHeadvalue("Content-Type").find('/') + 1);
@@ -141,10 +143,10 @@ void Client::ParseHttpRequest(Client &client, int clientSocket, vector<ConfigFil
             string Up = _resp->getRequest()->getConfigFile().getRoot() + "/" + _resp->getRequest()->getLocation()->getUp_store() + "/" + f;
             _resp->getFile().open(Up.c_str(), ios::out | ios::trunc | ios::binary);
             _resp->setFileName(Up);
+            cout << "============== Trying to open file: " << Up << endl;
             if (!_resp->getFile().is_open())
             {
                 setCodeStatus(*this->_resp, 500);
-                // cout << "this is my file name: " << _resp->getFileName() << endl;
                 _status = Processing;
                 return;
             }
@@ -156,13 +158,36 @@ void Client::ParseHttpRequest(Client &client, int clientSocket, vector<ConfigFil
             _status = Processing;
             return;
         }
+        string ext = getExt(*_resp);
+        if (!_resp->getRequest()->getLocation()->getCgi_pass().empty() && isCgiExtension(ext, *_resp))
+        {
+            cout << "i am hereeeeeeeeeeeeeeeeeeeeeeeeeee\n";
+            if (_resp->getRequest()->getHeadvalue("Transfer-Encoding").empty())
+            {
+                NonChunkedBody(*_resp, clientSocket);
+                if (_resp->getTotalReceived() == _resp->getRequest()->getContentLength())
+                {
+                    checkCgiPost(*_resp, clientSocket, epollFd, cgis);
+                    _status = WaitingCGI;
+                }
+            }
+            else
+            {
+                if (ChunkedBody(*_resp, clientSocket))
+                {
+                    checkCgiPost(*_resp, clientSocket, epollFd, cgis);
+                    _status = WaitingCGI;
+                }
+            }
+            return;
+        }
         if (_resp->getRequest()->getHeadvalue("Transfer-Encoding").empty())
         {
             NonChunkedBody(*_resp, clientSocket);
             if (_resp->getTotalReceived() == _resp->getRequest()->getContentLength())
             {
                 if (_resp->getFile().is_open())
-                _resp->getFile().close();
+                    _resp->getFile().close();
                 setCodeStatus(*_resp, 200);
                 _status = Processing;
             }
@@ -172,23 +197,13 @@ void Client::ParseHttpRequest(Client &client, int clientSocket, vector<ConfigFil
             if (ChunkedBody(*_resp, clientSocket))
             {
                 if (_resp->getFile().is_open())
-                _resp->getFile().close();
+                    _resp->getFile().close();
                 setCodeStatus(*_resp, 200);
                 _status = Processing;
             }
         }
-        int retur = handlePost(*this->_resp, clientSocket, epollFd, cgis);
-        if (retur == 1)
-        {
-            _status = Sending;
-        }
-        else if (retur == 2)
-        {
-            _status = WaitingCGI;
-            cout << "Waiting for cgi-----------\n";
-        }
-        return;
     }
+    return;
 }
 
 void Client::setNewSessionId(string &id)

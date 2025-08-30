@@ -100,7 +100,7 @@ int main(int ac, char **av)
      if (ac != 2)
           return (printErr("ERROR: ./Webserv <file.conf>"));
      ConfigFile config;
-     vector<ConfigFile> *servers;
+     vector<ConfigFile> *servers = NULL;
      config.initDefaultError();
      map<int, CgiProcess *> cgis;
      try
@@ -116,7 +116,6 @@ int main(int ac, char **av)
           const int MAX_EVENTS = 1000;
           epoll_event events[MAX_EVENTS];
           map<int, Client *> clients;
-          std::vector<int> clientsToDelete;
           while (1)
           {
                int n = epoll_wait(epollFd, events, MAX_EVENTS, -1);
@@ -159,5 +158,7 @@ int main(int ac, char **av)
      catch (exception &e)
      {
           cout << e.what() << endl;
+          cout << " sadly i am hereeeeeeeeeee\n";
      }
+     delete servers;
 }

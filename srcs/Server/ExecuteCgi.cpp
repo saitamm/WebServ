@@ -39,8 +39,8 @@ string checkCgiPath(Response &resp)
     }
     else if (ext == ".pl")
     {
-        if (cgi.count("usr/bin/perl"))
-            return "usr/bin/perl";
+        if (cgi.count("/usr/bin/perl"))
+            return "/usr/bin/perl";
     }
     return "";
 }
