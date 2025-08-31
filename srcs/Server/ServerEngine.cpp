@@ -68,7 +68,7 @@ void NonchunkedResponse(Response &resp, int clientSocket)
 {
     stringstream response;
     response << "HTTP/1.1 " << resp.getStatus() << " " << resp.getStatusValue(resp.getStatus()) << "\r\n";
-    response << "Content-type: " << resp.getType() << "\r\n";
+    response << "Content-Type: " << resp.getType() << "\r\n";
     if (resp.getRequest()->getRedirectionStatus())
     {
         Location *loc = resp.getRequest()->getLocation();

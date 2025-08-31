@@ -136,7 +136,8 @@ void CheckDupServ(vector<ConfigFile> *servers, ConfigFile& curr_server)
     }
 }
 
-vector<ConfigFile>* ConfigFile::ParseConfigFile(string confFile)
+vector<ConfigFile>* ConfigFile::
+ParseConfigFile(string confFile)
 {
     string line, key, value;
     string new_line;
@@ -200,7 +201,10 @@ vector<ConfigFile>* ConfigFile::ParseConfigFile(string confFile)
             ParseLocation(key, value, new_line, curr_loc, SeenInLocation);
     }
     if (!is_server || !is_location)
+    {
+        cout << "Error is here!" <<endl;
         throw ErrorConfigFileException();
+    }
     if (bloc == LOCATION)
     {
         CheckDupLoc(curr_server, curr_loc);
@@ -210,37 +214,5 @@ vector<ConfigFile>* ConfigFile::ParseConfigFile(string confFile)
         throw ErrorConfigFileException();
     CheckDupServ(servers, curr_server);
     servers->push_back(curr_server);
-
-// for (size_t i = 0; i < servers->size(); ++i)
-// {
-//     cout << "===== Server " << i + 1 << " =====" << endl;
-//     cout << "Host: " << (*servers)[i].getHost() << endl;
-//     cout << "Port: " << (*servers)[i].getPort() << endl;
-//     cout << "Server Name: " << (*servers)[i].getName() << endl;
-//     cout << "Root: " << (*servers)[i].getRoot() << endl;
-//     cout << "Index: " << (*servers)[i].getIndex() << endl;
-//     cout << "Max Body Size: " << (*servers)[i].getMax_size() << endl;
-
-//     // Print locations
-//     vector<Location> locs = (*servers)[i].getLocations();
-//     for (size_t j = 0; j < locs.size(); ++j)
-//     {
-//         cout << "--- Location " << j + 1 << " ---" << endl;
-//         cout << "Path: " << locs[j].getPath() << endl;
-//         cout << "AutoIndex: " << locs[j].getAuto_idx() << endl;
-//         cout << "Upload Store: " << locs[j].getUp_store() << endl;
-//         cout << "CGI Pass: " << locs[j].getCgi_pass() << endl;
-
-//         std::set<std::string> methodsSet = locs[j].getMethods();
-// std::vector<std::string> methods(methodsSet.begin(), methodsSet.end());
-
-// cout << "Methods: ";
-// for (size_t k = 0; k < methods.size(); ++k)
-//     cout << methods[k] << " ";
-// cout << endl;
-
-//     }
-// }
-
 return servers;
 }

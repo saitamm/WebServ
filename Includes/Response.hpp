@@ -73,6 +73,8 @@ public:
     fstream &getChunkFile(void) { return _chunkFile; }
     string &getRestSend(void) { return _restSend; }
     void setRestSend(const string &rest) { _restSend = rest; }
+    void setRestPost(const string &rest) { _restPost = rest; }
+    string &getRestPost(void) { return _restPost; }
 
 private:
     string _ContentType;
@@ -85,13 +87,9 @@ private:
     size_t totalReceived;
     string _sessionId;
     string _filename;
-
-    //chunked body
     unsigned int _received;
     unsigned int bufferSize;
-
-
-    // Chunked Response
+    string _restPost;
     ResponseStatus _status;
     fstream _chunkFile;
     string _restSend;

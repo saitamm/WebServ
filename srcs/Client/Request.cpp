@@ -1,10 +1,13 @@
 #include "../../Includes/Request.hpp"
 
-Request::Request()
+Request::Request() : _ContentLength(0), _locat(NULL)
 {
     _redir = false;
 }
-Request::~Request() {}
+Request::~Request()
+{
+    delete _locat;
+}
 
 // getters && setters
 
@@ -52,6 +55,7 @@ void Request::ParseHeader(string &Header)
     line >> this->_method;
     if ((_method != "GET" && _method != "DELETE" && _method != "POST") || _method.empty())
         throw BadRequestException();
+
     string path;
     vector<string> res;
     line >> path;

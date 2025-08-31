@@ -7,16 +7,15 @@ int SupportUpload(Response &resp)
     return (0);
 }
 
-unsigned int getSize(int clientSocket)
+unsigned int getSize(int clientSocket, Response &resp)
 {
     string line;
-    char c;
-    while (recv(clientSocket, &c, 1, 0))
-    {
-        line += c;
-        if (line.size() > 2 && line.substr(line.size() - 2) == "\r\n")
-            break;
-    }
+    char buffer[1024];
+   if(recv(clientSocket, buffer, sizeof(buffer), 0) <= 0)
+        throw BadRequestException();
+    line.append(buffer);
+    resp.setRestPost(line.substr(line.find("\r\n") + 2));
+    line = line.substr(0, line.find("\r\n"));
     unsigned int BufferSize;
     stringstream ll(line);
     string l;
@@ -34,13 +33,20 @@ void NonChunkedBody(Response &resp, int clientSocket)
     if (!resp.getTotalReceived())
     {
         resp.setTotalReceived(resp.getRequest()->getrestHeader().size());
-        resp.getFile().write(resp.getRequest()->getrestHeader().c_str(), resp.getTotalReceived());
+        if (resp.getFile().write(resp.getRequest()->getrestHeader().c_str(), resp.getTotalReceived()).fail())
+            throw BadRequestException();
     }
     string Body;
     bytesRead = recv(clientSocket, buf, sizeof(buf), 0);
     if (bytesRead <= 0)
+    {
+        if (resp.getTotalReceived() < resp.getRequest()->getContentLength())
+            throw BadRequestException();
         return;
-    resp.getFile().write(buf, bytesRead);
+    }
+
+    if (resp.getFile().write(buf, bytesRead).fail())
+        throw BadRequestException();
     resp.getFile().flush();
     resp.setTotalReceived(bytesRead);
 }
@@ -65,7 +71,8 @@ int ChunkedBody(Response &resp, int clientSocket)
         while (1)
         {
             size = (BufferSize > line.size()) ? line.size() : BufferSize;
-            resp.getFile().write(line.substr(0, size).c_str(), size);
+            if (resp.getFile().write(line.substr(0, size).c_str(), size).fail())
+                throw BadRequestException();
             line.erase(0, size);
             if (line.empty())
                 break;
@@ -84,11 +91,12 @@ int ChunkedBody(Response &resp, int clientSocket)
         {
             char buf[BufferSize - size];
             bytesRead = recv(clientSocket, buf, sizeof(buf), 0);
-            if (bytesRead == 0)
+            if (bytesRead <= 0)
             {
                 throw BadRequestException();
             }
-            resp.getFile().write(buf, bytesRead);
+            if (resp.getFile().write(buf, bytesRead).fail())
+                throw BadRequestException();
             resp.getFile().flush();
         }
     }
@@ -96,18 +104,19 @@ int ChunkedBody(Response &resp, int clientSocket)
     {
         if (resp.getReceived() == 0)
         {
-            resp.setBufferSize(getSize(clientSocket));
+            resp.setBufferSize(getSize(clientSocket, resp));
             if (resp.getBufferSize() == 0)
                 return (1);
+            if (resp.getFile().write(resp.getRestPost().c_str(), resp.getRestPost().size()).fail())
+                throw BadRequestException();
         }
         char buff[1024];
-        size_t read = min(resp.getBufferSize() - resp.getReceived(), (unsigned int)sizeof(buff));
+        size_t read = min(resp.getBufferSize() - resp.getReceived()- (unsigned int)resp.getRestPost().size(), (unsigned int)sizeof(buff));
         bytesRead = recv(clientSocket, buff, read, 0);
         if (bytesRead <= 0)
-        {
             throw BadRequestException();
-        }
-        resp.getFile().write(buff, bytesRead);
+        if (resp.getFile().write(buff, bytesRead).fail())
+            throw BadRequestException();
         resp.getFile().flush();
         resp.setReceived(bytesRead);
         if (resp.getReceived() == resp.getBufferSize())
@@ -132,4 +141,3 @@ int handlePost(Response &resp, int clientSocket, int epollFd, map<int, CgiProces
     }
     return (0);
 }
-

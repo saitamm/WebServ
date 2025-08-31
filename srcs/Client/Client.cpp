@@ -12,6 +12,8 @@ Client::Client()
 
 Client::~Client()
 {
+    delete _req;
+    delete _resp;
 }
 
 Client::Client(int fd)
@@ -88,7 +90,6 @@ void Client::buildResponse(int clientFd, int epollFd, map<int, CgiProcess *> &cg
         else if (retur == 2)
         {
             _status = WaitingCGI;
-            cout << "Waiting for cgi-----------\n";
         }
         return;
     }
@@ -100,15 +101,18 @@ void Client::ParseHttpRequest(Client &client, int clientSocket, vector<ConfigFil
     ssize_t bytesRead;
     if (_status == Heading)
     {
-        if ((bytesRead = recv(clientSocket, buf, sizeof(buf), 0)) > 0)
+        if ((bytesRead = recv(clientSocket, buf, sizeof(buf), 0)) >= 0)
             _buffer.append(buf, bytesRead);
+        else
+            throw BadRequestException();
         if (_buffer.find("\r\n\r\n") != string::npos)
         {
             client.getRequest()->ParseHeader(_buffer);
-            // matching server and location
             this->_req->setConfigFile(serv[0]);
             for (int i = 0; i < (int)serv.size(); i++)
             {
+                if (client.getRequest()->getHost() == "localhost")
+                    client.getRequest()->setHost("127.0.0.1");
                 if (serv[i].getHost() == client.getRequest()->getHost() && serv[i].getPort() == client.getRequest()->getPort())
                 {
                     client.getRequest()->setConfigFile(serv[i]);
@@ -146,7 +150,7 @@ void Client::ParseHttpRequest(Client &client, int clientSocket, vector<ConfigFil
             string Up = _resp->getRequest()->getConfigFile().getRoot() + "/" + _resp->getRequest()->getLocation()->getUp_store() + "/" + f;
             _resp->getFile().open(Up.c_str(), ios::out | ios::trunc | ios::binary);
             _resp->setFileName(Up);
-            cout << "this is my file name: " << _resp->getFileName() << endl;
+            // cout << "this is my file name: " << _resp->getFileName() << endl;
             if (!_resp->getFile().is_open())
             {
                 setCodeStatus(*this->_resp, 500);

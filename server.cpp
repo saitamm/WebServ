@@ -94,11 +94,17 @@ int openSocket(vector<ConfigFile> *servers, int epollFd, map<int, ConfigFile> &o
      }
      return 0;
 }
-
+static bool running = true;
+void signalHandler(int signum)
+{
+     std::cout << "\nCaught signal " << signum << ", shutting down..." << std::endl;
+     running = false;
+}
 int main(int ac, char **av)
 {
      if (ac != 2)
           return (printErr("ERROR: ./Webserv <file.conf>"));
+     signal(SIGINT, signalHandler);
      ConfigFile config;
      vector<ConfigFile> *servers;
      config.initDefaultError();
@@ -120,6 +126,21 @@ int main(int ac, char **av)
           while (1)
           {
                int n = epoll_wait(epollFd, events, MAX_EVENTS, -1);
+               if (n == -1)
+               {
+                    if (errno == EINTR)
+                    {
+                         running = false;
+                         for (map<int, Client *>::iterator it = clients.begin(); it != clients.end(); it++)
+                         {
+                              close(it->first);
+                              delete it->second;
+                         }
+                         break;
+                    }
+                    cerr << "epoll_wait error: " << strerror(errno) << endl;
+                    break;
+               }
                for (int i = 0; i < n; ++i)
                {
                     int fd = events[i].data.fd;
@@ -152,12 +173,14 @@ int main(int ac, char **av)
                     handleClientRequest(clients, fd, servers, epollFd, cgis);
                }
           }
+          delete servers;
+
           for (map<int, ConfigFile>::iterator it = openedServers.begin(); it != openedServers.end(); ++it)
                close(it->first);
      }
-
-catch (exception &e)
-{
-     cout << e.what() << endl;
-}
+     catch (exception &e)
+     {
+          delete servers;
+          cout << e.what() << endl;
+     }
 }
