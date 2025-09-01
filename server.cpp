@@ -125,7 +125,9 @@ int main(int ac, char **av)
           std::vector<int> clientsToDelete;
           while (1)
           {
-               int n = epoll_wait(epollFd, events, MAX_EVENTS, -1);
+               int n  =0;
+               n = epoll_wait(epollFd, events, MAX_EVENTS, -1);
+               cout << "Waiting for events..." << n <<endl;
                if (n == -1)
                {
                     if (errno == EINTR)
@@ -152,7 +154,7 @@ int main(int ac, char **av)
                               clients[clientSocket] = new Client();
                          clients[clientSocket]->setEpollFd(epollFd);
                          clients[clientSocket]->getEvent().data.fd = clientSocket;
-                         clients[clientSocket]->getEvent().events = EPOLLIN;
+                         clients[clientSocket]->getEvent().events = EPOLLIN ;
                          epoll_ctl(epollFd, EPOLL_CTL_ADD, clientSocket, &clients[clientSocket]->getEvent());
                          cout << "New connection accepted: fd=" << clientSocket << endl;
                          continue;
@@ -170,11 +172,12 @@ int main(int ac, char **av)
                          clients.erase(fd);
                          continue;
                     }
+                    cout << "Handling request on fd=" << fd << endl;
                     handleClientRequest(clients, fd, servers, epollFd, cgis);
+                    
                }
           }
           delete servers;
-
           for (map<int, ConfigFile>::iterator it = openedServers.begin(); it != openedServers.end(); ++it)
                close(it->first);
      }

@@ -41,6 +41,7 @@ public:
     void buildResponse(int clientSocket, int epollFd, map<int, CgiProcess *> &cgis);
     void setStatus(const ClientStatus &status) { _status = status; }
     ClientStatus getStatus(void) const { return _status; }
+    ssize_t getTimeout(void) const { return _timeout; }
 
 private:
     Client(const Client &copy);
@@ -50,10 +51,9 @@ private:
     string _buffer;
     ClientStatus _status;
     static vector<string> _session;
-
-    // Test
     epoll_event _event;
     static int epollFd;
+    ssize_t _timeout;
 };
 int allowMethod(Location loc, string method);
 void handleClientRequest(map<int, Client *> &clients, int clientSocket, vector<ConfigFile> *servers, int epollFd, map<int, CgiProcess *> &cgis);

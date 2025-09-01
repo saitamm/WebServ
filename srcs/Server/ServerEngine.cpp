@@ -134,9 +134,15 @@ void chunkedResponse(Response &resp, int clientSocket)
 void SendResponse(Response &resp, int clientSocket)
 {
     if (resp.getResponseStatus() == Nonchunked)
+    {
         NonchunkedResponse(resp, clientSocket);
+        cout << "i am in non chunked response \n";
+    }
     else
+    {
         chunkedResponse(resp, clientSocket);
+        cout << "i am in chunked response \n";
+    }
 }
 int allowMethod(Location loc, string method)
 {
@@ -148,16 +154,26 @@ int allowMethod(Location loc, string method)
     return (0);
 }
 
-void handleClientRequest(map<int, Client *> &clients, int clientSocket, vector<ConfigFile> *servers, int epollFd, map<int, CgiProcess*> &cgis)
+void handleClientRequest(map<int, Client *> &clients, int clientSocket, vector<ConfigFile> *servers, int epollFd, map<int, CgiProcess *> &cgis)
 {
     try
     {
         clients[clientSocket]->getResp()->initStatusCode();
-        if (clients[clientSocket]->getEvent().events == EPOLLIN)
+        cout << "------------------fd = " << clientSocket << "------------------\n";
+        if (clients[clientSocket]->getEvent().events == (EPOLLIN))
             clients[clientSocket]->ParseHttpRequest(*clients[clientSocket], clientSocket, *servers);
         if (clients[clientSocket]->getStatus() == Processing || clients[clientSocket]->getStatus() == Sending)
-        {
             clients[clientSocket]->buildResponse(clientSocket, epollFd, cgis);
+        long now = std::time(NULL);
+        cout << "time is" << now -clients[clientSocket]->getTimeout() << endl;
+        if (now - clients[clientSocket]->getTimeout() >= 3) // 3 seconds
+        {
+            std::cerr << "=============== Client timed out: fd=" << clientSocket << std::endl;
+            epoll_ctl(epollFd, EPOLL_CTL_DEL, clientSocket, NULL);
+            close(clientSocket);
+            delete clients[clientSocket];
+            clients.erase(clientSocket);
+            return;
         }
     }
     catch (const exception &e)
@@ -179,6 +195,7 @@ void handleClientRequest(map<int, Client *> &clients, int clientSocket, vector<C
             clients[clientSocket]->setStatus(Finished);
         if (clients[clientSocket]->getStatus() == Finished)
         {
+            cout << "i close the fd \n";
             delete clients[clientSocket];
             clients.erase(clientSocket);
             close(clientSocket);

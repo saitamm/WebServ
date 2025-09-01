@@ -7,6 +7,7 @@ Client::Client()
     _status = Heading;
     _req = new Request();
     _resp = new Response();
+    _timeout = std::time(NULL);
     memset(&_event, 0, sizeof(_event));
 }
 

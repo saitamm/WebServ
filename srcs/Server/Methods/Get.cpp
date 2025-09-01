@@ -42,7 +42,7 @@ void generateResponse(Response &resp, string &real_path)
 {
     getContentType(real_path, resp);
     size_t size = getFileSize(real_path);
-    if (size < 5999999)
+    if (size < 1024)
     {
         resp.setChunkFile(real_path);
         if (!resp.getChunkFile().is_open())
