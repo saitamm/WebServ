@@ -41,7 +41,7 @@ void NonChunkedBody(Response &resp, int clientSocket)
     if (bytesRead <= 0)
     {
         if (resp.getTotalReceived() < resp.getRequest()->getContentLength())
-            throw BadRequestException();
+            // throw BadRequestException();
         return;
     }
 

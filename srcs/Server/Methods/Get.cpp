@@ -74,7 +74,7 @@ void generateResponse(Response &resp, string &real_path)
         return;
     }
     resp.setStatus(200);
-    char buffer[1024];
+    char buffer[8192];
     resp.getChunkFile().read(buffer, sizeof(buffer));
     string line(buffer, resp.getChunkFile().gcount());
     resp.setBodyResp(resp.getRestSend() + line);

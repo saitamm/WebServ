@@ -54,7 +54,7 @@ void generateUser(Response &resp)
         resp.setSessionId(resp.getRequest()->getCookie());
     }
 }
-size_t getFileSize(const std::string &path)
+size_t getFileSize(const string &path)
 {
     struct stat st;
     if (stat(path.c_str(), &st) == 0)
@@ -114,7 +114,7 @@ void chunkedResponse(Response &resp, int clientSocket)
     else if (resp.getResponseStatus() == chunked)
     {
         stringstream response;
-        response << std::hex << resp.getBody().size() << "\r\n";
+        response << hex << resp.getBody().size() << "\r\n";
         response << resp.getBody() << "\r\n";
         string responseStr = response.str();
         int bytesend;
@@ -161,7 +161,8 @@ void handleClientRequest(map<int, Client *> &clients, int clientSocket, vector<C
             clients[clientSocket]->ParseHttpRequest(*clients[clientSocket], clientSocket, *servers);
         if (clients[clientSocket]->getStatus() == Processing || clients[clientSocket]->getStatus() == Sending)
             clients[clientSocket]->buildResponse(clientSocket, epollFd, cgis);
-        long now = std::time(NULL);
+        long now = time(NULL);
+        cout << "time is  = " << now - clients[clientSocket]->getTimeout() <<endl;
         if (now - clients[clientSocket]->getTimeout() >= 5 && clients[clientSocket]->getStatus() != Sending)
         {
             clients[clientSocket]->getResp()->setRequest(*clients[clientSocket]->getRequest());

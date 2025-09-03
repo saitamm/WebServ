@@ -51,7 +51,7 @@ int printErr(const string &err)
 void setNonBlocking(int fd)
 {
      if (fcntl(fd, F_SETFL, O_NONBLOCK | FD_CLOEXEC) == -1)
-          throw std::runtime_error("fcntl failed to set O_NONBLOCK | FD_CLOEXEC");
+          throw runtime_error("fcntl failed to set O_NONBLOCK | FD_CLOEXEC");
 }
 
 int openSocket(vector<ConfigFile> *servers, int epollFd, map<int, ConfigFile> &openedServers)
@@ -122,7 +122,7 @@ int main(int ac, char **av)
           const int MAX_EVENTS = 1000;
           epoll_event events[MAX_EVENTS];
           map<int, Client *> clients;
-          std::vector<int> clientsToDelete;
+          vector<int> clientsToDelete;
           while (1)
           {
                int n  =0;
@@ -169,7 +169,9 @@ int main(int ac, char **av)
                          clients.erase(fd);
                          continue;
                     }
+                    cout << "handling request\n";
                     handleClientRequest(clients, fd, servers, epollFd, cgis);
+                    cout << "--------------------\n";
                }
           }
           delete servers;

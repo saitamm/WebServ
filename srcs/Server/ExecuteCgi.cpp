@@ -51,11 +51,11 @@ map<string, string> CgiEnv(Response &resp)
     env["SCRIPT_FILENAME"] = resp.getRequest()->getConfigFile().getRoot() + resp.getRequest()->getUri();
     env["QUERY_STRING"] = resp.getRequest()->getQuery();
     env["SERVER_NAME"] = resp.getRequest()->getConfigFile().getName();
-    std::stringstream ss;
+    stringstream ss;
     ss << resp.getRequest()->getConfigFile().getPort();
     env["SERVER_PORT"] = ss.str();
     env["CONTENT_TYPE"] = resp.getContenttype();
-    std::stringstream sss;
+    stringstream sss;
     sss << resp.getRequest()->getContentLength();
     env["CONTENT_LENGTH"] = sss.str();
     return env;
@@ -86,7 +86,7 @@ void checkCgiGet(Response &resp, string &real_path, int clientFd, int epollFd, m
        vector<char *> envp;
         for (map<string, string>::iterator it = env.begin(); it != env.end(); ++it)
         {
-            std::string entry = it->first + "=" + it->second;
+            string entry = it->first + "=" + it->second;
             envp.push_back(strdup(entry.c_str()));
         }
         envp.push_back(NULL);
@@ -144,7 +144,7 @@ void checkCgiPost(Response& resp, int clientFd, int epollFd, map<int, CgiProcess
         vector<char *> envp;
         for (map<string, string>::iterator it = env.begin(); it != env.end(); ++it)
         {
-            std::string entry = it->first + "=" + it->second;
+            string entry = it->first + "=" + it->second;
             envp.push_back(strdup(entry.c_str()));
         }
         envp.push_back(NULL);
@@ -158,7 +158,7 @@ void checkCgiPost(Response& resp, int clientFd, int epollFd, map<int, CgiProcess
     {
         close(fd_in[0]);
         close(fd_out[1]);
-        resp.getFile().seekg(0, std::ios::beg);
+        resp.getFile().seekg(0, ios::beg);
         char buf[1024];
         while (resp.getFile().read(buf, sizeof(buf)) || resp.getFile().gcount() > 0)
         {
@@ -179,12 +179,12 @@ void checkCgiPost(Response& resp, int clientFd, int epollFd, map<int, CgiProcess
     }
 }
 
-void sendCleanUp(Response &resp, int epollFd, CgiProcess *proc, std::map<int, Client *> &clients, std::map<int, CgiProcess *> &cgis)
+void sendCleanUp(Response &resp, int epollFd, CgiProcess *proc, map<int, Client *> &clients, map<int, CgiProcess *> &cgis)
 {
      epoll_ctl(epollFd, EPOLL_CTL_DEL, proc->pipeFd, NULL);
      close(proc->pipeFd);
 
-     std::map<int, Client *>::iterator it = clients.find(proc->clientFd);
+     map<int, Client *>::iterator it = clients.find(proc->clientFd);
      if (it != clients.end())
      {
           Client *client = it->second;
@@ -222,7 +222,7 @@ void CgiEvent(int fd, int epollFd, map<int, Client *> &clients, map<int, CgiProc
                     int exitCode = WEXITSTATUS(status);
                     if (exitCode == 0)
                     {
-                         std::string outStr = proc->output.str();
+                         string outStr = proc->output.str();
                          if (resp.getRequest()->getMethod() == "POST")
                          {
                               resp.getFile().close();
@@ -242,20 +242,20 @@ void CgiEvent(int fd, int epollFd, map<int, Client *> &clients, map<int, CgiProc
                     }
                     else
                     {
-                         std::cerr << "CGI exited with error code " << exitCode << std::endl;
+                         cerr << "CGI exited with error code " << exitCode << endl;
                          setCodeStatus(resp, 500);
                     }
                }
                else if (WIFSIGNALED(status))
                {
                     int sig = WTERMSIG(status);
-                    std::cerr << "CGI killed by signal " << sig << std::endl;
+                    cerr << "CGI killed by signal " << sig << endl;
                     setCodeStatus(resp, 500);
                }
           }
           else
           {
-               std::cerr << "[CGI] Timeout, killing pid=" << proc->pid << std::endl;
+               cerr << "[CGI] Timeout, killing pid=" << proc->pid << endl;
                kill(proc->pid, SIGKILL);
                waitpid(proc->pid, NULL, 0);
                setCodeStatus(resp, 500);

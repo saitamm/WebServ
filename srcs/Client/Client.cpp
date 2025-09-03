@@ -7,7 +7,7 @@ Client::Client()
     _status = Heading;
     _req = new Request();
     _resp = new Response();
-    _timeout = std::time(NULL);
+    _timeout = time(NULL);
     memset(&_event, 0, sizeof(_event));
 }
 
@@ -151,7 +151,6 @@ void Client::ParseHttpRequest(Client &client, int clientSocket, vector<ConfigFil
             string Up = _resp->getRequest()->getConfigFile().getRoot() + "/" + _resp->getRequest()->getLocation()->getUp_store() + "/" + f;
             _resp->getFile().open(Up.c_str(), ios::out | ios::trunc | ios::binary);
             _resp->setFileName(Up);
-            // cout << "this is my file name: " << _resp->getFileName() << endl;
             if (!_resp->getFile().is_open())
             {
                 setCodeStatus(*this->_resp, 500);

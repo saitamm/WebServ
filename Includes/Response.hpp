@@ -9,7 +9,7 @@
 
 class CgiProcess;
 
-class BadDirectoryException : public std::exception
+class BadDirectoryException : public exception
 {
 public:
     const char *what() const throw()
@@ -101,7 +101,7 @@ void getContentType(string &real_path, Response &resp);
 void NonChunkedBody(Response &resp, int clientSocket);
 int ChunkedBody(Response &resp, int clientSocket);
 int SupportUpload(Response &resp);
-size_t getFileSize(const std::string &path);
+size_t getFileSize(const string &path);
 int handlePost(Response &resp, int clientSocket, int epollFd, map<int, CgiProcess*> &cgis);
 string checkCgiPath(Response &resp);
 #endif
