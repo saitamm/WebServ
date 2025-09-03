@@ -1,10 +1,14 @@
 #include "../../Includes/Request.hpp"
 
-Request::Request()
+Request::Request(): _locat(NULL)
 {
     _redir = false;
 }
-Request::~Request() {}
+Request::~Request()
+{
+    delete _locat;
+}
+
 
 // getters && setters
 

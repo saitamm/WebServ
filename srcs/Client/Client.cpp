@@ -8,10 +8,13 @@ Client::Client()
     _req = new Request();
     _resp = new Response();
     memset(&_event, 0, sizeof(_event));
+    lastActivity = time(NULL);
 }
 
 Client::~Client()
 {
+    delete _req;
+    delete _resp;
 }
 
 Client::Client(int fd)
@@ -21,6 +24,8 @@ Client::Client(int fd)
 
 void Client::setResp(Response &resp)
 {
+    if (_resp)
+        delete _resp;
     _resp = &resp;
 }
 
@@ -72,7 +77,6 @@ void Client::buildResponse(int clientFd, int epollFd, map<int, CgiProcess *> &cg
     {
         if (handleGet(*this->_resp, clientFd, epollFd, cgis) == 0)
         {
-            cout << "WAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n";
             _status = Sending;
         }
         else
@@ -89,7 +93,7 @@ void Client::buildResponse(int clientFd, int epollFd, map<int, CgiProcess *> &cg
     }
 }
 
-void Client::ParseHttpRequest(Client &client, int clientSocket, vector<ConfigFile> &serv, map<int, CgiProcess *> &cgis)
+void Client::ParseHttpRequest(Client &client, int clientSocket, auto_ptr<vector<ConfigFile> > &servers, map<int, CgiProcess *> &cgis)
 {
     char buf[1024];
     ssize_t bytesRead;
@@ -100,13 +104,12 @@ void Client::ParseHttpRequest(Client &client, int clientSocket, vector<ConfigFil
         if (_buffer.find("\r\n\r\n") != string::npos)
         {
             client.getRequest()->ParseHeader(_buffer);
-            // matching server and location
-            this->_req->setConfigFile(serv[0]);
-            for (int i = 0; i < (int)serv.size(); i++)
+            this->_req->setConfigFile((*servers)[0]);
+            for (int i = 0; i < (int)(*servers).size(); i++)
             {
-                if (serv[i].getHost() == client.getRequest()->getHost() && serv[i].getPort() == client.getRequest()->getPort())
+                if ((*servers)[i].getHost() == client.getRequest()->getHost() && (*servers)[i].getPort() == client.getRequest()->getPort())
                 {
-                    client.getRequest()->setConfigFile(serv[i]);
+                    client.getRequest()->setConfigFile((*servers)[i]);
                     break;
                 }
             }
@@ -116,7 +119,6 @@ void Client::ParseHttpRequest(Client &client, int clientSocket, vector<ConfigFil
                 cout << "No matching location found for URI: " << client.getRequest()->getUri() << endl;
                 throw BadRequestException();
             }
-            cout << "--------------------->" << client.getRequest()->getLocation()->getAuto_idx() << endl;
             RedirectionRequest(*client.getRequest());
             _status = Body;
         }
@@ -132,7 +134,6 @@ void Client::ParseHttpRequest(Client &client, int clientSocket, vector<ConfigFil
         }
         if (_status == Body)
         {
-            cout << " what about HEREEEEEEEEEEEEEEEEEEEEEe\n";
             srand(time(0));
             stringstream ll;
             string type = _resp->getRequest()->getHeadvalue("Content-Type").substr(_resp->getRequest()->getHeadvalue("Content-Type").find('/') + 1);
@@ -161,13 +162,12 @@ void Client::ParseHttpRequest(Client &client, int clientSocket, vector<ConfigFil
         string ext = getExt(*_resp);
         if (!_resp->getRequest()->getLocation()->getCgi_pass().empty() && isCgiExtension(ext, *_resp))
         {
-            cout << "i am hereeeeeeeeeeeeeeeeeeeeeeeeeee\n";
             if (_resp->getRequest()->getHeadvalue("Transfer-Encoding").empty())
             {
                 NonChunkedBody(*_resp, clientSocket);
                 if (_resp->getTotalReceived() == _resp->getRequest()->getContentLength())
                 {
-                    checkCgiPost(*_resp, clientSocket, epollFd, cgis);
+                    checkCgiPost(*_resp, clientSocket, epollFd, cgis, ext);
                     _status = WaitingCGI;
                 }
             }
@@ -175,7 +175,7 @@ void Client::ParseHttpRequest(Client &client, int clientSocket, vector<ConfigFil
             {
                 if (ChunkedBody(*_resp, clientSocket))
                 {
-                    checkCgiPost(*_resp, clientSocket, epollFd, cgis);
+                    checkCgiPost(*_resp, clientSocket, epollFd, cgis, ext);
                     _status = WaitingCGI;
                 }
             }

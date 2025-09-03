@@ -87,59 +87,118 @@ void generateResponse(Response &resp, string &real_path)
     }
 }
 
-
-
-int handleGet(Response &resp, int clientFd, int epollFd, map<int, CgiProcess*> &cgis)
+int handleGet(Response &resp, int clientFd, int epollFd, map<int, CgiProcess *> &cgis)
 {
-    string real_path = resp.getRequest()->getConfigFile().getRoot() + resp.getRequest()->getUri();
+    string root = resp.getRequest()->getConfigFile().getRoot();
+    string uri = resp.getRequest()->getUri();
+    string real_path;
+    string prefix = "/" + root;
+    while (uri.rfind(prefix, 0) == 0)
+    {
+        uri.erase(0, prefix.size());
+    }
+    real_path = root + uri;
     struct stat path;
     if (stat(real_path.c_str(), &path) == -1)
     {
-        cout << "i am hereeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\n";
         setCodeStatus(resp, 404);
         return 0;
     }
     if (S_ISREG(path.st_mode))
     {
         string ext = getExt(resp);
-        if(!resp.getRequest()->getLocation()->getCgi_pass().empty() && isCgiExtension(ext, resp))
+        if (!resp.getRequest()->getLocation()->getCgi_pass().empty() && isCgiExtension(ext, resp))
         {
-            checkCgiGet(resp, real_path, clientFd, epollFd, cgis);
+            checkCgiGet(resp, real_path, clientFd, epollFd, cgis, ext);
             return 1;
         }
         else
-        {
             generateResponse(resp, real_path);
-        }
     }
     else if (S_ISDIR(path.st_mode))
     {
         if (real_path[real_path.size() - 1] != '/')
             real_path += '/';
-        if (resp.getRequest()->getLocation()->getLoc_idx().empty())
+        // if (resp.getRequest()->getLocation()->getLoc_idx().empty())
+        // {
+        //     if (resp.getRequest()->getLocation()->getAuto_idx() != "on")
+        //     {
+        //         if (resp.getRequest()->getConfigFile().getIndex().empty())
+        //         {
+        //             setCodeStatus(resp, 404);
+        //             return 0;
+        //         }
+        //         else
+        //         {
+        //             if (resp.getRequest()->getCookie().empty())
+        //             {
+        //                 string indx_path = resp.getRequest()->getConfigFile().getIndex();
+        //                 generateResponse(resp, indx_path);
+        //             }
+        //             else
+        //             {
+        //                 string indx_path = "./index1.html";
+        //                 generateResponse(resp, indx_path);
+        //             }
+        //         }
+        //     }
+        //     else
+        //     {
+        //         DIR *dir = opendir(real_path.c_str());
+        //         if (dir != NULL)
+        //         {
+        //             stringstream html;
+        //             html << "<html><body><h1>Listing directory /" << real_path << "</h1><ul>";
+        //             struct dirent *entry;
+        //             while ((entry = readdir(dir)) != NULL)
+        //             {
+        //                 if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, ".."))
+        //                     continue;
+        //                 html << "<li><a href='./" << real_path << entry->d_name << "'>" << entry->d_name << "</a></li>";
+        //             }
+        //             html << "</ul></body></html>";
+        //             string ss = html.str();
+        //             closedir(dir);
+        //             resp.setStatus(200);
+        //             resp.setBodyResp(ss);
+        //             resp.setType("text/html");
+        //         }
+        //     }
+        // }
+        // else
+        // {
+        //     string path_idx = resp.getRequest()->getLocation()->getLoc_idx();
+        //     generateResponse(resp, path_idx);
+        // }
+        if (!resp.getRequest()->getConfigFile().getIndex().empty())
         {
-            if (resp.getRequest()->getLocation()->getAuto_idx() != "on")
+            if (resp.getRequest()->getCookie().empty())
             {
-                if (resp.getRequest()->getConfigFile().getIndex().empty())
-                {
-                    setCodeStatus(resp, 404);
-                    return 0;
-                }
-                else
-                {
-                    if (resp.getRequest()->getCookie().empty())
-                    {
-                        string indx_path = resp.getRequest()->getConfigFile().getIndex();
-                        generateResponse(resp, indx_path);
-                    }
-                    else
-                    {
-                        string indx_path = "./index1.html";
-                        generateResponse(resp, indx_path);
-                    }
-                }
+                string indx_path = resp.getRequest()->getConfigFile().getIndex();
+                generateResponse(resp, indx_path);
             }
             else
+            {
+                string indx_path = "./index1.html";
+                generateResponse(resp, indx_path);
+            }
+        }
+        string index = resp.getRequest()->getConfigFile().getRoot() + "/" + resp.getRequest()->getLocation()->getLoc_idx();
+        if ((!resp.getRequest()->getLocation()->getLoc_idx().empty()) && (stat(index.c_str(), &path) != -1))
+        {
+            size_t dotPos = index.find_last_of('.');
+            string ext = index.substr(dotPos);
+            cout << "WE ARE HEREEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE" << ext << "\n";
+            if (!resp.getRequest()->getLocation()->getCgi_pass().empty() && isCgiExtension(ext, resp))
+            {
+                checkCgiGet(resp, index, clientFd, epollFd, cgis, ext);
+                return 1;
+            }
+            generateResponse(resp, index);
+        }
+        else
+        {
+            if (resp.getRequest()->getLocation()->getAuto_idx() == "on")
             {
                 DIR *dir = opendir(real_path.c_str());
                 if (dir != NULL)
@@ -161,11 +220,11 @@ int handleGet(Response &resp, int clientFd, int epollFd, map<int, CgiProcess*> &
                     resp.setType("text/html");
                 }
             }
-        }
-        else
-        {
-            string path_idx = resp.getRequest()->getLocation()->getLoc_idx();
-            generateResponse(resp, path_idx);
+            else
+            {
+                setCodeStatus(resp, 403);
+                return 0;
+            }
         }
     }
     return 0;

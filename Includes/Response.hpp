@@ -104,6 +104,6 @@ void NonChunkedBody(Response &resp, int clientSocket);
 int ChunkedBody(Response &resp, int clientSocket);
 int SupportUpload(Response &resp);
 size_t getFileSize(const std::string &path);
-int handlePost(Response &resp, int clientSocket, int epollFd, map<int, CgiProcess*> &cgis);
+int ost(Response &resp, int clientSocket, int epollFd, map<int, CgiProcess*> &cgis);
 string checkCgiPath(Response &resp);
 #endif

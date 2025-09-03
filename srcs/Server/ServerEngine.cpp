@@ -150,40 +150,55 @@ int allowMethod(Location loc, string method)
     return (0);
 }
 
-void handleClientRequest(map<int, Client *> &clients, int clientSocket, vector<ConfigFile> *servers, int epollFd, map<int, CgiProcess*> &cgis)
+void handleClientRequest(std::map<int, Client *> &clients, int clientSocket,
+                         std::auto_ptr<std::vector<ConfigFile> > &servers,
+                         int epollFd, std::map<int, CgiProcess*> &cgis)
 {
+    std::map<int, Client *>::iterator it = clients.find(clientSocket);
+    if (it == clients.end())
+        return;
+
+    Client *client = it->second;
+    client->updateActivity();
     try
     {
-        clients[clientSocket]->getResp()->initStatusCode();
-        if (clients[clientSocket]->getEvent().events == EPOLLIN)
-            clients[clientSocket]->ParseHttpRequest(*clients[clientSocket], clientSocket, *servers, cgis);
-        if (clients[clientSocket]->getStatus() == Processing || clients[clientSocket]->getStatus() == Sending)
+        client->getResp()->initStatusCode();
+
+        if (client->getEvent().events & EPOLLIN)
+            client->ParseHttpRequest(*client, clientSocket, servers, cgis);
+
+        if (client->getStatus() == Processing || client->getStatus() == Sending)
         {
-            clients[clientSocket]->buildResponse(clientSocket, epollFd, cgis);
+            client->getEvent().events = EPOLLOUT;
+            epoll_ctl(epollFd, EPOLL_CTL_MOD, clientSocket, &client->getEvent());
+            client->buildResponse(clientSocket, epollFd, cgis);
         }
     }
-    catch (const exception &e)
+    catch (const std::exception &e)
     {
-        clients[clientSocket]->getResp()->setRequest(*clients[clientSocket]->getRequest());
-        clients[clientSocket]->setStatus(Sending);
-        if (!clients[clientSocket]->getRequest()->getRedirectionStatus())
-            setCodeStatus(*clients[clientSocket]->getResp(), 400);
+        client->getResp()->setRequest(*client->getRequest());
+        client->setStatus(Sending);
+        if (!client->getRequest()->getRedirectionStatus())
+            setCodeStatus(*client->getResp(), 400);
         else
-            setCodeStatus(*clients[clientSocket]->getResp(), 0);
+            setCodeStatus(*client->getResp(), 0);
     }
-    if (clients[clientSocket]->getStatus() == Sending)
+
+    if ((client->getEvent().events & EPOLLOUT) && (client->getStatus() == Sending))
     {
-        clients[clientSocket]->getEvent().events = EPOLLOUT;
-        epoll_ctl(clients[clientSocket]->getEpollFd(), EPOLL_CTL_MOD, clientSocket, &clients[clientSocket]->getEvent());
-        SendResponse(*clients[clientSocket]->getResp(), clientSocket);
-        clients[clientSocket]->setNewSessionId(clients[clientSocket]->getResp()->getSessionId());
-        if (clients[clientSocket]->getResp()->getResponseStatus() == Finish)
-            clients[clientSocket]->setStatus(Finished);
-        if (clients[clientSocket]->getStatus() == Finished)
-        {
-            delete clients[clientSocket];
-            clients.erase(clientSocket);
-            close(clientSocket);
-        }
+        SendResponse(*client->getResp(), clientSocket);
+        client->setNewSessionId(client->getResp()->getSessionId());
+
+        if (client->getResp()->getResponseStatus() == Finish)
+            client->setStatus(Finished);
+    }
+    if (client->getStatus() == Finished)
+    {
+        std::cout << "Closing socket fd=" << clientSocket << std::endl;
+        epoll_ctl(epollFd, EPOLL_CTL_DEL, clientSocket, NULL);
+        close(clientSocket);
+        delete client;
+        clients.erase(it);
     }
 }
+

@@ -18,9 +18,8 @@ string getExt(Response &resp)
     return ext;
 }
 
-string checkCgiPath(Response &resp)
+string checkCgiPath(Response &resp, string& ext)
 {
-    string ext = getExt(resp);
     const set<string> cgi = resp.getRequest()->getLocation()->getCgi_pass();
     if (ext == ".py")
     {
@@ -63,9 +62,10 @@ map<string, string> CgiEnv(Response &resp)
     return env;
 }
 
-void checkCgiGet(Response &resp, string &real_path, int clientFd, int epollFd, map<int, CgiProcess *> &cgis)
+void checkCgiGet(Response &resp, string &real_path, int clientFd, int epollFd, map<int, CgiProcess *> &cgis, string &ext)
 {
-    string arg = checkCgiPath(resp);
+    string arg = checkCgiPath(resp, ext);
+    cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ " << arg << endl;
     map<string, string> env = CgiEnv(resp);
     int fd[2];
     if (pipe(fd) == -1)
@@ -114,7 +114,7 @@ void checkCgiGet(Response &resp, string &real_path, int clientFd, int epollFd, m
     }
 }
 
-void checkCgiPost(Response &resp, int clientFd, int epollFd, map<int, CgiProcess *> &cgis)
+void checkCgiPost(Response &resp, int clientFd, int epollFd, map<int, CgiProcess *> &cgis, string &ext)
 {
     string path;
     path = resp.getFileName();
@@ -150,7 +150,7 @@ void checkCgiPost(Response &resp, int clientFd, int epollFd, map<int, CgiProcess
             envp.push_back(strdup(entry.c_str()));
         }
         envp.push_back(NULL);
-        string cgiPath = checkCgiPath(resp);
+        string cgiPath = checkCgiPath(resp, ext);
         char *argv[] = {strdup(cgiPath.c_str()), (char *)path.c_str(), NULL};
         execve(cgiPath.c_str(), argv, envp.data());
         perror("execve failed");
@@ -190,13 +190,14 @@ void sendCleanUp(Response &resp, int epollFd, CgiProcess *proc, std::map<int, Cl
     if (it != clients.end())
     {
         Client *client = it->second;
-        client->getEvent().events = EPOLLOUT;
-        epoll_ctl(epollFd, EPOLL_CTL_MOD, proc->clientFd, &client->getEvent());
-        SendResponse(resp, proc->clientFd);
-        client->setStatus(Finished);
-        close(proc->clientFd);
-        delete client;
-        clients.erase(proc->clientFd);
+        if(client->getEvent().events & EPOLLOUT)
+        {
+            SendResponse(resp, proc->clientFd);
+            client->setStatus(Finished);
+            close(proc->clientFd);
+            delete client;
+            clients.erase(proc->clientFd);
+        }
     }
     cgis.erase(proc->pipeFd);
     delete proc;
