@@ -52,10 +52,12 @@ void Request::ParseHeader(string &Header)
 
     string tmp1;
     stringstream line(Header);
+    int posH = Header.find("\r\n\r\n");
+    if (posH > 8000)
+        throw BadRequestException();
     line >> this->_method;
     if ((_method != "GET" && _method != "DELETE" && _method != "POST") || _method.empty())
         throw BadRequestException();
-
     string path;
     vector<string> res;
     line >> path;

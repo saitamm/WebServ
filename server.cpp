@@ -88,7 +88,7 @@ int openSocket(vector<ConfigFile> *servers, int epollFd, map<int, ConfigFile> &o
           epoll_event event;
           memset(&event, 0, sizeof(event));
           event.data.fd = serverSocket;
-          event.events = EPOLLIN; // ready to accept new clients
+          event.events = EPOLLIN;
           epoll_ctl(epollFd, EPOLL_CTL_ADD, serverSocket, &event);
           openedServers[serverSocket] = servers->at(i);
      }
@@ -97,7 +97,7 @@ int openSocket(vector<ConfigFile> *servers, int epollFd, map<int, ConfigFile> &o
 static bool running = true;
 void signalHandler(int signum)
 {
-     std::cout << "\nCaught signal " << signum << ", shutting down..." << std::endl;
+     (void) signum;
      running = false;
 }
 int main(int ac, char **av)
@@ -127,7 +127,6 @@ int main(int ac, char **av)
           {
                int n  =0;
                n = epoll_wait(epollFd, events, MAX_EVENTS, -1);
-               cout << "Waiting for events..." << n <<endl;
                if (n == -1)
                {
                     if (errno == EINTR)
@@ -140,7 +139,6 @@ int main(int ac, char **av)
                          }
                          break;
                     }
-                    cerr << "epoll_wait error: " << strerror(errno) << endl;
                     break;
                }
                for (int i = 0; i < n; ++i)
@@ -166,15 +164,12 @@ int main(int ac, char **av)
                     }
                     if (events[i].events & (EPOLLHUP | EPOLLRDHUP))
                     {
-                         std::cerr << "Client disconnected: fd=" << fd << std::endl;
                          close(fd);
                          delete clients[fd];
                          clients.erase(fd);
                          continue;
                     }
-                    cout << "Handling request on fd=" << fd << endl;
                     handleClientRequest(clients, fd, servers, epollFd, cgis);
-                    
                }
           }
           delete servers;

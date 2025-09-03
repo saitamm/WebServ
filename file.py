@@ -27,7 +27,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     for line in headers.split("\r\n"):
         if line:
             s.sendall((line + "\r\n").encode())
-            time.sleep(0.5)  # delay between header lines
+            time.sleep(3)  # delay between header lines
     s.sendall(b"\r\n")  # end of headers
 
     # Send body slowly, chunk by chunk

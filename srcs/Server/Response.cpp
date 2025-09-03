@@ -22,6 +22,7 @@ void Response::initStatusCode(void)
     _StatusCode[308] = "Permanent Redirect";
     _StatusCode[413] = "Payload Too Large";
     _StatusCode[400] = "Bad Request";
+    _StatusCode[408] = "Request Timeout";
 }
 
 Response::Response()
