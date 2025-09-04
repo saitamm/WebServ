@@ -126,7 +126,7 @@ int main(int ac, char **av)
           while (1)
           {
                int n  =0;
-               n = epoll_wait(epollFd, events, MAX_EVENTS, -1);
+               n = epoll_wait(epollFd, events, MAX_EVENTS, 1000);
                if (n == -1)
                {
                     if (errno == EINTR)
@@ -169,9 +169,7 @@ int main(int ac, char **av)
                          clients.erase(fd);
                          continue;
                     }
-                    cout << "handling request\n";
                     handleClientRequest(clients, fd, servers, epollFd, cgis);
-                    cout << "--------------------\n";
                }
           }
           delete servers;
