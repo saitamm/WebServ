@@ -13,12 +13,12 @@ public:
     int pipeFd;
     bool finished;
     time_t start;
-    string scriptPath;
-    stringstream output;
+    std::string scriptPath;
+    std::stringstream output;
 
-    fstream inputStream; 
+    std::fstream inputStream; 
 
-    CgiProcess(int fd, const string &script)
+    CgiProcess(int fd, const std::string &script)
         : clientFd(fd), pid(-1), pipeFd(-1), start(0), scriptPath(script) {}
 
     ~CgiProcess() {

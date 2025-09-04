@@ -2,45 +2,6 @@
 #include <iostream>
 
 int Client::epollFd = -1;
-int create_server_socket(vector<ConfigFile> *servers)
-{
-     int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
-     if (serverSocket == -1)
-     {
-          cerr << "Socket creation failed!\n";
-          return -1;
-     }
-     sockaddr_in serverAddr;
-     serverAddr.sin_family = AF_INET;
-     serverAddr.sin_port = htons(servers->at(0).getPort());
-     serverAddr.sin_addr.s_addr = INADDR_ANY;
-     int opt = 1;
-     setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-     if (bind(serverSocket, (sockaddr *)&serverAddr, sizeof(serverAddr)) < 0)
-     {
-          cerr << "Bind failed! Maybe port is busy.\n";
-          return -1;
-     }
-     return (serverSocket);
-}
-void accept_new_connection(int server_socket, fd_set *all_sockets, int *fd_max)
-{
-     struct sockaddr_in client_addr;
-     socklen_t client_len = sizeof(client_addr);
-     int new_client_fd = accept(server_socket, (struct sockaddr *)&client_addr, &client_len);
-
-     if (new_client_fd < 0)
-     {
-          perror("accept");
-          return;
-     }
-
-     FD_SET(new_client_fd, all_sockets);
-     if (new_client_fd > *fd_max)
-     {
-          *fd_max = new_client_fd;
-     }
-}
 
 int printErr(const string &err)
 {
@@ -54,7 +15,7 @@ void setNonBlocking(int fd)
           throw runtime_error("fcntl failed to set O_NONBLOCK | FD_CLOEXEC");
 }
 
-int openSocket(vector<ConfigFile> *servers, int epollFd, map<int, ConfigFile> &openedServers)
+int openSocket(auto_ptr<vector<ConfigFile> > &servers, int epollFd, map<int, ConfigFile> &openedServers)
 {
      for (size_t i = 0; i < servers->size(); i++)
      {
@@ -88,7 +49,7 @@ int openSocket(vector<ConfigFile> *servers, int epollFd, map<int, ConfigFile> &o
           epoll_event event;
           memset(&event, 0, sizeof(event));
           event.data.fd = serverSocket;
-          event.events = EPOLLIN;
+          event.events = EPOLLIN; // ready to accept new clients
           epoll_ctl(epollFd, EPOLL_CTL_ADD, serverSocket, &event);
           openedServers[serverSocket] = servers->at(i);
      }
@@ -106,47 +67,46 @@ int main(int ac, char **av)
           return (printErr("ERROR: ./Webserv <file.conf>"));
      signal(SIGINT, signalHandler);
      ConfigFile config;
-     vector<ConfigFile> *servers;
+     std::auto_ptr<std::vector<ConfigFile> > servers;
      config.initDefaultError();
      map<int, CgiProcess *> cgis;
      try
      {
           map<int, ConfigFile> openedServers;
           servers = config.ParseConfigFile(av[1]);
+
           int epollFd = epoll_create1(0);
           if (epollFd == -1)
-               return (printErr("Failed to create epoll"));
+               return printErr("Failed to create epoll");
+
           if (openSocket(servers, epollFd, openedServers))
                return 1;
 
           const int MAX_EVENTS = 1000;
           epoll_event events[MAX_EVENTS];
-          map<int, Client *> clients;
-          vector<int> clientsToDelete;
-          while (1)
-          {
-               int n  =0;
-               n = epoll_wait(epollFd, events, MAX_EVENTS, 1000);
-               if (n == -1)
+          std::map<int, Client *> clients;
+
+          const int KEEP_ALIVE_TIMEOUT = 5; 
+
+          while (running)
+          {    
+               int n = epoll_wait(epollFd, events, MAX_EVENTS, 1000);
+               if (n < 0)
                {
                     if (errno == EINTR)
-                    {
-                         running = false;
-                         for (map<int, Client *>::iterator it = clients.begin(); it != clients.end(); it++)
-                         {
-                              close(it->first);
-                              delete it->second;
-                         }
-                         break;
-                    }
+                         continue;
+                    perror("epoll_wait");
                     break;
                }
+
                for (int i = 0; i < n; ++i)
                {
                     int fd = events[i].data.fd;
+
                     if (openedServers.find(fd) != openedServers.end())
                     {
                          int clientSocket = accept(fd, NULL, NULL);
+                         std::cout << "Opening socket fd=" << clientSocket << std::endl;
                          setNonBlocking(clientSocket);
                          if (clients.find(clientSocket) == clients.end())
                               clients[clientSocket] = new Client();
@@ -164,21 +124,57 @@ int main(int ac, char **av)
                     }
                     if (events[i].events & (EPOLLHUP | EPOLLRDHUP))
                     {
+                         std::cerr << "Client disconnected: fd=" << fd << std::endl;
+                         epoll_ctl(epollFd, EPOLL_CTL_DEL, fd, NULL);
                          close(fd);
-                         delete clients[fd];
-                         clients.erase(fd);
                          continue;
                     }
                     handleClientRequest(clients, fd, servers, epollFd, cgis);
+
+               }
+
+               time_t now = time(NULL);
+               std::map<int, Client *>::iterator it;
+               for (it = clients.begin(); it != clients.end();)
+               {
+                    Client *client = it->second;
+                    if (difftime(now, client->getLastActivity()) > KEEP_ALIVE_TIMEOUT)
+                    {
+                         std::cout << "Closing idle socket fd=" << it->first << std::endl;
+                         epoll_ctl(epollFd, EPOLL_CTL_DEL, it->first, NULL);
+                         close(it->first);
+                         delete client;
+                         clients.erase(it++); 
+                    }
+                    else
+                         ++it;
                }
           }
-          delete servers;
-          for (map<int, ConfigFile>::iterator it = openedServers.begin(); it != openedServers.end(); ++it)
+
+          std::map<int, Client *>::iterator it;
+          std::cout << "Cleaning up...\n";
+          for (it = clients.begin(); it != clients.end(); ++it)
+          {
+               std::cout << "Closing socket fd=" << it->first << std::endl;
+               epoll_ctl(epollFd, EPOLL_CTL_DEL, it->first, NULL);
                close(it->first);
+               delete it->second;
+          }
+          clients.clear();
+
+          for (std::map<int, CgiProcess *>::iterator cit = cgis.begin(); cit != cgis.end(); ++cit)
+          {
+               close (cit->first);
+               delete cit->second;
+          }
+
+          for (std::map<int, ConfigFile>::iterator sit = openedServers.begin(); sit != openedServers.end(); ++sit)
+               close(sit->first);
+
+          close(epollFd);
      }
-     catch (exception &e)
+     catch (std::exception &e)
      {
-          delete servers;
-          cout << e.what() << endl;
+          std::cerr << "Config error: " << e.what() << std::endl;
      }
 }

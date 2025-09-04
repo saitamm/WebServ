@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 New connection accepted: fd=6
 this is my buffer 
 GET /uploads/ HTTP/1.1
@@ -91,3 +92,6 @@ Content-Length: 314
  bytes
 New connection accepted: fd=6
 New connection accepted: fd=7
+=======
+Error, ConfigFile Is Incorrect!
+>>>>>>> origin/keltoum

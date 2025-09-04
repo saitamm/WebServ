@@ -11,7 +11,7 @@ unsigned int getSize(int clientSocket, Response &resp)
 {
     string line;
     char buffer[1024];
-   if(recv(clientSocket, buffer, sizeof(buffer), 0) <= 0)
+    if (recv(clientSocket, buffer, sizeof(buffer), 0) <= 0)
         throw BadRequestException();
     line.append(buffer);
     resp.setRestPost(line.substr(line.find("\r\n") + 2));
@@ -29,20 +29,25 @@ unsigned int getSize(int clientSocket, Response &resp)
 void NonChunkedBody(Response &resp, int clientSocket)
 {
     char buf[1024];
-    ssize_t bytesRead = 0;
+    int bytesRead = 0;
     if (!resp.getTotalReceived())
     {
         resp.setTotalReceived(resp.getRequest()->getrestHeader().size());
         if (resp.getFile().write(resp.getRequest()->getrestHeader().c_str(), resp.getTotalReceived()).fail())
             throw BadRequestException();
+        cout << "is am rest \n";
+        cout << resp.getTotalReceived() << "========" << resp.getRequest()->getrestHeader().size() << endl;
+        // return ;
     }
     string Body;
     bytesRead = recv(clientSocket, buf, sizeof(buf), 0);
     if (bytesRead <= 0)
     {
-        if (resp.getTotalReceived() < resp.getRequest()->getContentLength())
+        cout << "=====================\n"
+             << bytesRead << endl;
+        // if (resp.getTotalReceived() < resp.getRequest()->getContentLength())
             // throw BadRequestException();
-        return;
+            return;
     }
 
     if (resp.getFile().write(buf, bytesRead).fail())
@@ -111,7 +116,7 @@ int ChunkedBody(Response &resp, int clientSocket)
                 throw BadRequestException();
         }
         char buff[1024];
-        size_t read = min(resp.getBufferSize() - resp.getReceived()- (unsigned int)resp.getRestPost().size(), (unsigned int)sizeof(buff));
+        size_t read = min(resp.getBufferSize() - resp.getReceived() - (unsigned int)resp.getRestPost().size(), (unsigned int)sizeof(buff));
         bytesRead = recv(clientSocket, buff, read, 0);
         if (bytesRead <= 0)
             throw BadRequestException();
@@ -136,7 +141,7 @@ int handlePost(Response &resp, int clientSocket, int epollFd, map<int, CgiProces
     string ext = getExt(resp);
     if (!resp.getRequest()->getLocation()->getCgi_pass().empty() && isCgiExtension(ext, resp))
     {
-        checkCgiPost(resp, clientSocket, epollFd, cgis);
+        checkCgiPost(resp, clientSocket, epollFd, cgis, ext);
         return (2);
     }
     return (0);

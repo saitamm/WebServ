@@ -9,6 +9,7 @@ Client::Client()
     _resp = new Response();
     _timeout = time(NULL);
     memset(&_event, 0, sizeof(_event));
+    lastActivity = time(NULL);
 }
 
 Client::~Client()
@@ -24,6 +25,8 @@ Client::Client(int fd)
 
 void Client::setResp(Response &resp)
 {
+    if (_resp)
+        delete _resp;
     _resp = &resp;
 }
 
@@ -96,7 +99,7 @@ void Client::buildResponse(int clientFd, int epollFd, map<int, CgiProcess *> &cg
     }
 }
 
-void Client::ParseHttpRequest(Client &client, int clientSocket, vector<ConfigFile> &serv)
+void Client::ParseHttpRequest(Client &client, int clientSocket, auto_ptr<vector<ConfigFile> > &serv)
 {
     char buf[1024];
     ssize_t bytesRead;
@@ -108,15 +111,16 @@ void Client::ParseHttpRequest(Client &client, int clientSocket, vector<ConfigFil
             throw BadRequestException();
         if (_buffer.find("\r\n\r\n") != string::npos)
         {
+            cout << "this is my header =\n"<< _buffer <<endl;
             client.getRequest()->ParseHeader(_buffer);
-            this->_req->setConfigFile(serv[0]);
-            for (int i = 0; i < (int)serv.size(); i++)
+            this->_req->setConfigFile(serv->at(0));
+            for (int i = 0; i < (int)serv->size(); i++)
             {
                 if (client.getRequest()->getHost() == "localhost")
                     client.getRequest()->setHost("127.0.0.1");
-                if (serv[i].getHost() == client.getRequest()->getHost() && serv[i].getPort() == client.getRequest()->getPort())
+                if (serv->at(i).getHost() == client.getRequest()->getHost() && serv->at(i).getPort() == client.getRequest()->getPort())
                 {
-                    client.getRequest()->setConfigFile(serv[i]);
+                    client.getRequest()->setConfigFile(serv->at(i));
                     break;
                 }
             }
@@ -169,11 +173,13 @@ void Client::ParseHttpRequest(Client &client, int clientSocket, vector<ConfigFil
         if (_resp->getRequest()->getHeadvalue("Transfer-Encoding").empty())
         {
             NonChunkedBody(*_resp, clientSocket);
+            cout << "totatl received =" << _resp->getTotalReceived() << "-------" << _resp->getRequest()->getContentLength() <<endl;
             if (_resp->getTotalReceived() == _resp->getRequest()->getContentLength())
             {
                 if (_resp->getFile().is_open())
                     _resp->getFile().close();
                 setCodeStatus(*_resp, 200);
+                cout << "-----\n";
                 _status = Processing;
             }
         }
