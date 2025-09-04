@@ -194,7 +194,7 @@ void handleClientRequest(std::map<int, Client *> &clients, int clientSocket,
     }
     if (client->getStatus() == Finished)
     {
-        std::cout << "Closing socket fd=" << clientSocket << std::endl;
+        std::cout << "Closingggg socket fd=" << clientSocket << std::endl;
         epoll_ctl(epollFd, EPOLL_CTL_DEL, clientSocket, NULL);
         close(clientSocket);
         delete client;
