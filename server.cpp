@@ -37,7 +37,8 @@ int openSocket(auto_ptr<vector<ConfigFile> > &servers, int epollFd, map<int, Con
                return (printErr("reation failed!"));
           setNonBlocking(serverSocket);
           int opt = 1;
-          setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+          if(setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1)
+               printErr("setsockopt failed");
           sockaddr_in serverAddr;
           memset(&serverAddr, 0, sizeof(serverAddr));
           serverAddr.sin_family = AF_INET;
@@ -49,8 +50,9 @@ int openSocket(auto_ptr<vector<ConfigFile> > &servers, int epollFd, map<int, Con
           epoll_event event;
           memset(&event, 0, sizeof(event));
           event.data.fd = serverSocket;
-          event.events = EPOLLIN; // ready to accept new clients
-          epoll_ctl(epollFd, EPOLL_CTL_ADD, serverSocket, &event);
+          event.events = EPOLLIN | EPOLLHUP | EPOLLRDHUP; // ready to accept new clients
+          if (epoll_ctl(epollFd, EPOLL_CTL_ADD, serverSocket, &event) == -1)
+               return (printErr("epoll_ctl failed"));
           openedServers[serverSocket] = servers->at(i);
      }
      return 0;
@@ -58,7 +60,7 @@ int openSocket(auto_ptr<vector<ConfigFile> > &servers, int epollFd, map<int, Con
 static bool running = true;
 void signalHandler(int signum)
 {
-     (void) signum;
+     (void)signum;
      running = false;
 }
 int main(int ac, char **av)
@@ -86,10 +88,10 @@ int main(int ac, char **av)
           epoll_event events[MAX_EVENTS];
           std::map<int, Client *> clients;
 
-          const int KEEP_ALIVE_TIMEOUT = 5; 
+          const int KEEP_ALIVE_TIMEOUT = 5;
 
           while (running)
-          {    
+          {
                int n = epoll_wait(epollFd, events, MAX_EVENTS, 1000);
                if (n < 0)
                {
@@ -106,14 +108,23 @@ int main(int ac, char **av)
                     if (openedServers.find(fd) != openedServers.end())
                     {
                          int clientSocket = accept(fd, NULL, NULL);
+                         if (clientSocket == -1)
+                         {
+                              if (errno != EAGAIN || errno != EWOULDBLOCK)
+                              {
+                                   perror("accept");
+                                   break;
+                              }
+                         }
                          std::cout << "Opening socket fd=" << clientSocket << std::endl;
                          setNonBlocking(clientSocket);
                          if (clients.find(clientSocket) == clients.end())
                               clients[clientSocket] = new Client();
                          clients[clientSocket]->setEpollFd(epollFd);
                          clients[clientSocket]->getEvent().data.fd = clientSocket;
-                         clients[clientSocket]->getEvent().events = EPOLLIN ;
-                         epoll_ctl(epollFd, EPOLL_CTL_ADD, clientSocket, &clients[clientSocket]->getEvent());
+                         clients[clientSocket]->getEvent().events = EPOLLIN;
+                         if (epoll_ctl(epollFd, EPOLL_CTL_ADD, clientSocket, &clients[clientSocket]->getEvent()) == -1)
+                              return (printErr("epoll_ctl failed"));
                          cout << "New connection accepted: fd=" << clientSocket << endl;
                          continue;
                     }
@@ -122,15 +133,15 @@ int main(int ac, char **av)
                          CgiEvent(fd, epollFd, clients, cgis);
                          continue;
                     }
-                    if (events[i].events & (EPOLLHUP | EPOLLRDHUP))
+                    if (clients[fd]->getEvent().events & (EPOLLHUP | EPOLLRDHUP))
                     {
                          std::cerr << "Client disconnected: fd=" << fd << std::endl;
-                         epoll_ctl(epollFd, EPOLL_CTL_DEL, fd, NULL);
+                         if (epoll_ctl(epollFd, EPOLL_CTL_DEL, fd, NULL) == -1)
+                              return (printErr("epoll_ctl failed"));
                          close(fd);
                          continue;
                     }
                     handleClientRequest(clients, fd, servers, epollFd, cgis);
-
                }
 
                time_t now = time(NULL);
@@ -141,10 +152,11 @@ int main(int ac, char **av)
                     if (difftime(now, client->getLastActivity()) > KEEP_ALIVE_TIMEOUT)
                     {
                          std::cout << "Closing idle socket fd=" << it->first << std::endl;
-                         epoll_ctl(epollFd, EPOLL_CTL_DEL, it->first, NULL);
+                         if (epoll_ctl(epollFd, EPOLL_CTL_DEL, it->first, NULL) == -1)
+                              return (printErr("epoll_ctl failed"));
                          close(it->first);
                          delete client;
-                         clients.erase(it++); 
+                         clients.erase(it++);
                     }
                     else
                          ++it;
@@ -152,11 +164,11 @@ int main(int ac, char **av)
           }
 
           std::map<int, Client *>::iterator it;
-          std::cout << "Cleaning up...\n";
           for (it = clients.begin(); it != clients.end(); ++it)
           {
                std::cout << "Closing socket fd=" << it->first << std::endl;
-               epoll_ctl(epollFd, EPOLL_CTL_DEL, it->first, NULL);
+               if (epoll_ctl(epollFd, EPOLL_CTL_DEL, it->first, NULL) == -1)
+                    return (printErr("epoll_ctl failed"));
                close(it->first);
                delete it->second;
           }
@@ -164,10 +176,9 @@ int main(int ac, char **av)
 
           for (std::map<int, CgiProcess *>::iterator cit = cgis.begin(); cit != cgis.end(); ++cit)
           {
-               close (cit->first);
+               close(cit->first);
                delete cit->second;
           }
-
           for (std::map<int, ConfigFile>::iterator sit = openedServers.begin(); sit != openedServers.end(); ++sit)
                close(sit->first);
 

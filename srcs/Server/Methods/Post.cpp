@@ -35,7 +35,7 @@ void NonChunkedBody(Response &resp, int clientSocket)
         resp.setTotalReceived(resp.getRequest()->getrestHeader().size());
         if (resp.getFile().write(resp.getRequest()->getrestHeader().c_str(), resp.getTotalReceived()).fail())
             throw BadRequestException();
-        // return ;
+        // return ;     
     }
     string Body;
     bytesRead = recv(clientSocket, buf, sizeof(buf), 0);

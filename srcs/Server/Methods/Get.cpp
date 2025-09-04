@@ -87,9 +87,7 @@ void generateResponse(Response &resp, string &real_path)
     }
 }
 
-
-
-int handleGet(Response &resp, int clientFd, int epollFd, map<int, CgiProcess*> &cgis)
+int handleGet(Response &resp, int clientFd, int epollFd, map<int, CgiProcess *> &cgis)
 {
     string root = resp.getRequest()->getConfigFile().getRoot();
     string uri = resp.getRequest()->getUri();
@@ -121,31 +119,43 @@ int handleGet(Response &resp, int clientFd, int epollFd, map<int, CgiProcess*> &
     {
         if (real_path[real_path.size() - 1] != '/')
             real_path += '/';
-        if (!resp.getRequest()->getConfigFile().getIndex().empty())
-        {
-            if (resp.getRequest()->getCookie().empty())
-            {
-                string indx_path = resp.getRequest()->getConfigFile().getIndex();
-                generateResponse(resp, indx_path);
-            }
-            else
-            {
-                string indx_path = "./index1.html";
-                generateResponse(resp, indx_path);
-            }
-        }
+        // if (!resp.getRequest()->getConfigFile().getIndex().empty())
+        // {
+        //     if (resp.getRequest()->getCookie().empty())
+        //     {
+        //         cout << "---------------------------\n";
+        //         string indx_path = resp.getRequest()->getConfigFile().getIndex();
+        //         generateResponse(resp, indx_path);
+        //     }
+        //     else
+        //     {
+        //         string indx_path = "./index1.html";
+        //         generateResponse(resp, indx_path);
+        //     }
+        //     return 0;
+        // }
         string index = resp.getRequest()->getConfigFile().getRoot() + "/" + resp.getRequest()->getLocation()->getLoc_idx();
         if ((!resp.getRequest()->getLocation()->getLoc_idx().empty()) && (stat(index.c_str(), &path) != -1))
         {
             size_t dotPos = index.find_last_of('.');
             string ext = index.substr(dotPos);
-            cout << "WE ARE HEREEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE" << ext << "\n";
             if (!resp.getRequest()->getLocation()->getCgi_pass().empty() && isCgiExtension(ext, resp))
             {
                 checkCgiGet(resp, index, clientFd, epollFd, cgis, ext);
                 return 1;
             }
-            generateResponse(resp, index);
+            if (resp.getRequest()->getCookie().empty())
+            {
+                string indx_path = resp.getRequest()->getLocation()->getLoc_idx();
+                generateResponse(resp, indx_path);
+                return (0);
+            }
+            else
+            {
+                string indx_path = "./index1.html";
+                generateResponse(resp, indx_path);
+                return (0);
+            }
         }
         else
         {
