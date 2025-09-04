@@ -153,9 +153,7 @@ int allowMethod(Location loc, string method)
     return (0);
 }
 
-void handleClientRequest(std::map<int, Client *> &clients, int clientSocket,
-                         std::auto_ptr<std::vector<ConfigFile> > &servers,
-                         int epollFd, std::map<int, CgiProcess *> &cgis)
+void handleClientRequest(std::map<int, Client *> &clients, int clientSocket,std::auto_ptr<std::vector<ConfigFile> > &servers,int epollFd, std::map<int, CgiProcess *> &cgis)
 {
     std::map<int, Client *>::iterator it = clients.find(clientSocket);
     if (it == clients.end())
@@ -172,16 +170,7 @@ void handleClientRequest(std::map<int, Client *> &clients, int clientSocket,
         {
             client->getEvent().events = EPOLLOUT;
             epoll_ctl(epollFd, EPOLL_CTL_MOD, clientSocket, &client->getEvent());
-            cout << "what about here\n";
             clients[clientSocket]->buildResponse(clientSocket, epollFd, cgis);
-        }
-        long now = time(NULL);
-        //cout << "time is  = " << now - clients[clientSocket]->getTimeout() << endl;
-        if (now - clients[clientSocket]->getTimeout() >= 5 && clients[clientSocket]->getStatus() != Sending)
-        {
-            clients[clientSocket]->getResp()->setRequest(*clients[clientSocket]->getRequest());
-            setCodeStatus(*clients[clientSocket]->getResp(), 408);
-            clients[clientSocket]->setStatus(Sending);
         }
     }
     catch (const exception &e)
@@ -207,6 +196,8 @@ void handleClientRequest(std::map<int, Client *> &clients, int clientSocket,
         std::cout << "Closing socket fd=" << clientSocket << std::endl;
         epoll_ctl(epollFd, EPOLL_CTL_DEL, clientSocket, NULL);
         close(clientSocket);
+                         cout << "-----------------------****i clean the client\n";
+
         delete client;
         clients.erase(it);
     }

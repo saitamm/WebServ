@@ -35,19 +35,15 @@ void NonChunkedBody(Response &resp, int clientSocket)
         resp.setTotalReceived(resp.getRequest()->getrestHeader().size());
         if (resp.getFile().write(resp.getRequest()->getrestHeader().c_str(), resp.getTotalReceived()).fail())
             throw BadRequestException();
-        cout << "is am rest \n";
-        cout << resp.getTotalReceived() << "========" << resp.getRequest()->getrestHeader().size() << endl;
         // return ;
     }
     string Body;
     bytesRead = recv(clientSocket, buf, sizeof(buf), 0);
     if (bytesRead <= 0)
     {
-        cout << "=====================\n"
-             << bytesRead << endl;
-        // if (resp.getTotalReceived() < resp.getRequest()->getContentLength())
-            // throw BadRequestException();
-            return;
+        if (resp.getTotalReceived() < resp.getRequest()->getContentLength())
+            throw BadRequestException();
+        return;
     }
 
     if (resp.getFile().write(buf, bytesRead).fail())
