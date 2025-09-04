@@ -100,6 +100,7 @@ int handleGet(Response &resp, int clientFd, int epollFd, map<int, CgiProcess*> &
         uri.erase(0, prefix.size());
     }
     real_path = root + uri;
+    cout << ">>>>>>>>>>>>>>>>>. " << real_path << endl;
     struct stat path;
     if (stat(real_path.c_str(), &path) == -1)
     {

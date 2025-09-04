@@ -126,8 +126,7 @@ void chunkedResponse(Response &resp, int clientSocket)
     {
         stringstream response;
         response << "0\r\n\r\n";
-        int bytesend;
-        bytesend = send(clientSocket, response.str().c_str(), response.str().size(), MSG_NOSIGNAL);
+        send(clientSocket, response.str().c_str(), response.str().size(), MSG_NOSIGNAL);
         resp.setResponseStatus(Finish);
     }
 }
@@ -177,6 +176,8 @@ void handleClientRequest(std::map<int, Client *> &clients, int clientSocket,std:
     {
         client->getResp()->setRequest(*client->getRequest());
         client->setStatus(Sending);
+        client->getEvent().events = EPOLLOUT;
+        epoll_ctl(epollFd, EPOLL_CTL_MOD, clientSocket, &client->getEvent());
         if (!client->getRequest()->getRedirectionStatus())
             setCodeStatus(*client->getResp(), 400);
         else

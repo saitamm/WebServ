@@ -99,7 +99,7 @@ void checkCgiGet(Response &resp, string &real_path, int clientFd, int epollFd, m
     else
     {
         close(fd[1]);
-        setNonBlocking(fd[0]);
+       setNonBlocking(fd[0]);
         epoll_event ev;
         memset(&ev, 0, sizeof(ev));
         ev.data.fd = fd[0];
