@@ -195,6 +195,7 @@ void sendCleanUp(Response &resp, int epollFd, CgiProcess *proc, std::map<int, Cl
             SendResponse(resp, proc->clientFd);
             client->setStatus(Finished);
             close(proc->clientFd);
+
             delete client;
             clients.erase(proc->clientFd);
         }

@@ -42,7 +42,7 @@ void generateResponse(Response &resp, string &real_path)
 {
     getContentType(real_path, resp);
     size_t size = getFileSize(real_path);
-    if (size < 5999999)
+    if (size < 1024)
     {
         resp.setChunkFile(real_path);
         if (!resp.getChunkFile().is_open())
@@ -74,7 +74,7 @@ void generateResponse(Response &resp, string &real_path)
         return;
     }
     resp.setStatus(200);
-    char buffer[1024];
+    char buffer[8192];
     resp.getChunkFile().read(buffer, sizeof(buffer));
     string line(buffer, resp.getChunkFile().gcount());
     resp.setBodyResp(resp.getRestSend() + line);
@@ -87,7 +87,9 @@ void generateResponse(Response &resp, string &real_path)
     }
 }
 
-int handleGet(Response &resp, int clientFd, int epollFd, map<int, CgiProcess *> &cgis)
+
+
+int handleGet(Response &resp, int clientFd, int epollFd, map<int, CgiProcess*> &cgis)
 {
     string root = resp.getRequest()->getConfigFile().getRoot();
     string uri = resp.getRequest()->getUri();
@@ -119,57 +121,6 @@ int handleGet(Response &resp, int clientFd, int epollFd, map<int, CgiProcess *> 
     {
         if (real_path[real_path.size() - 1] != '/')
             real_path += '/';
-        // if (resp.getRequest()->getLocation()->getLoc_idx().empty())
-        // {
-        //     if (resp.getRequest()->getLocation()->getAuto_idx() != "on")
-        //     {
-        //         if (resp.getRequest()->getConfigFile().getIndex().empty())
-        //         {
-        //             setCodeStatus(resp, 404);
-        //             return 0;
-        //         }
-        //         else
-        //         {
-        //             if (resp.getRequest()->getCookie().empty())
-        //             {
-        //                 string indx_path = resp.getRequest()->getConfigFile().getIndex();
-        //                 generateResponse(resp, indx_path);
-        //             }
-        //             else
-        //             {
-        //                 string indx_path = "./index1.html";
-        //                 generateResponse(resp, indx_path);
-        //             }
-        //         }
-        //     }
-        //     else
-        //     {
-        //         DIR *dir = opendir(real_path.c_str());
-        //         if (dir != NULL)
-        //         {
-        //             stringstream html;
-        //             html << "<html><body><h1>Listing directory /" << real_path << "</h1><ul>";
-        //             struct dirent *entry;
-        //             while ((entry = readdir(dir)) != NULL)
-        //             {
-        //                 if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, ".."))
-        //                     continue;
-        //                 html << "<li><a href='./" << real_path << entry->d_name << "'>" << entry->d_name << "</a></li>";
-        //             }
-        //             html << "</ul></body></html>";
-        //             string ss = html.str();
-        //             closedir(dir);
-        //             resp.setStatus(200);
-        //             resp.setBodyResp(ss);
-        //             resp.setType("text/html");
-        //         }
-        //     }
-        // }
-        // else
-        // {
-        //     string path_idx = resp.getRequest()->getLocation()->getLoc_idx();
-        //     generateResponse(resp, path_idx);
-        // }
         if (!resp.getRequest()->getConfigFile().getIndex().empty())
         {
             if (resp.getRequest()->getCookie().empty())

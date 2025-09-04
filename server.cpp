@@ -12,7 +12,7 @@ int printErr(const string &err)
 void setNonBlocking(int fd)
 {
      if (fcntl(fd, F_SETFL, O_NONBLOCK | FD_CLOEXEC) == -1)
-          throw std::runtime_error("fcntl failed to set O_NONBLOCK | FD_CLOEXEC");
+          throw runtime_error("fcntl failed to set O_NONBLOCK | FD_CLOEXEC");
 }
 
 int openSocket(auto_ptr<vector<ConfigFile> > &servers, int epollFd, map<int, ConfigFile> &openedServers)
@@ -55,28 +55,24 @@ int openSocket(auto_ptr<vector<ConfigFile> > &servers, int epollFd, map<int, Con
      }
      return 0;
 }
-
-bool running = true;
-
-void handle_sigint(int signum)
+static bool running = true;
+void signalHandler(int signum)
 {
-     std::cout << "\nCaught SIGINT (" << signum << "), shutting down..." << std::endl;
+     (void) signum;
      running = false;
 }
-
 int main(int ac, char **av)
 {
      if (ac != 2)
           return (printErr("ERROR: ./Webserv <file.conf>"));
-
+     signal(SIGINT, signalHandler);
      ConfigFile config;
      std::auto_ptr<std::vector<ConfigFile> > servers;
      config.initDefaultError();
-     std::map<int, CgiProcess *> cgis;
-
+     map<int, CgiProcess *> cgis;
      try
      {
-          std::map<int, ConfigFile> openedServers;
+          map<int, ConfigFile> openedServers;
           servers = config.ParseConfigFile(av[1]);
 
           int epollFd = epoll_create1(0);
@@ -89,7 +85,6 @@ int main(int ac, char **av)
           const int MAX_EVENTS = 1000;
           epoll_event events[MAX_EVENTS];
           std::map<int, Client *> clients;
-          signal(SIGINT, handle_sigint);
 
           const int KEEP_ALIVE_TIMEOUT = 5; 
 
@@ -113,14 +108,13 @@ int main(int ac, char **av)
                          int clientSocket = accept(fd, NULL, NULL);
                          std::cout << "Opening socket fd=" << clientSocket << std::endl;
                          setNonBlocking(clientSocket);
-
-                         clients[clientSocket] = new Client();
+                         if (clients.find(clientSocket) == clients.end())
+                              clients[clientSocket] = new Client();
                          clients[clientSocket]->setEpollFd(epollFd);
                          clients[clientSocket]->getEvent().data.fd = clientSocket;
-                         clients[clientSocket]->getEvent().events = EPOLLIN;
+                         clients[clientSocket]->getEvent().events = EPOLLIN ;
                          epoll_ctl(epollFd, EPOLL_CTL_ADD, clientSocket, &clients[clientSocket]->getEvent());
-
-                         std::cout << "New connection accepted: fd=" << clientSocket << std::endl;
+                         cout << "New connection accepted: fd=" << clientSocket << endl;
                          continue;
                     }
                     if (cgis.find(fd) != cgis.end())

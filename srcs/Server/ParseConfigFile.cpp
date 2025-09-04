@@ -202,7 +202,6 @@ auto_ptr<vector<ConfigFile> > ConfigFile::ParseConfigFile(string confFile)
 
     if (!is_server || !is_location)
         throw ErrorConfigFileException();
-
     if (bloc == LOCATION)
     {
         CheckDupLoc(curr_server, curr_loc);

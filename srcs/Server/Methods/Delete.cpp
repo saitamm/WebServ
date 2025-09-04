@@ -38,17 +38,16 @@ void deleteRecursively(const string &path)
 void handleDelete(Response &resp)
 {
     struct stat path;
-    string file = resp.getRequest()->getConfigFile().getRoot() + resp.getRequest()->getUri();
-    if (stat(file.c_str(), &path) == -1)
+    string file = resp.getRequest()->getConfigFile().getRoot() +"/"+ resp.getRequest()->getLocation()->getUp_store() + resp.getRequest()->getUri();
+    if (stat(file.c_str(), &path) == -1 )
     {
         setCodeStatus(resp, 404);
         return;
     }
     // file
-
     if (S_ISREG(path.st_mode))
     {
-        if (remove(file.c_str()) == -1)
+        if ( remove(file.c_str()) == -1)
         {
             setCodeStatus(resp, 403);
             return;
@@ -63,7 +62,7 @@ void handleDelete(Response &resp)
     {
         if (file[file.size() - 1] == '/')
         {
-            if (access(file.c_str(), W_OK) == -1)
+            if (file ==resp.getRequest()->getConfigFile().getRoot() +"/"+ resp.getRequest()->getLocation()->getUp_store()+"/" ||  access(file.c_str(), W_OK) == -1)
             {
                 setCodeStatus(resp, 403);
                 return;

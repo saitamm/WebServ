@@ -54,8 +54,7 @@ void generateUser(Response &resp)
         resp.setSessionId(resp.getRequest()->getCookie());
     }
 }
-
-size_t getFileSize(const std::string &path)
+size_t getFileSize(const string &path)
 {
     struct stat st;
     if (stat(path.c_str(), &st) == 0)
@@ -69,7 +68,7 @@ void NonchunkedResponse(Response &resp, int clientSocket)
 {
     stringstream response;
     response << "HTTP/1.1 " << resp.getStatus() << " " << resp.getStatusValue(resp.getStatus()) << "\r\n";
-    response << "Content-type: " << resp.getType() << "\r\n";
+    response << "Content-Type: " << resp.getType() << "\r\n";
     if (resp.getRequest()->getRedirectionStatus())
     {
         Location *loc = resp.getRequest()->getLocation();
@@ -115,7 +114,7 @@ void chunkedResponse(Response &resp, int clientSocket)
     else if (resp.getResponseStatus() == chunked)
     {
         stringstream response;
-        response << std::hex << resp.getBody().size() << "\r\n";
+        response << hex << resp.getBody().size() << "\r\n";
         response << resp.getBody() << "\r\n";
         string responseStr = response.str();
         int bytesend;
@@ -127,17 +126,21 @@ void chunkedResponse(Response &resp, int clientSocket)
     {
         stringstream response;
         response << "0\r\n\r\n";
-        send(clientSocket, response.str().c_str(), response.str().size(), MSG_NOSIGNAL);
+        int bytesend;
+        bytesend = send(clientSocket, response.str().c_str(), response.str().size(), MSG_NOSIGNAL);
         resp.setResponseStatus(Finish);
     }
 }
-
 void SendResponse(Response &resp, int clientSocket)
 {
     if (resp.getResponseStatus() == Nonchunked)
+    {
         NonchunkedResponse(resp, clientSocket);
+    }
     else
+    {
         chunkedResponse(resp, clientSocket);
+    }
 }
 
 int allowMethod(Location loc, string method)
@@ -150,9 +153,7 @@ int allowMethod(Location loc, string method)
     return (0);
 }
 
-void handleClientRequest(std::map<int, Client *> &clients, int clientSocket,
-                         std::auto_ptr<std::vector<ConfigFile> > &servers,
-                         int epollFd, std::map<int, CgiProcess*> &cgis)
+void handleClientRequest(std::map<int, Client *> &clients, int clientSocket,std::auto_ptr<std::vector<ConfigFile> > &servers,int epollFd, std::map<int, CgiProcess *> &cgis)
 {
     std::map<int, Client *>::iterator it = clients.find(clientSocket);
     if (it == clients.end())
@@ -162,19 +163,17 @@ void handleClientRequest(std::map<int, Client *> &clients, int clientSocket,
     client->updateActivity();
     try
     {
-        client->getResp()->initStatusCode();
-
-        if (client->getEvent().events & EPOLLIN)
-            client->ParseHttpRequest(*client, clientSocket, servers, cgis);
-
-        if (client->getStatus() == Processing || client->getStatus() == Sending)
+        clients[clientSocket]->getResp()->initStatusCode();
+        if (clients[clientSocket]->getEvent().events == (EPOLLIN))
+            clients[clientSocket]->ParseHttpRequest(*clients[clientSocket], clientSocket, servers);
+        if (clients[clientSocket]->getStatus() == Processing || clients[clientSocket]->getStatus() == Sending)
         {
             client->getEvent().events = EPOLLOUT;
             epoll_ctl(epollFd, EPOLL_CTL_MOD, clientSocket, &client->getEvent());
-            client->buildResponse(clientSocket, epollFd, cgis);
+            clients[clientSocket]->buildResponse(clientSocket, epollFd, cgis);
         }
     }
-    catch (const std::exception &e)
+    catch (const exception &e)
     {
         client->getResp()->setRequest(*client->getRequest());
         client->setStatus(Sending);
@@ -197,8 +196,9 @@ void handleClientRequest(std::map<int, Client *> &clients, int clientSocket,
         std::cout << "Closingggg socket fd=" << clientSocket << std::endl;
         epoll_ctl(epollFd, EPOLL_CTL_DEL, clientSocket, NULL);
         close(clientSocket);
+                         cout << "-----------------------****i clean the client\n";
+
         delete client;
         clients.erase(it);
     }
 }
-

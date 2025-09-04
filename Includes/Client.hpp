@@ -31,7 +31,7 @@ public:
     int getFd(void) const;
     string &getbuff(void) { return (_buffer); }
     Request *getRequest(void) { return (_req); };
-    void ParseHttpRequest(Client &client, int clientSocket, auto_ptr<vector<ConfigFile> > &servers, map<int, CgiProcess *> &cgis);
+    void ParseHttpRequest(Client &client, int clientSocket, auto_ptr<vector<ConfigFile> > &serv);
     void setNewSessionId(string &id);
     string &getSession(void);
     epoll_event &getEvent(void) { return (_event); }
@@ -42,6 +42,8 @@ public:
     void buildResponse(int clientSocket, int epollFd, map<int, CgiProcess *> &cgis);
     void setStatus(const ClientStatus &status) { _status = status; }
     ClientStatus getStatus(void) const { return _status; }
+    ssize_t getTimeout(void) const { return _timeout; }
+
     void updateActivity() { lastActivity = time(NULL); }
     time_t getLastActivity() const { return lastActivity; }
     void setKeepAlive(bool ka) { keepAlive = ka; }
@@ -54,11 +56,12 @@ private:
     string _buffer;
     ClientStatus _status;
     static vector<string> _session;
+    epoll_event _event;
+    static int epollFd;
+    ssize_t _timeout;
     time_t lastActivity;
     bool keepAlive;
     // Test
-    epoll_event _event;
-    static int epollFd;
 };
 int allowMethod(Location loc, string method);
 void handleClientRequest(map<int, Client *> &clients, int clientSocket, auto_ptr<vector<ConfigFile> > &servers, int epollFd, map<int, CgiProcess *> &cgis);

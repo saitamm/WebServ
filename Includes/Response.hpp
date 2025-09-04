@@ -9,7 +9,7 @@
 
 class CgiProcess;
 
-class BadDirectoryException : public std::exception
+class BadDirectoryException : public exception
 {
 public:
     const char *what() const throw()
@@ -73,6 +73,8 @@ public:
     fstream &getChunkFile(void) { return _chunkFile; }
     string &getRestSend(void) { return _restSend; }
     void setRestSend(const string &rest) { _restSend = rest; }
+    void setRestPost(const string &rest) { _restPost = rest; }
+    string &getRestPost(void) { return _restPost; }
 
 private:
     string _ContentType;
@@ -85,13 +87,9 @@ private:
     size_t totalReceived;
     string _sessionId;
     string _filename;
-
-    //chunked body
     unsigned int _received;
     unsigned int bufferSize;
-
-
-    // Chunked Response
+    string _restPost;
     ResponseStatus _status;
     fstream _chunkFile;
     string _restSend;
@@ -103,7 +101,7 @@ void getContentType(string &real_path, Response &resp);
 void NonChunkedBody(Response &resp, int clientSocket);
 int ChunkedBody(Response &resp, int clientSocket);
 int SupportUpload(Response &resp);
-size_t getFileSize(const std::string &path);
-int ost(Response &resp, int clientSocket, int epollFd, map<int, CgiProcess*> &cgis);
+size_t getFileSize(const string &path);
+int handlePost(Response &resp, int clientSocket, int epollFd, map<int, CgiProcess*> &cgis);
 string checkCgiPath(Response &resp);
 #endif
