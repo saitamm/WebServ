@@ -52,7 +52,7 @@ int openSocket(auto_ptr<vector<ConfigFile> > &servers, int epollFd, map<int, Con
           event.data.fd = serverSocket;
           event.events = EPOLLIN | EPOLLHUP | EPOLLRDHUP; // ready to accept new clients
           if (epoll_ctl(epollFd, EPOLL_CTL_ADD, serverSocket, &event) == -1)
-               return (printErr("epoll_ctl failed"));
+               return (printErr("epoll_ctl failed")); 
           openedServers[serverSocket] = servers->at(i);
      }
      return 0;
