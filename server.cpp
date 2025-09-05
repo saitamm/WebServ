@@ -107,6 +107,7 @@ int main(int ac, char **av)
 
                     if (openedServers.find(fd) != openedServers.end())
                     {
+                         // ConnectClient();
                          int clientSocket = accept(fd, NULL, NULL);
                          if (clientSocket == -1)
                          {
@@ -143,7 +144,6 @@ int main(int ac, char **av)
                     }
                     handleClientRequest(clients, fd, servers, epollFd, cgis);
                }
-
                time_t now = time(NULL);
                std::map<int, Client *>::iterator it;
                for (it = clients.begin(); it != clients.end();)

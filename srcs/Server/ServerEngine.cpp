@@ -107,6 +107,8 @@ void chunkedResponse(Response &resp, int clientSocket)
         response << "Connection: close\r\n\r\n";
         int bytesend;
         bytesend = send(clientSocket, response.str().c_str(), response.str().size(), MSG_NOSIGNAL);
+        if (bytesend <= -1)
+            resp.setResponseStatus(Finish);
         if (bytesend != (int)response.str().size() && bytesend != -1)
             resp.setRestSend(response.str().substr(bytesend));
         resp.setResponseStatus(chunked);
@@ -121,6 +123,8 @@ void chunkedResponse(Response &resp, int clientSocket)
         bytesend = send(clientSocket, responseStr.c_str(), responseStr.size(), MSG_NOSIGNAL);
         if (bytesend != (int)response.str().size() && bytesend != -1)
             resp.setRestSend(response.str().substr(bytesend));
+        if (bytesend <= 0)
+            resp.setResponseStatus(Finish);
     }
     else if (resp.getResponseStatus() == Last)
     {
@@ -128,19 +132,17 @@ void chunkedResponse(Response &resp, int clientSocket)
         response << "0\r\n\r\n";
         int bytesend;
         bytesend = send(clientSocket, response.str().c_str(), response.str().size(), MSG_NOSIGNAL);
+        if (bytesend <= 0)
+            resp.setResponseStatus(Finish);
         resp.setResponseStatus(Finish);
     }
 }
 void SendResponse(Response &resp, int clientSocket)
 {
     if (resp.getResponseStatus() == Nonchunked)
-    {
         NonchunkedResponse(resp, clientSocket);
-    }
     else
-    {
         chunkedResponse(resp, clientSocket);
-    }
 }
 
 int allowMethod(Location loc, string method)
@@ -152,7 +154,22 @@ int allowMethod(Location loc, string method)
     }
     return (0);
 }
-
+void CleanClient(std::map<int, Client *> &clients, int clientSocket)
+{
+    if (clients[clientSocket]->getResp()->getResponseStatus() == Finish)
+        clients[clientSocket]->setStatus(Finished);
+    if (clients[clientSocket]->getStatus() == Finished)
+    {
+        if (epoll_ctl(clients[clientSocket]->getEpollFd(), EPOLL_CTL_DEL, clientSocket, NULL) == -1)
+        {
+            perror("epoll_ctl: add");
+            return;
+        }
+        close(clientSocket);
+        delete clients[clientSocket];
+        clients.erase(clientSocket);
+    }
+}
 void handleClientRequest(std::map<int, Client *> &clients, int clientSocket, std::auto_ptr<std::vector<ConfigFile> > &servers, int epollFd, std::map<int, CgiProcess *> &cgis)
 {
     clients[clientSocket]->updateActivity();
@@ -170,6 +187,7 @@ void handleClientRequest(std::map<int, Client *> &clients, int clientSocket, std
                 return;
             }
             clients[clientSocket]->buildResponse(clientSocket, epollFd, cgis);
+            cout << clients[clientSocket]->getResp()->getResponseStatus() <<endl;
         }
     }
     catch (const exception &e)
@@ -192,20 +210,6 @@ void handleClientRequest(std::map<int, Client *> &clients, int clientSocket, std
     {
         SendResponse(*clients[clientSocket]->getResp(), clientSocket);
         clients[clientSocket]->setNewSessionId(clients[clientSocket]->getResp()->getSessionId());
-
-        if (clients[clientSocket]->getResp()->getResponseStatus() == Finish)
-            clients[clientSocket]->setStatus(Finished);
     }
-    if (clients[clientSocket]->getStatus() == Finished)
-    {
-        cout << "WAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAa\n";
-        if (epoll_ctl(epollFd, EPOLL_CTL_DEL, clientSocket, NULL) == -1)
-        {
-            perror("epoll_ctl: add");
-            return;
-        }
-        close(clientSocket);
-        delete clients[clientSocket];
-        clients.erase(clientSocket);
-    }
+    CleanClient(clients, clientSocket);
 }

@@ -119,21 +119,6 @@ int handleGet(Response &resp, int clientFd, int epollFd, map<int, CgiProcess *> 
     {
         if (real_path[real_path.size() - 1] != '/')
             real_path += '/';
-        // if (!resp.getRequest()->getConfigFile().getIndex().empty())
-        // {
-        //     if (resp.getRequest()->getCookie().empty())
-        //     {
-        //         cout << "---------------------------\n";
-        //         string indx_path = resp.getRequest()->getConfigFile().getIndex();
-        //         generateResponse(resp, indx_path);
-        //     }
-        //     else
-        //     {
-        //         string indx_path = "./index1.html";
-        //         generateResponse(resp, indx_path);
-        //     }
-        //     return 0;
-        // }
         string index = resp.getRequest()->getConfigFile().getRoot() + "/" + resp.getRequest()->getLocation()->getLoc_idx();
         if ((!resp.getRequest()->getLocation()->getLoc_idx().empty()) && (stat(index.c_str(), &path) != -1))
         {

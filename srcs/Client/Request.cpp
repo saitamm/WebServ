@@ -52,6 +52,7 @@ void Request::ParseHeader(string &Header)
 
     string tmp1;
     stringstream line(Header);
+    cout <<Header <<endl;
     int posH = Header.find("\r\n\r\n");
     if (posH > 8000)
         throw BadRequestException();

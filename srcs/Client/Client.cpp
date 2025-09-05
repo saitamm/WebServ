@@ -23,6 +23,15 @@ Client::Client(int fd)
     _fd = fd;
 }
 
+void Client::setBuff(string &buff, size_t &readbyte) { _buffer.append(buff, readbyte); }
+void Client::setKeepAlive(bool ka) { keepAlive = ka; }
+void Client::setEpollFd(int fd) { epollFd = fd; }
+void Client::setStatus(const ClientStatus &status) { _status = status; }
+void Client::setNewSessionId(string &id)
+{
+    if (find(_session.begin(), _session.end(), id) == _session.end())
+        _session.push_back(id);
+}
 void Client::setResp(Response &resp)
 {
     if (_resp)
@@ -30,20 +39,15 @@ void Client::setResp(Response &resp)
     _resp = &resp;
 }
 
-int Client::getFd(void) const
-{
-    return (_fd);
-}
+int Client::getFd(void) const { return (_fd); }
+time_t Client::getLastActivity() const { return lastActivity; }
+Response *Client::getResp(void) { return (_resp); }
+epoll_event &Client::getEvent(void) { return (_event); }
+int Client::getEpollFd(void) { return (epollFd); }
+bool Client::getKeepAlive() const { return keepAlive; }
+ssize_t Client::getTimeout(void) const { return _timeout; }
+ClientStatus Client::getStatus(void) const { return _status; }
 
-Response *Client::getResp(void)
-{
-    return (_resp);
-}
-
-void Client::setBuff(string &buff, size_t &readbyte)
-{
-    _buffer.append(buff, readbyte);
-}
 
 int checkSize(unsigned long long size, size_t max_size)
 {
@@ -51,6 +55,7 @@ int checkSize(unsigned long long size, size_t max_size)
         return (1);
     return (0);
 }
+void Client::updateActivity() { lastActivity = time(NULL); }
 void Client::buildResponse(int clientFd, int epollFd, map<int, CgiProcess *> &cgis)
 {
 
@@ -110,7 +115,7 @@ void Client::ParseHttpRequest(Client &client, int clientSocket, auto_ptr<vector<
         if ((bytesRead = recv(clientSocket, buf, sizeof(buf), 0)) >= 0)
             _buffer.append(buf, bytesRead);
         else
-            throw BadRequestException();
+            _status = Finished;
         if (_buffer.find("\r\n\r\n") != string::npos)
         {
             client.getRequest()->ParseHeader(_buffer);
@@ -156,6 +161,7 @@ void Client::ParseHttpRequest(Client &client, int clientSocket, auto_ptr<vector<
             string Up = _resp->getRequest()->getConfigFile().getRoot() + "/" + _resp->getRequest()->getLocation()->getUp_store() + "/" + f;
             _resp->getFile().open(Up.c_str(), ios::out | ios::trunc | ios::binary);
             _resp->setFileName(Up);
+            cout << Up << endl;
             if (!_resp->getFile().is_open())
             {
                 setCodeStatus(*this->_resp, 500);
@@ -195,10 +201,4 @@ void Client::ParseHttpRequest(Client &client, int clientSocket, auto_ptr<vector<
 
         return;
     }
-}
-
-void Client::setNewSessionId(string &id)
-{
-    if (find(_session.begin(), _session.end(), id) == _session.end())
-        _session.push_back(id);
 }

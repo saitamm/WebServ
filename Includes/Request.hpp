@@ -44,6 +44,8 @@ class Request
 public:
     Request();
     ~Request();
+
+    //getters
     string &getMethod(void);
     string &getHost(void);
     string &getUri(void);
