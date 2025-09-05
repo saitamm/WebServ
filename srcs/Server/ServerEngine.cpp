@@ -118,7 +118,7 @@ void chunkedResponse(Response &resp, int clientSocket)
         response << resp.getBody() << "\r\n";
         string responseStr = response.str();
         int bytesend;
-        bytesend = send(clientSocket, responseStr.c_str(), responseStr.size(), 0);
+        bytesend = send(clientSocket, responseStr.c_str(), responseStr.size(), MSG_NOSIGNAL);
         if (bytesend != (int)response.str().size() && bytesend != -1)
             resp.setRestSend(response.str().substr(bytesend));
     }
@@ -152,14 +152,10 @@ int allowMethod(Location loc, string method)
     return (0);
 }
 
-void handleClientRequest(std::map<int, Client *> &clients, int clientSocket,std::auto_ptr<std::vector<ConfigFile> > &servers,int epollFd, std::map<int, CgiProcess *> &cgis)
+void handleClientRequest(std::map<int, Client *> &clients, int clientSocket, std::auto_ptr<std::vector<ConfigFile> > &servers, int epollFd, std::map<int, CgiProcess *> &cgis)
 {
-    std::map<int, Client *>::iterator it = clients.find(clientSocket);
-    if (it == clients.end())
-        return;
-
-    Client *client = it->second;
-    client->updateActivity();
+    clients[clientSocket]->updateActivity();
+    Client *client = clients[clientSocket];
     try
     {
         clients[clientSocket]->getResp()->initStatusCode();
@@ -167,8 +163,12 @@ void handleClientRequest(std::map<int, Client *> &clients, int clientSocket,std:
             clients[clientSocket]->ParseHttpRequest(*clients[clientSocket], clientSocket, servers);
         if (clients[clientSocket]->getStatus() == Processing || clients[clientSocket]->getStatus() == Sending)
         {
-            client->getEvent().events = EPOLLOUT;
-            epoll_ctl(epollFd, EPOLL_CTL_MOD, clientSocket, &client->getEvent());
+            clients[clientSocket]->getEvent().events = EPOLLOUT;
+            if (epoll_ctl(epollFd, EPOLL_CTL_MOD, clientSocket, &clients[clientSocket]->getEvent()) == -1)
+            {
+                perror("epoll_ctl: add");
+                return;
+            }
             clients[clientSocket]->buildResponse(clientSocket, epollFd, cgis);
         }
     }
@@ -177,29 +177,37 @@ void handleClientRequest(std::map<int, Client *> &clients, int clientSocket,std:
         client->getResp()->setRequest(*client->getRequest());
         client->setStatus(Sending);
         client->getEvent().events = EPOLLOUT;
-        epoll_ctl(epollFd, EPOLL_CTL_MOD, clientSocket, &client->getEvent());
-        if (!client->getRequest()->getRedirectionStatus())
-            setCodeStatus(*client->getResp(), 400);
+        if (epoll_ctl(epollFd, EPOLL_CTL_MOD, clientSocket, &client->getEvent()) == -1)
+        {
+            perror("epoll_ctl: add");
+            return;
+        }
+        clients[clientSocket]->getResp()->setRequest(*clients[clientSocket]->getRequest());
+        clients[clientSocket]->setStatus(Sending);
+        if (!clients[clientSocket]->getRequest()->getRedirectionStatus())
+            setCodeStatus(*clients[clientSocket]->getResp(), 400);
         else
-            setCodeStatus(*client->getResp(), 0);
+            setCodeStatus(*clients[clientSocket]->getResp(), 0);
     }
 
-    if ((client->getEvent().events & EPOLLOUT) && (client->getStatus() == Sending))
+    if ((clients[clientSocket]->getEvent().events & EPOLLOUT) && (clients[clientSocket]->getStatus() == Sending))
     {
-        SendResponse(*client->getResp(), clientSocket);
-        client->setNewSessionId(client->getResp()->getSessionId());
+        SendResponse(*clients[clientSocket]->getResp(), clientSocket);
+        clients[clientSocket]->setNewSessionId(clients[clientSocket]->getResp()->getSessionId());
 
-        if (client->getResp()->getResponseStatus() == Finish)
-            client->setStatus(Finished);
+        if (clients[clientSocket]->getResp()->getResponseStatus() == Finish)
+            clients[clientSocket]->setStatus(Finished);
     }
-    if (client->getStatus() == Finished)
+    if (clients[clientSocket]->getStatus() == Finished)
     {
         std::cout << "Closingggg socket fd=" << clientSocket << std::endl;
-        epoll_ctl(epollFd, EPOLL_CTL_DEL, clientSocket, NULL);
+        if (epoll_ctl(epollFd, EPOLL_CTL_DEL, clientSocket, NULL) == -1)
+        {
+            perror("epoll_ctl: add");
+            return;
+        }
         close(clientSocket);
-                         cout << "-----------------------****i clean the client\n";
-
-        delete client;
-        clients.erase(it);
+        delete clients[clientSocket];
+        clients.erase(clientSocket);
     }
 }

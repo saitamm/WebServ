@@ -8,6 +8,13 @@ bool isCgiExtension(const string &ext, Response &resp)
     return 0;
 }
 
+bool isCgi(const string &ext)
+{
+    if (ext != ".py" && ext != ".php" && ext != ".sh" && ext != ".pl")
+        return 0;
+    return 1;
+}
+
 string getExt(Response &resp)
 {
     string path = resp.getRequest()->getUri();
@@ -18,7 +25,7 @@ string getExt(Response &resp)
     return ext;
 }
 
-string checkCgiPath(Response &resp, string& ext)
+string checkCgiPath(Response &resp, string &ext)
 {
     const set<string> cgi = resp.getRequest()->getLocation()->getCgi_pass();
     if (ext == ".py")
@@ -104,7 +111,11 @@ void checkCgiGet(Response &resp, string &real_path, int clientFd, int epollFd, m
         memset(&ev, 0, sizeof(ev));
         ev.data.fd = fd[0];
         ev.events = EPOLLIN | EPOLLHUP;
-        epoll_ctl(epollFd, EPOLL_CTL_ADD, fd[0], &ev);
+        if (epoll_ctl(epollFd, EPOLL_CTL_ADD, fd[0], &ev) == -1)
+        {
+            perror("epoll_ctl: add");
+            return;
+        }
         CgiProcess *proc = new CgiProcess(clientFd, real_path);
         proc->pid = pid;
         proc->pipeFd = fd[0];
@@ -172,7 +183,11 @@ void checkCgiPost(Response &resp, int clientFd, int epollFd, map<int, CgiProcess
         memset(&ev, 0, sizeof(ev));
         ev.data.fd = fd_out[0];
         ev.events = EPOLLIN | EPOLLHUP;
-        epoll_ctl(epollFd, EPOLL_CTL_ADD, fd_out[0], &ev);
+        if (epoll_ctl(epollFd, EPOLL_CTL_ADD, fd_out[0], &ev) == -1)
+        {
+            perror("epoll_ctl: add");
+            return;
+        }
         CgiProcess *proc = new CgiProcess(clientFd, path);
         proc->pid = pid;
         proc->pipeFd = fd_out[0];
@@ -183,22 +198,26 @@ void checkCgiPost(Response &resp, int clientFd, int epollFd, map<int, CgiProcess
 
 void sendCleanUp(Response &resp, int epollFd, CgiProcess *proc, std::map<int, Client *> &clients, std::map<int, CgiProcess *> &cgis)
 {
-    epoll_ctl(epollFd, EPOLL_CTL_DEL, proc->pipeFd, NULL);
+    if (epoll_ctl(epollFd, EPOLL_CTL_DEL, proc->pipeFd, NULL) == -1)
+    {
+        perror("epoll_ctl: add");
+        return;
+    }
     close(proc->pipeFd);
 
     std::map<int, Client *>::iterator it = clients.find(proc->clientFd);
     if (it != clients.end())
     {
         Client *client = it->second;
-        if(client->getEvent().events & EPOLLOUT)
+        if (client->getEvent().events & EPOLLOUT)
         {
             SendResponse(resp, proc->clientFd);
-            client->setStatus(Finished);
-            close(proc->clientFd);
-
-            delete client;
-            clients.erase(proc->clientFd);
         }
+        client->setStatus(Finished);
+        close(proc->clientFd);
+
+        delete client;
+        clients.erase(proc->clientFd);
     }
     cgis.erase(proc->pipeFd);
     delete proc;

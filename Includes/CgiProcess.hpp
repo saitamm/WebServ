@@ -15,6 +15,7 @@ public:
     time_t start;
     std::string scriptPath;
     std::stringstream output;
+    
 
     std::fstream inputStream; 
 
@@ -22,7 +23,7 @@ public:
         : clientFd(fd), pid(-1), pipeFd(-1), start(0), scriptPath(script) {}
 
     ~CgiProcess() {
-        if (inputStream.is_open()) inputStream.close();
+     
     }
 
 private:

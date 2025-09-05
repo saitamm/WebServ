@@ -76,7 +76,9 @@ void Client::buildResponse(int clientFd, int epollFd, map<int, CgiProcess *> &cg
     if (this->_req->getMethod() == "GET")
     {
         if (handleGet(*this->_resp, clientFd, epollFd, cgis) == 0)
+        {
             _status = Sending;
+        }
         else
         {
             _status = WaitingCGI;
@@ -111,7 +113,6 @@ void Client::ParseHttpRequest(Client &client, int clientSocket, auto_ptr<vector<
             throw BadRequestException();
         if (_buffer.find("\r\n\r\n") != string::npos)
         {
-            cout << "this is my header =\n"<< _buffer <<endl;
             client.getRequest()->ParseHeader(_buffer);
             this->_req->setConfigFile(serv->at(0));
             for (int i = 0; i < (int)serv->size(); i++)
@@ -158,8 +159,8 @@ void Client::ParseHttpRequest(Client &client, int clientSocket, auto_ptr<vector<
             if (!_resp->getFile().is_open())
             {
                 setCodeStatus(*this->_resp, 500);
-                cout << "this is my file name: " << _resp->getFileName() << endl;
                 _status = Processing;
+                cout << "i am heeeeeeeere\n";
                 return;
             }
             _status = Reading;
@@ -173,13 +174,11 @@ void Client::ParseHttpRequest(Client &client, int clientSocket, auto_ptr<vector<
         if (_resp->getRequest()->getHeadvalue("Transfer-Encoding").empty())
         {
             NonChunkedBody(*_resp, clientSocket);
-            cout << "totatl received =" << _resp->getTotalReceived() << "-------" << _resp->getRequest()->getContentLength() <<endl;
             if (_resp->getTotalReceived() == _resp->getRequest()->getContentLength())
             {
                 if (_resp->getFile().is_open())
                     _resp->getFile().close();
                 setCodeStatus(*_resp, 200);
-                cout << "-----\n";
                 _status = Processing;
             }
         }
