@@ -13,9 +13,7 @@ unsigned int getSize(int clientSocket, Response &resp)
     int byteread;
     if ((byteread = recv(clientSocket, buffer, sizeof(buffer), 0)) <= 0)
         throw BadRequestException();
-    cout << byteread << endl;
     string line(buffer, byteread);
-    cout << "--------------------" << line << endl;
     line.erase(0, 2);
     stringstream ll(line);
     unsigned int BufferSize;
@@ -92,7 +90,6 @@ int ChunkedBody(Response &resp, int clientSocket)
             line.erase(0, size);
             if (line.empty())
                 break;
-            cout << "line ---" << line << endl;
             line.erase(0, 2);
             stringstream kk(line);
             string k;
@@ -121,7 +118,6 @@ int ChunkedBody(Response &resp, int clientSocket)
     {
         if (resp.getReceived() == 0)
         {
-            cout << "----\n";
             resp.setBufferSize(getSize(clientSocket, resp));
             if (resp.getBufferSize() == 0)
             {

@@ -187,7 +187,6 @@ void handleClientRequest(std::map<int, Client *> &clients, int clientSocket, std
                 return;
             }
             clients[clientSocket]->buildResponse(clientSocket, epollFd, cgis);
-            cout << clients[clientSocket]->getResp()->getResponseStatus() <<endl;
         }
     }
     catch (const exception &e)

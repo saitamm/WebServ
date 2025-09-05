@@ -166,7 +166,6 @@ void Client::ParseHttpRequest(Client &client, int clientSocket, auto_ptr<vector<
             {
                 setCodeStatus(*this->_resp, 500);
                 _status = Processing;
-                cout << "i am heeeeeeeere\n";
                 return;
             }
             _status = Reading;
