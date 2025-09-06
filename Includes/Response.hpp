@@ -95,4 +95,7 @@ int SupportUpload(Response &resp);
 size_t getFileSize(const string &path);
 int handlePost(Response &resp, int clientSocket, int epollFd, map<int, CgiProcess *> &cgis);
 string checkCgiPath(Response &resp);
+int CreatUploadFile(Response &resp);
+int ReadBody(Response &resp, int clientSocket);
+
 #endif

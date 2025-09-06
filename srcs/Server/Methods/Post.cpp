@@ -7,6 +7,69 @@ int SupportUpload(Response &resp)
     return (0);
 }
 
+int CreatUploadFile(Response &resp)
+{
+    srand(time(0));
+    stringstream ll;
+    string type = resp.getRequest()->getHeadvalue("Content-Type").substr(resp.getRequest()->getHeadvalue("Content-Type").find('/') + 1);
+    ll << rand();
+    string f = ll.str() + "." + type;
+    if (type.empty())
+        throw BadRequestException();
+    string store = resp.getRequest()->getConfigFile().getRoot() + "/" + resp.getRequest()->getLocation()->getUp_store();
+    string Up = store + "/" + f;
+    resp.getFile().open(Up.c_str(), ios::out | ios::trunc | ios::binary);
+    resp.setFileName(Up);
+    cout << Up << endl;
+    if (!resp.getFile().is_open())
+    {
+        struct stat st;
+        if (stat(store.c_str(), &st) == -1)
+        {
+            setCodeStatus(resp, 500);
+            return (1);
+        }
+        if (access(resp.getRequest()->getLocation()->getUp_store().c_str(), W_OK) == -1)
+        {
+            setCodeStatus(resp, 403);
+            return (1);
+        }
+        setCodeStatus(resp, 500);
+        return 1;
+    }
+    return (0);
+}
+
+int ReadBody(Response &resp, int clientSocket)
+{
+    if (SupportUpload(resp))
+    {
+        setCodeStatus(resp, 403);
+        return 1;
+    }
+    if (resp.getRequest()->getHeadvalue("Transfer-Encoding").empty())
+    {
+        NonChunkedBody(resp, clientSocket);
+        if (resp.getTotalReceived() == resp.getRequest()->getContentLength())
+        {
+            if (resp.getFile().is_open())
+                resp.getFile().close();
+            setCodeStatus(resp, 200);
+            return 1;
+        }
+    }
+    else
+    {
+        if (ChunkedBody(resp, clientSocket))
+        {
+            if (resp.getFile().is_open())
+                resp.getFile().close();
+            setCodeStatus(resp, 200);
+            return (1);
+        }
+    }
+    return (0);
+}
 unsigned int getSize(int clientSocket, Response &resp)
 {
     char buffer[1024];

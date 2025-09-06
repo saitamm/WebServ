@@ -12,6 +12,7 @@ void setCodeStatus(Response &resp, int error)
     if (body[error].empty())
     {
         string defaultErrorPage = resp.getRequest()->getConfigFile().getDefaultErrorPage(error);
+        cout << "*************** "<< defaultErrorPage << " *******"<<endl;
         getContentType(defaultErrorPage, resp);
         ifstream file(defaultErrorPage.c_str());
         if (!file.is_open())
@@ -20,13 +21,14 @@ void setCodeStatus(Response &resp, int error)
             return;
         }
         string buffer((istreambuf_iterator<char>(file)),
-                      istreambuf_iterator<char>());
+        istreambuf_iterator<char>());
         resp.setBodyResp(buffer);
         file.close();
     }
     else
     {
         getContentType(body[error], resp);
+        cout << "--------------------\n" << error <<endl;
         ifstream file(body[error].c_str());
         if (!file.is_open())
         {
@@ -85,6 +87,7 @@ void NonchunkedResponse(Response &resp, int clientSocket)
 
     response << resp.getBody();
     int bytesend;
+    cout << "this is my response :" << response.str() <<endl;
     bytesend = send(clientSocket, response.str().c_str(), response.str().size(), MSG_NOSIGNAL);
     if (bytesend != (int)response.str().size() && bytesend != -1)
     {
@@ -173,6 +176,7 @@ void CleanClient(std::map<int, Client *> &clients, int clientSocket)
 void handleClientRequest(std::map<int, Client *> &clients, int clientSocket, std::auto_ptr<std::vector<ConfigFile> > &servers, int epollFd, std::map<int, CgiProcess *> &cgis)
 {
     clients[clientSocket]->updateActivity();
+    Client *client = clients[clientSocket];
     try
     {
         clients[clientSocket]->getResp()->initStatusCode();
@@ -191,8 +195,10 @@ void handleClientRequest(std::map<int, Client *> &clients, int clientSocket, std
     }
     catch (const exception &e)
     {
-        clients[clientSocket]->getEvent().events = EPOLLOUT;
-        if (epoll_ctl(epollFd, EPOLL_CTL_MOD, clientSocket, &clients[clientSocket]->getEvent()) == -1)
+        client->getResp()->setRequest(*client->getRequest());
+        client->setStatus(Sending);
+        client->getEvent().events = EPOLLOUT;
+        if (epoll_ctl(epollFd, EPOLL_CTL_MOD, clientSocket, &client->getEvent()) == -1)
         {
             perror("epoll_ctl: add");
             return;
@@ -200,7 +206,7 @@ void handleClientRequest(std::map<int, Client *> &clients, int clientSocket, std
         clients[clientSocket]->getResp()->setRequest(*clients[clientSocket]->getRequest());
         clients[clientSocket]->setStatus(Sending);
         if (!clients[clientSocket]->getRequest()->getRedirectionStatus())
-            setCodeStatus(*clients[clientSocket]->getResp(), 400);
+            setCodeStatus(*clients[clientSocket]->getResp(), atoi(e.what()));
         else
             setCodeStatus(*clients[clientSocket]->getResp(), 0);
     }

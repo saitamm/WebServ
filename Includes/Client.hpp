@@ -77,5 +77,6 @@ void checkCgiPost(Response &resp, int clientFd, int epollFd, map<int, CgiProcess
 void CgiEvent(int fd, int epollFd, map<int, Client *> &clients, map<int, CgiProcess *> &cgis);
 string getExt(Response &resp);
 bool isCgiExtension(const string &ext, Response &resp);
+bool isCgi(const string &ext);
 
 #endif

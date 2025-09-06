@@ -21,8 +21,10 @@ void Response::initStatusCode(void)
     _StatusCode[307] = "Temporary Redirect";
     _StatusCode[308] = "Permanent Redirect";
     _StatusCode[413] = "Payload Too Large";
+    _StatusCode[431] = "Payload Too Large";
     _StatusCode[400] = "Bad Request";
     _StatusCode[408] = "Request Timeout";
+    _StatusCode[501] = "Not Implemented";
 }
 
 Response::Response()
@@ -61,11 +63,11 @@ void Response::setStatus(int stat) { _Code = stat; };
 void Response::setTotalReceived(size_t received) { totalReceived += received; }
 void Response::setReceived(unsigned int received) { _received += received; }
 void Response::setBufferSize(unsigned int size) { bufferSize = size; }
-    string &Response::getRestSend(void) { return _restSend; }
-        fstream &Response::getChunkFile(void) { return _chunkFile; }
+string &Response::getRestSend(void) { return _restSend; }
+fstream &Response::getChunkFile(void) { return _chunkFile; }
 
-    void Response::setRestPost(const string &rest) { _restPost = rest; }
- void Response::setRestSend(const string &rest) { _restSend = rest; }
+void Response::setRestPost(const string &rest) { _restPost = rest; }
+void Response::setRestSend(const string &rest) { _restSend = rest; }
 void Response::setSessionId(string &user) { _sessionId = user; }
 void Response::setChunkFile(string &name)
 {
@@ -75,3 +77,6 @@ void Response::setChunkFile(string &name)
         cerr << "Failed to open chunk file: " << name << endl;
     }
 }
+
+
+//function

@@ -13,6 +13,8 @@ void ConfigFile::initDefaultError(void)
     default_errors[409] = "srcs/Server/errors/409.html";
     default_errors[500] = "srcs/Server/errors/500.html";
     default_errors[413] = "srcs/Server/errors/413.html";
+    default_errors[431] = "srcs/Server/errors/431.html";
+    default_errors[501] = "srcs/Server/errors/501.html";
 }
 
 ConfigFile::ConfigFile() {}

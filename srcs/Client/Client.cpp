@@ -48,7 +48,6 @@ bool Client::getKeepAlive() const { return keepAlive; }
 ssize_t Client::getTimeout(void) const { return _timeout; }
 ClientStatus Client::getStatus(void) const { return _status; }
 
-
 int checkSize(unsigned long long size, size_t max_size)
 {
     if (size > max_size)
@@ -105,7 +104,23 @@ void Client::buildResponse(int clientFd, int epollFd, map<int, CgiProcess *> &cg
         return;
     }
 }
-
+void matchServer(Client &client, auto_ptr<vector<ConfigFile> > &serv)
+{
+    client.getRequest()->setConfigFile(serv->at(0));
+    for (int i = 0; i < (int)serv->size(); i++)
+    {
+        if (client.getRequest()->getHost() == "localhost")
+            client.getRequest()->setHost("127.0.0.1");
+        if (serv->at(i).getHost() == client.getRequest()->getHost() && serv->at(i).getPort() == client.getRequest()->getPort())
+        {
+            client.getRequest()->setConfigFile(serv->at(i));
+            break;
+        }
+    }
+    client.getRequest()->setLocation(matchLocation(client.getRequest()->getUri(), client.getRequest()->getConfigFile().getLocations()));
+    if (!client.getRequest()->getLocation())
+        throw NotFoundException();
+}
 void Client::ParseHttpRequest(Client &client, int clientSocket, auto_ptr<vector<ConfigFile> > &serv)
 {
     char buf[1024];
@@ -119,23 +134,8 @@ void Client::ParseHttpRequest(Client &client, int clientSocket, auto_ptr<vector<
         if (_buffer.find("\r\n\r\n") != string::npos)
         {
             client.getRequest()->ParseHeader(_buffer);
-            this->_req->setConfigFile(serv->at(0));
-            for (int i = 0; i < (int)serv->size(); i++)
-            {
-                if (client.getRequest()->getHost() == "localhost")
-                    client.getRequest()->setHost("127.0.0.1");
-                if (serv->at(i).getHost() == client.getRequest()->getHost() && serv->at(i).getPort() == client.getRequest()->getPort())
-                {
-                    client.getRequest()->setConfigFile(serv->at(i));
-                    break;
-                }
-            }
-            client.getRequest()->setLocation(matchLocation(client.getRequest()->getUri(), client.getRequest()->getConfigFile().getLocations()));
-            if (!client.getRequest()->getLocation())
-            {
-                cout << "No matching location found for URI: " << client.getRequest()->getUri() << endl;
-                throw BadRequestException();
-            }
+            matchServer(client, serv);
+
             RedirectionRequest(*client.getRequest());
             _status = Body;
         }
@@ -145,59 +145,23 @@ void Client::ParseHttpRequest(Client &client, int clientSocket, auto_ptr<vector<
         this->_resp->setRequest(*this->_req);
         if (client.getRequest()->getMethod() == "GET" || client.getRequest()->getMethod() == "DELETE")
         {
-
             _status = Processing;
             return;
         }
         if (_status == Body)
         {
-            srand(time(0));
-            stringstream ll;
-            string type = _resp->getRequest()->getHeadvalue("Content-Type").substr(_resp->getRequest()->getHeadvalue("Content-Type").find('/') + 1);
-            ll << rand();
-            string f = ll.str() + "." + type;
-            if (type.empty())
-                throw BadRequestException();
-            string Up = _resp->getRequest()->getConfigFile().getRoot() + "/" + _resp->getRequest()->getLocation()->getUp_store() + "/" + f;
-            _resp->getFile().open(Up.c_str(), ios::out | ios::trunc | ios::binary);
-            _resp->setFileName(Up);
-            cout << Up << endl;
-            if (!_resp->getFile().is_open())
+            if (CreatUploadFile(*_resp))
             {
-                setCodeStatus(*this->_resp, 500);
                 _status = Processing;
                 return;
             }
             _status = Reading;
         }
-        if (SupportUpload(*_resp))
+        if (ReadBody(*_resp, clientSocket))
         {
-            setCodeStatus(*_resp, 403);
             _status = Processing;
             return;
         }
-        if (_resp->getRequest()->getHeadvalue("Transfer-Encoding").empty())
-        {
-            NonChunkedBody(*_resp, clientSocket);
-            if (_resp->getTotalReceived() == _resp->getRequest()->getContentLength())
-            {
-                if (_resp->getFile().is_open())
-                    _resp->getFile().close();
-                setCodeStatus(*_resp, 200);
-                _status = Processing;
-            }
-        }
-        else
-        {
-            if (ChunkedBody(*_resp, clientSocket))
-            {
-                if (_resp->getFile().is_open())
-                    _resp->getFile().close();
-                setCodeStatus(*_resp, 200);
-                _status = Processing;
-            }
-        }
-
         return;
     }
 }

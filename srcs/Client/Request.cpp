@@ -54,10 +54,10 @@ void Request::ParseHeader(string &Header)
     stringstream line(Header);
     int posH = Header.find("\r\n\r\n");
     if (posH > 8000)
-        throw BadRequestException();
+        throw LargeHeaderException();
     line >> this->_method;
     if ((_method != "GET" && _method != "DELETE" && _method != "POST") || _method.empty())
-        throw BadRequestException();
+        throw NotImplementedException();
     string path;
     vector<string> res;
     line >> path;
@@ -73,6 +73,7 @@ void Request::ParseHeader(string &Header)
     _ContentLength = 0;
     getline(line, tmp);
     string input;
+    int i = 0;
     while (getline(line, input) && input != "\r")
     {
         tmp = input.substr(0, input.find(':'));
@@ -89,6 +90,7 @@ void Request::ParseHeader(string &Header)
         }
         else if (tmp == "Host")
         {
+            i++;
             _host = input.substr(input.find(':') + 2);
             if (this->_host.find(':') != string::npos)
             {
@@ -110,7 +112,7 @@ void Request::ParseHeader(string &Header)
             trim(_cookie, "\n\t\r ;");
         }
     }
-    if (this->_host.empty())
+    if (this->_host.empty() || i > 1)
         throw BadRequestException();
     stringstream ss(tmp1);
     ss >> this->_ContentLength;

@@ -87,6 +87,8 @@ void generateResponse(Response &resp, string &real_path)
     }
 }
 
+
+
 int handleGet(Response &resp, int clientFd, int epollFd, map<int, CgiProcess *> &cgis)
 {
     string root = resp.getRequest()->getConfigFile().getRoot();
@@ -107,13 +109,20 @@ int handleGet(Response &resp, int clientFd, int epollFd, map<int, CgiProcess *> 
     if (S_ISREG(path.st_mode))
     {
         string ext = getExt(resp);
-        if (!resp.getRequest()->getLocation()->getCgi_pass().empty() && isCgiExtension(ext, resp))
+        if(isCgi(ext) && resp.getRequest()->getLocation()->getCgi_pass().empty())
+        {
+            setCodeStatus(resp, 500);
+            return 0;
+        }
+        else if (!resp.getRequest()->getLocation()->getCgi_pass().empty() && isCgiExtension(ext, resp))
         {
             checkCgiGet(resp, real_path, clientFd, epollFd, cgis, ext);
             return 1;
         }
         else
+        {
             generateResponse(resp, real_path);
+        }
     }
     else if (S_ISDIR(path.st_mode))
     {
@@ -131,6 +140,7 @@ int handleGet(Response &resp, int clientFd, int epollFd, map<int, CgiProcess *> 
             }
             if (resp.getRequest()->getCookie().empty())
             {
+                cout << ":::::::::::::::::::::;\n";
                 string indx_path = resp.getRequest()->getLocation()->getLoc_idx();
                 generateResponse(resp, indx_path);
                 return (0);

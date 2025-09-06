@@ -17,6 +17,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <stdlib.h>
 
 #define LIMIT 1024
 
@@ -25,10 +26,44 @@ class BadRequestException : public exception
 public:
     const char *what() const throw()
     {
-        return ("Bad Request\n");
+        return ("400");
     }
 };
 
+class NotFoundException : public exception
+{
+public:
+    const char *what() const throw()
+    {
+        return ("404");
+    }
+};
+class LargeHeaderException : public exception
+{
+public:
+    const char *what() const throw()
+    {
+        return ("431");
+    }
+};
+
+class NotImplementedException : public exception
+{
+public:
+    const char *what() const throw()
+    {
+        return ("501");
+    }
+};
+
+class RedirectionException : public exception
+{
+public:
+    const char *what() const throw()
+    {
+        return ("600");
+    }
+};
 class SocketErrorException : public exception
 {
 public:

@@ -8,6 +8,13 @@ bool isCgiExtension(const string &ext, Response &resp)
     return 0;
 }
 
+bool isCgi(const string &ext)
+{
+    if (ext != ".py" && ext != ".php" && ext != ".sh" && ext != ".pl")
+        return 0;
+    return 1;
+}
+
 string getExt(Response &resp)
 {
     string path = resp.getRequest()->getUri();
@@ -99,7 +106,7 @@ void checkCgiGet(Response &resp, string &real_path, int clientFd, int epollFd, m
     else
     {
         close(fd[1]);
-        setNonBlocking(fd[0]);
+       setNonBlocking(fd[0]);
         epoll_event ev;
         memset(&ev, 0, sizeof(ev));
         ev.data.fd = fd[0];
