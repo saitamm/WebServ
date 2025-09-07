@@ -72,7 +72,7 @@ map<string, string> CgiEnv(Response &resp)
 void checkCgiGet(Response &resp, string &real_path, int clientFd, int epollFd, map<int, CgiProcess *> &cgis, string &ext)
 {
     string arg = checkCgiPath(resp, ext);
-    cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ " << arg << endl;
+    // cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ " << arg << endl;
     map<string, string> env = CgiEnv(resp);
     int fd[2];
     if (pipe(fd) == -1)

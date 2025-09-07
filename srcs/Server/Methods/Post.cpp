@@ -20,21 +20,15 @@ int CreatUploadFile(Response &resp)
     string Up = store + "/" + f;
     resp.getFile().open(Up.c_str(), ios::out | ios::trunc | ios::binary);
     resp.setFileName(Up);
-    cout << Up << endl;
+    cout << "This is the uploaded file  = " << Up << endl;
     if (!resp.getFile().is_open())
     {
         struct stat st;
         if (stat(store.c_str(), &st) == -1)
-        {
-            setCodeStatus(resp, 500);
-            return (1);
-        }
+            throw ServerErrorException();
         if (access(resp.getRequest()->getLocation()->getUp_store().c_str(), W_OK) == -1)
-        {
-            setCodeStatus(resp, 403);
-            return (1);
-        }
-        setCodeStatus(resp, 500);
+            throw ForbiddenException();
+        throw ServerErrorException();
         return 1;
     }
     return (0);
@@ -43,10 +37,7 @@ int CreatUploadFile(Response &resp)
 int ReadBody(Response &resp, int clientSocket)
 {
     if (SupportUpload(resp))
-    {
-        setCodeStatus(resp, 403);
-        return 1;
-    }
+        throw ForbiddenException();
     if (resp.getRequest()->getHeadvalue("Transfer-Encoding").empty())
     {
         NonChunkedBody(resp, clientSocket);
@@ -101,7 +92,7 @@ void NonChunkedBody(Response &resp, int clientSocket)
     {
         resp.setTotalReceived(resp.getRequest()->getrestHeader().size());
         if (resp.getFile().write(resp.getRequest()->getrestHeader().c_str(), resp.getTotalReceived()).fail())
-            throw BadRequestException();
+            throw ServerErrorException();
         // return ;
     }
     if (resp.getRequest()->getContentLength() == 0)

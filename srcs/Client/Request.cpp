@@ -117,7 +117,7 @@ void Request::ParseHeader(string &Header)
     stringstream ss(tmp1);
     ss >> this->_ContentLength;
     if (((tmp1.empty() && _head["Transfer-Encoding"].empty()) || tmp1[0] == '-') && _method == "POST")
-        throw BadRequestException();
+        throw ContentLengthException();
     int pos = Header.find("\r\n\r\n");
     this->restHeader = Header.substr(pos + 4);
 }
@@ -127,7 +127,7 @@ void RedirectionRequest(Request &req)
     if (req.getLocation()->getRetur().empty())
         return;
     map<int, string>::const_iterator it = req.getLocation()->getRetur().begin();
-    if ((it->first >= 300 && it->first <= 308))
+    if ((it->first >= 301 && it->first <= 302))
     {
         req.setRedirectionStatus();
         throw BadRequestException();

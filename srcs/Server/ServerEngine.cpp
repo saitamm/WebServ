@@ -12,7 +12,6 @@ void setCodeStatus(Response &resp, int error)
     if (body[error].empty())
     {
         string defaultErrorPage = resp.getRequest()->getConfigFile().getDefaultErrorPage(error);
-        cout << "*************** "<< defaultErrorPage << " *******"<<endl;
         getContentType(defaultErrorPage, resp);
         ifstream file(defaultErrorPage.c_str());
         if (!file.is_open())
@@ -28,7 +27,6 @@ void setCodeStatus(Response &resp, int error)
     else
     {
         getContentType(body[error], resp);
-        cout << "--------------------\n" << error <<endl;
         ifstream file(body[error].c_str());
         if (!file.is_open())
         {
@@ -87,7 +85,7 @@ void NonchunkedResponse(Response &resp, int clientSocket)
 
     response << resp.getBody();
     int bytesend;
-    cout << "this is my response :" << response.str() <<endl;
+    // cout << "this is my response :" << response.str() <<endl;
     bytesend = send(clientSocket, response.str().c_str(), response.str().size(), MSG_NOSIGNAL);
     if (bytesend != (int)response.str().size() && bytesend != -1)
     {

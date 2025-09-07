@@ -140,7 +140,6 @@ int handleGet(Response &resp, int clientFd, int epollFd, map<int, CgiProcess *> 
             }
             if (resp.getRequest()->getCookie().empty())
             {
-                cout << ":::::::::::::::::::::;\n";
                 string indx_path = resp.getRequest()->getLocation()->getLoc_idx();
                 generateResponse(resp, indx_path);
                 return (0);

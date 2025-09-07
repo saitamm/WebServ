@@ -4,13 +4,13 @@ map<int, string> ConfigFile::default_errors;
 void ConfigFile::initDefaultError(void)
 {
     default_errors[200] = "srcs/Server/errors/200.html";
-    default_errors[204] = "srcs/Server/errors/204.html";
     default_errors[301] = "srcs/Server/errors/301.html";
     default_errors[400] = "srcs/Server/errors/400.html";
     default_errors[403] = "srcs/Server/errors/403.html";
     default_errors[404] = "srcs/Server/errors/404.html";
     default_errors[405] = "srcs/Server/errors/405.html";
     default_errors[409] = "srcs/Server/errors/409.html";
+    default_errors[411] = "srcs/Server/errors/411.html";
     default_errors[500] = "srcs/Server/errors/500.html";
     default_errors[413] = "srcs/Server/errors/413.html";
     default_errors[431] = "srcs/Server/errors/431.html";

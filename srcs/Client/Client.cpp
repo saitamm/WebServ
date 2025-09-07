@@ -86,7 +86,7 @@ void Client::buildResponse(int clientFd, int epollFd, map<int, CgiProcess *> &cg
         else
         {
             _status = WaitingCGI;
-            cout << "i am here waiting for cgi-----------------\n";
+            // cout << "i am here waiting for cgi-----------------\n";
         }
         return;
     }

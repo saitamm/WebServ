@@ -5,7 +5,6 @@ map<int, string> Response::_StatusCode;
 void Response::initStatusCode(void)
 {
     _StatusCode[200] = "OK";
-    _StatusCode[204] = "No Content";
     _StatusCode[403] = "Forbidden";
     _StatusCode[404] = "Not Found";
     _StatusCode[405] = "Method Not Allowed";
@@ -14,16 +13,11 @@ void Response::initStatusCode(void)
     _StatusCode[300] = "Multiple Choices";
     _StatusCode[301] = "Moved Permanently";
     _StatusCode[302] = "Found";
-    _StatusCode[303] = "See Other";
-    _StatusCode[304] = "Not Modified";
-    _StatusCode[305] = "Use Proxy";
-    _StatusCode[306] = "Switch Proxy";
-    _StatusCode[307] = "Temporary Redirect";
-    _StatusCode[308] = "Permanent Redirect";
     _StatusCode[413] = "Payload Too Large";
     _StatusCode[431] = "Payload Too Large";
     _StatusCode[400] = "Bad Request";
     _StatusCode[408] = "Request Timeout";
+    _StatusCode[411] = "Length Required";
     _StatusCode[501] = "Not Implemented";
 }
 

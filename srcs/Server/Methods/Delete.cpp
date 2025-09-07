@@ -4,7 +4,7 @@ void deleteRecursively(const string &path)
 {
     DIR *dir = opendir(path.c_str());
     if (!dir)
-        throw BadDirectoryException();
+        throw ForbiddenException();
 
     struct dirent *entry;
     while ((entry = readdir(dir)) != NULL)
@@ -18,8 +18,7 @@ void deleteRecursively(const string &path)
         struct stat st;
         if (stat(fullPath.c_str(), &st) == -1)
         {
-            cerr << "Failed to stat: " << fullPath << endl;
-            throw BadDirectoryException();
+            throw ForbiddenException();
         }
         if (S_ISDIR(st.st_mode))
         {
@@ -28,18 +27,21 @@ void deleteRecursively(const string &path)
         else
         {
             if (remove(fullPath.c_str()) != 0)
-                throw BadDirectoryException();
+                throw ForbiddenException();
         }
     }
     closedir(dir);
     if (rmdir(path.c_str()) != 0)
-        throw BadDirectoryException();
+        throw ForbiddenException();
 }
 void handleDelete(Response &resp)
 {
     struct stat path;
-    string file = resp.getRequest()->getConfigFile().getRoot() +"/"+ resp.getRequest()->getLocation()->getUp_store() + resp.getRequest()->getUri();
-    if (stat(file.c_str(), &path) == -1 )
+    string file = resp.getRequest()->getConfigFile().getRoot() + "/" + resp.getRequest()->getLocation()->getUp_store() + resp.getRequest()->getUri();
+    cout << "this is my file to delete :" << file << endl;
+    if (resp.getRequest()->getLocation()->getUp_store().empty() || resp.getRequest()->getLocation()->getUp_store() == "/")
+        throw ForbiddenException();
+    if (stat(file.c_str(), &path) == -1)
     {
         setCodeStatus(resp, 404);
         return;
@@ -47,46 +49,26 @@ void handleDelete(Response &resp)
     // file
     if (S_ISREG(path.st_mode))
     {
-        if ( remove(file.c_str()) == -1)
-        {
-            setCodeStatus(resp, 403);
-            return;
-        }
+        if (remove(file.c_str()) == -1)
+            throw ForbiddenException();
         else
-        {
             setCodeStatus(resp, 200);
-        }
     }
     // directory
     else if (S_ISDIR(path.st_mode))
     {
         if (file[file.size() - 1] == '/')
         {
-            if (file ==resp.getRequest()->getConfigFile().getRoot() +"/"+ resp.getRequest()->getLocation()->getUp_store()+"/" ||  access(file.c_str(), W_OK) == -1)
-            {
-                setCodeStatus(resp, 403);
-                return;
-            }
-            try
-            {
-                deleteRecursively(file);
-                setCodeStatus(resp, 204);
-            }
-            catch (const exception &e)
-            {
-                setCodeStatus(resp, 403);
-            }
+            if (file == resp.getRequest()->getConfigFile().getRoot() + "/" + resp.getRequest()->getLocation()->getUp_store() + "/" || access(file.c_str(), W_OK) == -1)
+                throw ForbiddenException();
 
+            deleteRecursively(file);
+            setCodeStatus(resp, 200);
             return;
         }
         else
-        {
-            setCodeStatus(resp, 409);
-            return;
-        }
+            throw ConflictException();
     }
     else
-    {
-        setCodeStatus(resp, 404);
-    }
+        throw NotFoundException();
 }
