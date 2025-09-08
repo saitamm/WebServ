@@ -109,12 +109,12 @@ int handleGet(Response &resp, int clientFd, int epollFd, map<int, CgiProcess *> 
     if (S_ISREG(path.st_mode))
     {
         string ext = getExt(resp);
-        if(isCgi(ext) && resp.getRequest()->getLocation()->getCgi_pass().empty())
+        if(isCgi(ext) && resp.getRequest()->getLocation().getCgi_pass().empty())
         {
             setCodeStatus(resp, 500);
             return 0;
         }
-        else if (!resp.getRequest()->getLocation()->getCgi_pass().empty() && isCgiExtension(ext, resp))
+        else if (!resp.getRequest()->getLocation().getCgi_pass().empty() && isCgiExtension(ext, resp))
         {
             checkCgiGet(resp, real_path, clientFd, epollFd, cgis, ext);
             return 1;
@@ -128,19 +128,19 @@ int handleGet(Response &resp, int clientFd, int epollFd, map<int, CgiProcess *> 
     {
         if (real_path[real_path.size() - 1] != '/')
             real_path += '/';
-        string index = resp.getRequest()->getConfigFile().getRoot() + "/" + resp.getRequest()->getLocation()->getLoc_idx();
-        if ((!resp.getRequest()->getLocation()->getLoc_idx().empty()) && (stat(index.c_str(), &path) != -1))
+        string index = resp.getRequest()->getConfigFile().getRoot() + "/" + resp.getRequest()->getLocation().getLoc_idx();
+        if ((!resp.getRequest()->getLocation().getLoc_idx().empty()) && (stat(index.c_str(), &path) != -1))
         {
             size_t dotPos = index.find_last_of('.');
             string ext = index.substr(dotPos);
-            if (!resp.getRequest()->getLocation()->getCgi_pass().empty() && isCgiExtension(ext, resp))
+            if (!resp.getRequest()->getLocation().getCgi_pass().empty() && isCgiExtension(ext, resp))
             {
                 checkCgiGet(resp, index, clientFd, epollFd, cgis, ext);
                 return 1;
             }
             if (resp.getRequest()->getCookie().empty())
             {
-                string indx_path = resp.getRequest()->getLocation()->getLoc_idx();
+                string indx_path = resp.getRequest()->getLocation().getLoc_idx();
                 generateResponse(resp, indx_path);
                 return (0);
             }
@@ -153,7 +153,7 @@ int handleGet(Response &resp, int clientFd, int epollFd, map<int, CgiProcess *> 
         }
         else
         {
-            if (resp.getRequest()->getLocation()->getAuto_idx() == "on")
+            if (resp.getRequest()->getLocation().getAuto_idx() == "on")
             {
                 DIR *dir = opendir(real_path.c_str());
                 if (dir != NULL)

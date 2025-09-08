@@ -59,7 +59,7 @@ void Client::buildResponse(int clientFd, int epollFd, map<int, CgiProcess *> &cg
 {
 
     this->_resp->setRequest(*this->_req);
-    if (!allowMethod(*this->_req->getLocation(), this->_req->getMethod()))
+    if (!allowMethod(this->_req->getLocation(), this->_req->getMethod()))
     {
         setCodeStatus(*this->getResp(), 405);
         _status = Sending;
@@ -118,8 +118,7 @@ void matchServer(Client &client, auto_ptr<vector<ConfigFile> > &serv)
         }
     }
     client.getRequest()->setLocation(matchLocation(client.getRequest()->getUri(), client.getRequest()->getConfigFile().getLocations()));
-    if (!client.getRequest()->getLocation())
-        throw NotFoundException();
+    
 }
 void Client::ParseHttpRequest(Client &client, int clientSocket, auto_ptr<vector<ConfigFile> > &serv)
 {
@@ -135,7 +134,6 @@ void Client::ParseHttpRequest(Client &client, int clientSocket, auto_ptr<vector<
         {
             client.getRequest()->ParseHeader(_buffer);
             matchServer(client, serv);
-
             RedirectionRequest(*client.getRequest());
             _status = Body;
         }
@@ -150,11 +148,7 @@ void Client::ParseHttpRequest(Client &client, int clientSocket, auto_ptr<vector<
         }
         if (_status == Body)
         {
-            if (CreatUploadFile(*_resp))
-            {
-                _status = Processing;
-                return;
-            }
+            CreatUploadFile(*_resp);
             _status = Reading;
         }
         if (ReadBody(*_resp, clientSocket))

@@ -86,4 +86,14 @@ public:
         return ("411");
     }
 };
+
+class RedirectionException : public exception
+{
+public:
+    const char *what() const throw()
+    {
+        return ("0");
+    }
+};
+    
 #endif

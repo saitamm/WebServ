@@ -36,7 +36,7 @@ public:
     string &getUri(void);
     string getQuery(void);
     string &getCtype(void);
-    Location *getLocation(void);
+    Location &getLocation(void);
     unsigned long long &getContentLength(void);
     ConfigFile &getConfigFile(void);
     string &getHeadvalue(string key);
@@ -52,7 +52,7 @@ public:
     void setHost(const string &host);
     void setUrl(vector<string> &url);
     void setHeadvalue(const string &key, const string &value);
-    void setLocation(Location *locat);
+    void setLocation(Location &locat);
     void setHeader(string &key, string &value);
     void setRestHeader(const string &rest);
     void setConfigFile(ConfigFile &serv);
@@ -65,13 +65,13 @@ private:
     unsigned long long _ContentLength;
     map<string, string> _head;
     ConfigFile _serv;
-    Location *_locat;
+    Location _locat;
     string restHeader;
     bool _redir;
     string _cookie;
 };
 void trim(string &str, string tr);
-Location *matchLocation(const string &uri, const vector<Location> &locations);
+Location &matchLocation(const string &uri,  vector<Location> &locations);
 void split(string str, char c, vector<string> &resul);
 void RedirectionRequest(Request &req);
 #endif

@@ -38,7 +38,7 @@ int openSocket(auto_ptr<vector<ConfigFile> > &servers, int epollFd, map<int, Con
           setNonBlocking(serverSocket);
           int opt = 1;
           setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-          cout << "port is :" << servers->at(i).getPort() <<endl;
+          cout << "port is :" << servers->at(i).getPort() << endl;
           sockaddr_in serverAddr;
           memset(&serverAddr, 0, sizeof(serverAddr));
           serverAddr.sin_family = AF_INET;

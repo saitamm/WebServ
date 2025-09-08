@@ -2,12 +2,12 @@
 
 int SupportUpload(Response &resp)
 {
-    if (resp.getRequest()->getLocation()->getUp_store().empty())
+    if (resp.getRequest()->getLocation().getUp_store().empty())
         return (1);
     return (0);
 }
 
-int CreatUploadFile(Response &resp)
+void CreatUploadFile(Response &resp)
 {
     srand(time(0));
     stringstream ll;
@@ -16,7 +16,7 @@ int CreatUploadFile(Response &resp)
     string f = ll.str() + "." + type;
     if (type.empty())
         throw BadRequestException();
-    string store = resp.getRequest()->getConfigFile().getRoot() + "/" + resp.getRequest()->getLocation()->getUp_store();
+    string store = resp.getRequest()->getConfigFile().getRoot() + "/" + resp.getRequest()->getLocation().getUp_store();
     string Up = store + "/" + f;
     resp.getFile().open(Up.c_str(), ios::out | ios::trunc | ios::binary);
     resp.setFileName(Up);
@@ -26,12 +26,10 @@ int CreatUploadFile(Response &resp)
         struct stat st;
         if (stat(store.c_str(), &st) == -1)
             throw ServerErrorException();
-        if (access(resp.getRequest()->getLocation()->getUp_store().c_str(), W_OK) == -1)
+        if (access(resp.getRequest()->getLocation().getUp_store().c_str(), W_OK) == -1)
             throw ForbiddenException();
         throw ServerErrorException();
-        return 1;
     }
-    return (0);
 }
 
 int ReadBody(Response &resp, int clientSocket)
@@ -77,10 +75,24 @@ unsigned int getSize(int clientSocket, Response &resp)
     ss << hex << l;
     ss >> BufferSize;
     line.erase(0, line.find("\n") + 1);
-    if (resp.getFile().write(line.c_str(), line.size()).fail())
-        throw BadRequestException();
-    resp.getFile().flush();
-    resp.setReceived(line.size());
+    size_t size = 0;
+    while (1)
+    {
+        size = (BufferSize > line.size()) ? line.size() : BufferSize;
+        if (resp.getFile().write(line.c_str(), size).fail())
+            throw BadRequestException();
+        resp.getFile().flush();
+        resp.setReceived(size);
+        line.erase(0, size);
+        stringstream ll(line);
+        string l;
+        ll >> l;
+        stringstream ss;
+        ss << hex << l;
+        ss >> BufferSize;
+        if (BufferSize == 0)
+            break;
+    }
     return (BufferSize);
 }
 
@@ -182,7 +194,6 @@ int ChunkedBody(Response &resp, int clientSocket)
         }
         else
         {
-
             char buff[1024];
             size_t read = min(resp.getBufferSize() - resp.getReceived(), (unsigned int)sizeof(buff));
             bytesRead = recv(clientSocket, buff, read, 0);
@@ -204,7 +215,7 @@ int ChunkedBody(Response &resp, int clientSocket)
 int handlePost(Response &resp, int clientSocket, int epollFd, map<int, CgiProcess *> &cgis)
 {
     string ext = getExt(resp);
-    if (!resp.getRequest()->getLocation()->getCgi_pass().empty() && isCgiExtension(ext, resp))
+    if (!resp.getRequest()->getLocation().getCgi_pass().empty() && isCgiExtension(ext, resp))
     {
         checkCgiPost(resp, clientSocket, epollFd, cgis, ext);
         return (2);

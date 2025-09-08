@@ -1,12 +1,11 @@
 #include "../../Includes/Request.hpp"
 
-Request::Request() : _ContentLength(0), _locat(NULL)
+Request::Request() : _ContentLength(0)
 {
     _redir = false;
 }
 Request::~Request()
 {
-    delete _locat;
 }
 
 // getters && setters
@@ -21,7 +20,7 @@ string Request::getQuery(void)
     return "";
 }
 string &Request::getCtype(void) { return (_head["Content-Type"]); }
-Location *Request::getLocation(void) { return (_locat); }
+Location &Request::getLocation(void) { return (_locat); }
 string &Request::getHeadvalue(string key) { return (_head[key]); }
 unsigned long long &Request::getContentLength(void) { return (_ContentLength); }
 ConfigFile &Request::getConfigFile(void) { return (_serv); }
@@ -40,7 +39,7 @@ void Request::setMethod(const string &method) { _method = method; }
 void Request::setHost(const string &host) { _host = host; }
 void Request::setUrl(vector<string> &url) { _url = url; }
 void Request::setHeadvalue(const string &key, const string &value) { _head[key] = value; }
-void Request::setLocation(Location *locat) { _locat = locat; }
+void Request::setLocation(Location &locat) { _locat = locat; }
 void Request::setHeader(string &key, string &value) { _head[key] = value; }
 void Request::setRestHeader(const string &rest) { restHeader = rest; }
 void Request::setConfigFile(ConfigFile &serv) { _serv = serv; }
@@ -124,12 +123,12 @@ void Request::ParseHeader(string &Header)
 
 void RedirectionRequest(Request &req)
 {
-    if (req.getLocation()->getRetur().empty())
+    if (req.getLocation().getRetur().empty())
         return;
-    map<int, string>::const_iterator it = req.getLocation()->getRetur().begin();
+    map<int, string>::const_iterator it = req.getLocation().getRetur().begin();
     if ((it->first >= 301 && it->first <= 302))
     {
         req.setRedirectionStatus();
-        throw BadRequestException();
+        throw RedirectionException();
     }
 }

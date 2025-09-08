@@ -37,9 +37,8 @@ void deleteRecursively(const string &path)
 void handleDelete(Response &resp)
 {
     struct stat path;
-    string file = resp.getRequest()->getConfigFile().getRoot() + "/" + resp.getRequest()->getLocation()->getUp_store() + resp.getRequest()->getUri();
-    cout << "this is my file to delete :" << file << endl;
-    if (resp.getRequest()->getLocation()->getUp_store().empty() || resp.getRequest()->getLocation()->getUp_store() == "/")
+    string file = resp.getRequest()->getConfigFile().getRoot() + "/" + resp.getRequest()->getLocation().getUp_store() + resp.getRequest()->getUri();
+    if (resp.getRequest()->getLocation().getUp_store().empty() || resp.getRequest()->getLocation().getUp_store() == "/")
         throw ForbiddenException();
     if (stat(file.c_str(), &path) == -1)
     {
@@ -59,7 +58,7 @@ void handleDelete(Response &resp)
     {
         if (file[file.size() - 1] == '/')
         {
-            if (file == resp.getRequest()->getConfigFile().getRoot() + "/" + resp.getRequest()->getLocation()->getUp_store() + "/" || access(file.c_str(), W_OK) == -1)
+            if (file == resp.getRequest()->getConfigFile().getRoot() + "/" + resp.getRequest()->getLocation().getUp_store() + "/" || access(file.c_str(), W_OK) == -1)
                 throw ForbiddenException();
 
             deleteRecursively(file);

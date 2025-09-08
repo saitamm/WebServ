@@ -8,14 +8,6 @@
 
 class CgiProcess;
 
-class BadDirectoryException : public exception
-{
-public:
-    const char *what() const throw()
-    {
-        return ("soumayaaaaaaaaaaaa\n");
-    }
-};
 
 enum ResponseStatus
 {
@@ -95,7 +87,7 @@ int SupportUpload(Response &resp);
 size_t getFileSize(const string &path);
 int handlePost(Response &resp, int clientSocket, int epollFd, map<int, CgiProcess *> &cgis);
 string checkCgiPath(Response &resp);
-int CreatUploadFile(Response &resp);
+void CreatUploadFile(Response &resp);
 int ReadBody(Response &resp, int clientSocket);
 
 #endif

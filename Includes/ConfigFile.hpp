@@ -87,7 +87,7 @@ public:
     int setMax_size(const string &size);
     const map<int, string> &getError_page() const;
     void add_error(int err, string path);
-    const vector<Location> &getLocations() const;
+     vector<Location> &getLocations() ;
     void add_locations(const Location &loc);
     auto_ptr<vector<ConfigFile> > ParseConfigFile(string confFile);
     string &getDefaultErrorPage(int error) const;

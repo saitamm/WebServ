@@ -210,7 +210,7 @@ void ConfigFile::add_error(int err, string path)
     error_page[err] = path;
 }
 
-const vector<Location> &ConfigFile::getLocations() const
+ vector<Location> &ConfigFile::getLocations() 
 {
     return locations;
 }

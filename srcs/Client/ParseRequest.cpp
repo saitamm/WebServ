@@ -19,20 +19,22 @@ void split(string str, char c, vector<string> &resul)
     str.erase(0, str.find(c) + 1);
     resul.push_back(str);
 }
-Location *matchLocation(const string &uri, const vector<Location> &locations)
+Location &matchLocation(const string &uri,  vector<Location> &locations)
 {
-    Location *bestMatch = NULL;
     size_t maxMatchLength = 0;
+    int bestMatch = -1;
     for (size_t i = 0; i < locations.size(); ++i)
     {
         string path = locations[i].getPath();
         if (uri.find(path) != string::npos && path.length() > maxMatchLength)
         {
-            bestMatch = new Location(locations[i]);
+            bestMatch = i;
             maxMatchLength = path.length();
         }
     }
-    return bestMatch;
+    if (bestMatch == -1)
+        throw NotFoundException();
+    return locations[bestMatch];
 }
 
 

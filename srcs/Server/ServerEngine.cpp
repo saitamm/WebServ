@@ -4,7 +4,7 @@ void setCodeStatus(Response &resp, int error)
 {
     if (resp.getRequest()->getRedirectionStatus())
     {
-        resp.setStatus(resp.getRequest()->getLocation()->getRetur().begin()->first);
+        resp.setStatus(resp.getRequest()->getLocation().getRetur().begin()->first);
         return;
     }
     resp.setStatus(error);
@@ -20,7 +20,7 @@ void setCodeStatus(Response &resp, int error)
             return;
         }
         string buffer((istreambuf_iterator<char>(file)),
-        istreambuf_iterator<char>());
+                      istreambuf_iterator<char>());
         resp.setBodyResp(buffer);
         file.close();
     }
@@ -68,24 +68,22 @@ void NonchunkedResponse(Response &resp, int clientSocket)
 {
     stringstream response;
     response << "HTTP/1.1 " << resp.getStatus() << " " << resp.getStatusValue(resp.getStatus()) << "\r\n";
-    response << "Content-Type: " << resp.getType() << "\r\n";
     if (resp.getRequest()->getRedirectionStatus())
     {
-        Location *loc = resp.getRequest()->getLocation();
-        if (loc)
+        if (!resp.getRequest()->getLocation().getRetur().empty())
         {
-            const map<int, string> &returMap = loc->getRetur();
-            if (!returMap.empty())
-                response << "Location: " << returMap.begin()->second << "\r\n";
+            response << "Location: " << resp.getRequest()->getLocation().getRetur().begin()->second << "\r\n";
         }
     }
     generateUser(resp);
     response << "Set-Cookie: user=" << resp.getSessionId() << "\r\n";
+    if (!resp.getRequest()->getRedirectionStatus())
+    {
+        response << "Content-Type: " << resp.getType() << "\r\n";
+    }
     response << "Content-Length: " << resp.getBody().size() << "\r\n\r\n";
-
     response << resp.getBody();
     int bytesend;
-    // cout << "this is my response :" << response.str() <<endl;
     bytesend = send(clientSocket, response.str().c_str(), response.str().size(), MSG_NOSIGNAL);
     if (bytesend != (int)response.str().size() && bytesend != -1)
     {
@@ -203,10 +201,7 @@ void handleClientRequest(std::map<int, Client *> &clients, int clientSocket, std
         }
         clients[clientSocket]->getResp()->setRequest(*clients[clientSocket]->getRequest());
         clients[clientSocket]->setStatus(Sending);
-        if (!clients[clientSocket]->getRequest()->getRedirectionStatus())
-            setCodeStatus(*clients[clientSocket]->getResp(), atoi(e.what()));
-        else
-            setCodeStatus(*clients[clientSocket]->getResp(), 0);
+        setCodeStatus(*clients[clientSocket]->getResp(), atoi(e.what()));
     }
 
     if ((clients[clientSocket]->getEvent().events & EPOLLOUT) && (clients[clientSocket]->getStatus() == Sending))

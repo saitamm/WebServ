@@ -2,7 +2,7 @@
 
 bool isCgiExtension(const string &ext, Response &resp)
 {
-    set<string> extensions = resp.getRequest()->getLocation()->getCgi_ext();
+    set<string> extensions = resp.getRequest()->getLocation().getCgi_ext();
     if (extensions.count(ext))
         return 1;
     return 0;
@@ -27,7 +27,7 @@ string getExt(Response &resp)
 
 string checkCgiPath(Response &resp, string &ext)
 {
-    const set<string> cgi = resp.getRequest()->getLocation()->getCgi_pass();
+    const set<string> cgi = resp.getRequest()->getLocation().getCgi_pass();
     if (ext == ".py")
     {
         if (cgi.count("/usr/bin/python3"))
