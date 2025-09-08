@@ -71,8 +71,8 @@ map<string, string> CgiEnv(Response &resp)
 
 void checkCgiGet(Response &resp, string &real_path, int clientFd, int epollFd, map<int, CgiProcess *> &cgis, string &ext)
 {
+    cerr << "What abut here\n";
     string arg = checkCgiPath(resp, ext);
-    // cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ " << arg << endl;
     map<string, string> env = CgiEnv(resp);
     int fd[2];
     if (pipe(fd) == -1)
@@ -106,7 +106,7 @@ void checkCgiGet(Response &resp, string &real_path, int clientFd, int epollFd, m
     else
     {
         close(fd[1]);
-       setNonBlocking(fd[0]);
+        setNonBlocking(fd[0]);
         epoll_event ev;
         memset(&ev, 0, sizeof(ev));
         ev.data.fd = fd[0];
@@ -120,7 +120,6 @@ void checkCgiGet(Response &resp, string &real_path, int clientFd, int epollFd, m
         proc->pid = pid;
         proc->pipeFd = fd[0];
         proc->start = time(NULL);
-
         cgis[fd[0]] = proc;
     }
 }
@@ -223,6 +222,67 @@ void sendCleanUp(Response &resp, int epollFd, CgiProcess *proc, std::map<int, Cl
     delete proc;
 }
 
+void sendTimeout(Response &resp, int epollFd, CgiProcess *proc, std::map<int, Client *> &clients, std::map<int, CgiProcess *> &cgis)
+{
+    (void)cgis;
+    if (epoll_ctl(epollFd, EPOLL_CTL_DEL, proc->pipeFd, NULL) == -1)
+    {
+        perror("epoll_ctl: add");
+        return;
+    }
+    close(proc->pipeFd);
+
+    std::map<int, Client *>::iterator it = clients.find(proc->clientFd);
+    if (it != clients.end())
+    {
+        Client *client = it->second;
+        if (client->getEvent().events & EPOLLOUT)
+        {
+            SendResponse(resp, proc->clientFd);
+        }
+        client->setStatus(Finished);
+        close(proc->clientFd);
+
+        delete client;
+        clients.erase(proc->clientFd);
+    }
+}
+
+void checkCgiTimeouts(int epollFd, std::map<int, Client *> &clients, std::map<int, CgiProcess *> &cgis)
+{
+    std::map<int, CgiProcess *>::iterator it = cgis.begin();
+    while (it != cgis.end())
+    {
+        CgiProcess *proc = it->second;
+        time_t now = time(NULL);
+
+        if (difftime(now, proc->start) > 3)
+        {
+            std::cerr << "[CGI] Timeout, killing pid=" << proc->pid << std::endl;
+
+            kill(proc->pid, SIGKILL);
+            waitpid(proc->pid, NULL, 0);
+
+            if (clients.find(proc->clientFd) != clients.end())
+            {
+                Client *client = clients[proc->clientFd];
+                Response &resp = *client->getResp();
+                setCodeStatus(resp, 504);
+
+                sendTimeout(resp, epollFd, proc, clients, cgis);
+            }
+
+            // erase returns the next valid iterator (C++98 way)
+            cgis.erase(it++);
+            delete proc;
+        }
+        else
+        {
+            ++it;
+        }
+    }
+}
+
 void CgiEvent(int fd, int epollFd, map<int, Client *> &clients, map<int, CgiProcess *> &cgis)
 {
     CgiProcess *proc = cgis[fd];
@@ -230,15 +290,15 @@ void CgiEvent(int fd, int epollFd, map<int, Client *> &clients, map<int, CgiProc
     ssize_t bytesRead = read(proc->pipeFd, buffer, sizeof(buffer));
     if (bytesRead > 0)
         proc->output.write(buffer, bytesRead);
-
     int status;
     pid_t result = waitpid(proc->pid, &status, WNOHANG);
+    Response *resp = NULL;
 
-    if (result == proc->pid || difftime(time(NULL), proc->start) > 5)
+    if (result == proc->pid || difftime(time(NULL), proc->start) > 3)
     {
         Client *client = clients[proc->clientFd];
-        Response &resp = *client->getResp();
-        resp.setRequest(*client->getRequest());
+        resp = client->getResp();
+        resp->setRequest(*client->getRequest());
 
         if (result == proc->pid)
         {
@@ -248,43 +308,44 @@ void CgiEvent(int fd, int epollFd, map<int, Client *> &clients, map<int, CgiProc
                 if (exitCode == 0)
                 {
                     std::string outStr = proc->output.str();
-                    if (resp.getRequest()->getMethod() == "POST")
+                    if (resp->getRequest()->getMethod() == "POST")
                     {
-                        resp.getFile().close();
-                        resp.getFile().open(resp.getFileName().c_str(), ios::out | ios::trunc | ios::binary);
-                        resp.getFile().write(outStr.data(), outStr.size());
-                        resp.getFile().flush();
-                        if (resp.getFile().is_open())
-                            resp.getFile().close();
-                        setCodeStatus(resp, 200);
+                        resp->getFile().close();
+                        resp->getFile().open(resp->getFileName().c_str(), ios::out | ios::trunc | ios::binary);
+                        resp->getFile().write(outStr.data(), outStr.size());
+                        resp->getFile().flush();
+                        if (resp->getFile().is_open())
+                            resp->getFile().close();
+                        setCodeStatus(*resp, 200);
                     }
                     else
                     {
-                        resp.setBodyResp(outStr);
-                        resp.setStatus(200);
-                        resp.setType("text/html");
+                        resp->setBodyResp(outStr);
+                        resp->setStatus(200);
+                        resp->setType("text/html");
                     }
                 }
                 else
                 {
                     std::cerr << "CGI exited with error code " << exitCode << std::endl;
-                    setCodeStatus(resp, 500);
+                    setCodeStatus(*resp, 502);
                 }
             }
             else if (WIFSIGNALED(status))
             {
                 int sig = WTERMSIG(status);
                 std::cerr << "CGI killed by signal " << sig << std::endl;
-                setCodeStatus(resp, 500);
+                setCodeStatus(*resp, 502);
             }
+            sendCleanUp(*resp, epollFd, proc, clients, cgis);
         }
         else
         {
             std::cerr << "[CGI] Timeout, killing pid=" << proc->pid << std::endl;
             kill(proc->pid, SIGKILL);
             waitpid(proc->pid, NULL, 0);
-            setCodeStatus(resp, 500);
+            setCodeStatus(*resp, 504);
+            sendCleanUp(*resp, epollFd, proc, clients, cgis);
         }
-        sendCleanUp(resp, epollFd, proc, clients, cgis);
     }
 }

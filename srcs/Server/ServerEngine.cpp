@@ -81,7 +81,10 @@ void NonchunkedResponse(Response &resp, int clientSocket)
     {
         response << "Content-Type: " << resp.getType() << "\r\n";
     }
+    generateUser(resp);
+    response << "Set-Cookie: user=" << resp.getSessionId() << "\r\n";
     response << "Content-Length: " << resp.getBody().size() << "\r\n\r\n";
+
     response << resp.getBody();
     int bytesend;
     bytesend = send(clientSocket, response.str().c_str(), response.str().size(), MSG_NOSIGNAL);
@@ -171,22 +174,24 @@ void CleanClient(std::map<int, Client *> &clients, int clientSocket)
 }
 void handleClientRequest(std::map<int, Client *> &clients, int clientSocket, std::auto_ptr<std::vector<ConfigFile> > &servers, int epollFd, std::map<int, CgiProcess *> &cgis)
 {
+    if (clients.find(clientSocket) == clients.end())
+        return;
     clients[clientSocket]->updateActivity();
     Client *client = clients[clientSocket];
     try
     {
         clients[clientSocket]->getResp()->initStatusCode();
-        if (clients[clientSocket]->getEvent().events == (EPOLLIN))
+        if (clients[clientSocket]->getEvent().events & EPOLLIN)
             clients[clientSocket]->ParseHttpRequest(*clients[clientSocket], clientSocket, servers);
         if (clients[clientSocket]->getStatus() == Processing || clients[clientSocket]->getStatus() == Sending)
         {
+            clients[clientSocket]->buildResponse(clientSocket, epollFd, cgis);
             clients[clientSocket]->getEvent().events = EPOLLOUT;
             if (epoll_ctl(epollFd, EPOLL_CTL_MOD, clientSocket, &clients[clientSocket]->getEvent()) == -1)
             {
                 perror("epoll_ctl: add");
                 return;
             }
-            clients[clientSocket]->buildResponse(clientSocket, epollFd, cgis);
         }
     }
     catch (const exception &e)

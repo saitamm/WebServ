@@ -78,5 +78,7 @@ void CgiEvent(int fd, int epollFd, map<int, Client *> &clients, map<int, CgiProc
 string getExt(Response &resp);
 bool isCgiExtension(const string &ext, Response &resp);
 bool isCgi(const string &ext);
+void checkCgiTimeouts(int epollFd, std::map<int, Client *> &clients, std::map<int, CgiProcess *> &cgis);
+void sendCleanUp(Response &resp, int epollFd, CgiProcess *proc, std::map<int, Client *> &clients, std::map<int, CgiProcess *> &cgis);
 
 #endif

@@ -45,7 +45,6 @@ unsigned int Response::getBufferSize(void) { return bufferSize; }
 string &Response::getSessionId(void) { return (_sessionId); }
 string &Response::getRestPost(void) { return _restPost; }
 ResponseStatus Response::getResponseStatus(void) const { return _status; }
-
 // setters
 void Response::setFileName(const string &filename) { _filename = filename; }
 void Response::setResponseStatus(ResponseStatus status) { _status = status; }

@@ -171,16 +171,21 @@ int main(int ac, char **av)
                          CgiEvent(fd, epollFd, clients, cgis);
                          continue;
                     }
-                    if (clients[fd]->getEvent().events & (EPOLLHUP | EPOLLRDHUP))
+                    if (clients.find(fd) != clients.end() &&
+                        (clients[fd]->getEvent().events & (EPOLLHUP | EPOLLRDHUP)))
                     {
                          std::cerr << "Client disconnected: fd=" << fd << std::endl;
                          epoll_ctl(epollFd, EPOLL_CTL_DEL, fd, NULL);
                          close(fd);
+                         delete clients[fd];
+                         clients.erase(fd);
                          continue;
                     }
+
                     handleClientRequest(clients, fd, servers, epollFd, cgis);
                }
                timeout(clients, epollFd);
+               checkCgiTimeouts(epollFd, clients, cgis);
           }
           cleaningAfterSignal(clients, epollFd, openedServers, cgis);
      }

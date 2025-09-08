@@ -86,7 +86,6 @@ void Client::buildResponse(int clientFd, int epollFd, map<int, CgiProcess *> &cg
         else
         {
             _status = WaitingCGI;
-            // cout << "i am here waiting for cgi-----------------\n";
         }
         return;
     }
@@ -118,7 +117,6 @@ void matchServer(Client &client, auto_ptr<vector<ConfigFile> > &serv)
         }
     }
     client.getRequest()->setLocation(matchLocation(client.getRequest()->getUri(), client.getRequest()->getConfigFile().getLocations()));
-    
 }
 void Client::ParseHttpRequest(Client &client, int clientSocket, auto_ptr<vector<ConfigFile> > &serv)
 {

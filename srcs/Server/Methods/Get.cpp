@@ -94,11 +94,7 @@ int handleGet(Response &resp, int clientFd, int epollFd, map<int, CgiProcess *> 
     string root = resp.getRequest()->getConfigFile().getRoot();
     string uri = resp.getRequest()->getUri();
     string real_path;
-    string prefix = "/" + root;
-    while (uri.rfind(prefix, 0) == 0)
-    {
-        uri.erase(0, prefix.size());
-    }
+ 
     real_path = root + uri;
     struct stat path;
     if (stat(real_path.c_str(), &path) == -1)
@@ -155,26 +151,33 @@ int handleGet(Response &resp, int clientFd, int epollFd, map<int, CgiProcess *> 
         {
             if (resp.getRequest()->getLocation().getAuto_idx() == "on")
             {
+
                 DIR *dir = opendir(real_path.c_str());
                 if (dir != NULL)
                 {
                     stringstream html;
-                    html << "<html><body><h1>Listing directory /" << real_path << "</h1><ul>";
+                    html << "<html><body><h1>Listing directory " << uri << "</h1><ul>";
                     struct dirent *entry;
                     while ((entry = readdir(dir)) != NULL)
                     {
                         if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, ".."))
                             continue;
-                        html << "<li><a href='./" << real_path << entry->d_name << "'>" << entry->d_name << "</a></li>";
+
+                        string link = uri;
+                        if (!link.empty() && link[link.size() - 1] != '/')
+                            link += "/";
+                        link += entry->d_name;
+
+                        html << "<li><a href='" << link << "'>" << entry->d_name << "</a></li>";
                     }
                     html << "</ul></body></html>";
-                    string ss = html.str();
                     closedir(dir);
                     resp.setStatus(200);
-                    resp.setBodyResp(ss);
+                    resp.setBodyResp(html.str());
                     resp.setType("text/html");
                 }
             }
+
             else
             {
                 setCodeStatus(resp, 403);
