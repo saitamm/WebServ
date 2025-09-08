@@ -1,49 +1,48 @@
 import socket
 import time
-import threading
 
-def send_split_header():
-    s = socket.socket()
-    s.connect(('localhost', 8080))
-    s.send(b"DELETE /Body/92823.txt HTTP/1.1\r\nHost: localhost:8080\r\n")
-    s.send(b"\r\n\r\n")  # Finish header
-    print("Sent split header")
-    print(s.recv(1024))
-    s.close()
+HOST = "127.0.0.1"   # your server IP
+PORT = 8080          # your server port
 
-def send_header():
-    s = socket.socket()
-    s.connect(('localhost', 8080))
-    s.send(b"GET / HTTP/1.2\r\nHost: localhost\r\n")
-    s.send(b"\r\n\r\n")  # Finish header
-    print("Sent split header")
-    print(s.recv(1024))
-    s.close()
-# def send_large_header():
-#     s = socket.socket()
-#     s.connect(('localhost', 8080))
-#     header = "GET / HTTP/1.1\r\nHost: localhost\r\n" + "X-A: A\r\n" * 1000 + "\r\n\r\n"
-#     s.send(header.encode())
-#     print("Sent large header")
-#     print(s.recv(1024))
-#     s.close()
+# Build a very long header value
+long_header_value = "A" * 20000  
 
-# def no_end_header():
-#     s = socket.socket()
-#     s.connect(('localhost', 8080))
-#     s.send(b"GET / HTTP/1.1\r\nHost: localhost\r\n")  # No \r\n\r\n
-#     print("Sent incomplete header")
-#     time.sleep(5)
-#     s.close()
+# Build a very long body
+long_body = "B" * 100000  # 100 KB of body
 
-# Launch threads
-threads = [
-    threading.Thread(target=send_split_header),
-    threading.Thread(target=send_header),
-]
+# Construct headers
+headers = (
+    "POST / HTTP/1.1\r\n"
+    f"Host: {HOST}\r\n"
+    f"X-Test-Header: {long_header_value}\r\n"
+    f"Content-Length: {len(long_body)}\r\n"
+    "Connection: close\r\n\r\n"
+)
 
-for t in threads:
-    t.start()
+# Open socket
+with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+    s.connect((HOST, PORT))
 
-for t in threads:
-    t.join()
+    # Send headers slowly
+    for line in headers.split("\r\n"):
+        if line:
+            s.sendall((line + "\r\n").encode())
+            time.sleep(3)  # delay between header lines
+    s.sendall(b"\r\n")  # end of headers
+
+    # Send body slowly, chunk by chunk
+    chunk_size = 1024
+    for i in range(0, len(long_body), chunk_size):
+        chunk = long_body[i:i+chunk_size]
+        s.sendall(chunk.encode())
+        time.sleep(0.2)  # delay between body chunks
+
+    # Receive response
+    response = b""
+    while True:
+        part = s.recv(4096)
+        if not part:
+            break
+        response += part
+
+print(response.decode(errors="ignore"))

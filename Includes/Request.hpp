@@ -20,7 +20,7 @@
 
 #define LIMIT 1024
 
-class BadRequestException : public std::exception
+class BadRequestException : public exception
 {
 public:
     const char *what() const throw()
@@ -29,7 +29,7 @@ public:
     }
 };
 
-class SocketErrorException : public std::exception
+class SocketErrorException : public exception
 {
 public:
     const char *what() const throw()
@@ -44,10 +44,12 @@ class Request
 public:
     Request();
     ~Request();
+
+    //getters
     string &getMethod(void);
     string &getHost(void);
     string &getUri(void);
-    string &getQuery(void);
+    string getQuery(void);
     string &getCtype(void);
     Location *getLocation(void);
     unsigned long long &getContentLength(void);
@@ -57,6 +59,8 @@ public:
     bool getRedirectionStatus(void) const;
     void setRedirectionStatus(void);
     string &getrestHeader(void);
+    int getPort(void);
+    string &getCookie(void);
 
     // setters  
     void setMethod(const string &method);
@@ -71,6 +75,7 @@ public:
 private:
     string _method;
     string _host;
+    string _port;
     vector<string> _url;
     unsigned long long _ContentLength;
     map<string, string> _head;
@@ -78,9 +83,10 @@ private:
     Location *_locat;
     string restHeader;
     bool _redir;
+    string _cookie;
 };
 void trim(string &str, string tr);
-Location *matchLocation(const std::string &uri, const std::vector<Location> &locations);
+Location *matchLocation(const string &uri, const vector<Location> &locations);
 void split(string str, char c, vector<string> &resul);
 void RedirectionRequest(Request &req);
 #endif

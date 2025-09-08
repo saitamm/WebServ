@@ -1,4 +1,4 @@
-#include "../../../Includes/Response.hpp"
+#include "../../../Includes/Client.hpp"
 
 void getContentType(string &real_path, Response &resp)
 {
@@ -38,89 +38,83 @@ void getContentType(string &real_path, Response &resp)
     resp.setType("application/octet-stream");
 }
 
-void generateResponse(Response& resp, string& real_path)
+void generateResponse(Response &resp, string &real_path)
 {
-    ifstream file(real_path.c_str(), ios::binary);
-    if (!file.is_open())
-    {
-        setCodeStatus(resp, 403);
-        return;
-    }
-    std::string buffer((std::istreambuf_iterator<char>(file)),
-                       std::istreambuf_iterator<char>());
-    resp.setStatus(200);
-    resp.setBodyResp(buffer);
     getContentType(real_path, resp);
-}
-
-void checkCgi(Response &resp, string &real_path)
-{
-    int fd[2];
-    if(pipe(fd) == -1)
+    size_t size = getFileSize(real_path);
+    if (size < 1024)
     {
-        setCodeStatus(resp, 500);
-        return;
-    }
-    pid_t pid = fork();
-    if (pid < 0)
-    {
-        setCodeStatus(resp, 500);
-        return;
-    }
-    else if(pid == 0)
-    {
-        close(fd[0]);
-        dup2(fd[1], STDOUT_FILENO);
-        close(fd[1]);
-        string arg = resp.getRequest()->getLocation()->getCgi_pass();
-        char *argv[] = {strdup(arg.c_str()), strdup(real_path.c_str()), NULL};
-        char *envp[] = {strdup("REQUEST_METHOD=GET"), strdup(("SCRIPT_FILENAME=" + real_path).c_str()), NULL};
-        execve(arg.c_str(), argv, envp);
-        exit(1);
-    }
-    else
-    {
-        close(fd[1]);
-        char buffer[4096];
-        std::stringstream output;
-        ssize_t bytesRead;
-        while ((bytesRead = read(fd[0], buffer, sizeof(buffer))) > 0)
+        resp.setChunkFile(real_path);
+        if (!resp.getChunkFile().is_open())
         {
-            output.write(buffer, bytesRead);
+            cerr << "Failed to open chunk file: " << real_path << endl;
+            setCodeStatus(resp, 500);
+            resp.setResponseStatus(Nonchunked);
+            return;
         }
-        close(fd[0]);
-
-        int status;
-        waitpid(pid, &status, 0);
-
         resp.setStatus(200);
-        string outStr = output.str();
-        resp.setBodyResp(outStr);
-        resp.setType("text/html");
-
+        stringstream buffer;
+        buffer << resp.getChunkFile().rdbuf();
+        resp.setBodyResp(buffer.str());
+        resp.getChunkFile().close();
+        return;
+    }
+    if (resp.getResponseStatus() == Nonchunked)
+    {
+        resp.setChunkFile(real_path);
+        if (!resp.getChunkFile().is_open())
+        {
+            cerr << "Failed to open chunk file: " << real_path << endl;
+            setCodeStatus(resp, 500);
+            resp.setResponseStatus(Nonchunked);
+            return;
+        }
+        resp.setStatus(200);
+        resp.setResponseStatus(First);
+        return;
+    }
+    resp.setStatus(200);
+    char buffer[8192];
+    resp.getChunkFile().read(buffer, sizeof(buffer));
+    string line(buffer, resp.getChunkFile().gcount());
+    resp.setBodyResp(resp.getRestSend() + line);
+    resp.setResponseStatus(chunked);
+    if (line.size() == 0 && resp.getRestSend().empty())
+    {
+        resp.setResponseStatus(Last);
+        resp.getChunkFile().close();
+        return;
     }
 }
 
-void handleGet(Response &resp)
+int handleGet(Response &resp, int clientFd, int epollFd, map<int, CgiProcess *> &cgis)
 {
-    string real_path = resp.getRequest()->getConfigFile().getRoot() + resp.getRequest()->getUri();
+    string root = resp.getRequest()->getConfigFile().getRoot();
+    string uri = resp.getRequest()->getUri();
+    string real_path;
+ 
+    real_path = root + uri;
     struct stat path;
-    cout << real_path <<endl;
     if (stat(real_path.c_str(), &path) == -1)
     {
         setCodeStatus(resp, 404);
-        return;
+        return 0;
     }
     if (S_ISREG(path.st_mode))
     {
-        if(!resp.getRequest()->getLocation()->getCgi_pass().empty())
+        string ext = getExt(resp);
+        if (isCgi(ext) && resp.getRequest()->getLocation()->getCgi_pass().empty())
         {
-            cout << "here ---->" << resp.getRequest()->getLocation()->getCgi_pass()<<endl;
-            checkCgi(resp, real_path);
+            setCodeStatus(resp, 500);
+            return 0;
+        }
+        else if (!resp.getRequest()->getLocation()->getCgi_pass().empty() && isCgiExtension(ext, resp))
+        {
+            checkCgiGet(resp, real_path, clientFd, epollFd, cgis, ext);
+            return 1;
         }
         else
         {
-            cout << "HEREEEEEEEEE\n";
             generateResponse(resp, real_path);
         }
     }
@@ -128,49 +122,67 @@ void handleGet(Response &resp)
     {
         if (real_path[real_path.size() - 1] != '/')
             real_path += '/';
-        if (resp.getRequest()->getLocation()->getLoc_idx().empty())
+        string index = resp.getRequest()->getConfigFile().getRoot() + "/" + resp.getRequest()->getLocation()->getLoc_idx();
+        if ((!resp.getRequest()->getLocation()->getLoc_idx().empty()) && (stat(index.c_str(), &path) != -1))
         {
-            if (resp.getRequest()->getLocation()->getAuto_idx() != "on")
+            size_t dotPos = index.find_last_of('.');
+            string ext = index.substr(dotPos);
+            if (!resp.getRequest()->getLocation()->getCgi_pass().empty() && isCgiExtension(ext, resp))
             {
-                if (resp.getRequest()->getConfigFile().getIndex().empty())
-                {
-                    return setCodeStatus(resp, 404);
-                }
-                else
-                {
-                    string indx_path = resp.getRequest()->getConfigFile().getIndex();
-                    generateResponse(resp, indx_path);
-                }
+                checkCgiGet(resp, index, clientFd, epollFd, cgis, ext);
+                return 1;
+            }
+            if (resp.getRequest()->getCookie().empty())
+            {
+                cout << ":::::::::::::::::::::;\n";
+                string indx_path = resp.getRequest()->getLocation()->getLoc_idx();
+                generateResponse(resp, indx_path);
+                return (0);
             }
             else
             {
-                DIR* dir = opendir(real_path.c_str());
-                if (dir != NULL)
-                {
-                    stringstream html;
-                    html << "<html><body><h1>Listing directory /" << real_path << "</h1><ul>";
-                    struct dirent* entry;
-                    while((entry = readdir(dir)) != NULL)
-                    {
-                        if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, ".."))
-                            continue;
-                       html << "<li><a href='./" << real_path << entry->d_name << "'>" << entry->d_name << "</a></li>";
-
-                    }
-                    html << "</ul></body></html>";
-                    string ss = html.str();
-                    closedir(dir);
-                    resp.setStatus(200);
-                    resp.setBodyResp(ss);
-                    resp.setType("text/html");
-                }
+                string indx_path = "./index1.html";
+                generateResponse(resp, indx_path);
+                return (0);
             }
         }
         else
         {
-            string path_idx = resp.getRequest()->getLocation()->getLoc_idx();
-            generateResponse(resp, path_idx);
+            if (resp.getRequest()->getLocation()->getAuto_idx() == "on")
+            {
+
+                DIR *dir = opendir(real_path.c_str());
+                if (dir != NULL)
+                {
+                    stringstream html;
+                    html << "<html><body><h1>Listing directory " << uri << "</h1><ul>";
+                    struct dirent *entry;
+                    while ((entry = readdir(dir)) != NULL)
+                    {
+                        if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, ".."))
+                            continue;
+
+                        string link = uri;
+                        if (!link.empty() && link[link.size() - 1] != '/')
+                            link += "/";
+                        link += entry->d_name;
+
+                        html << "<li><a href='" << link << "'>" << entry->d_name << "</a></li>";
+                    }
+                    html << "</ul></body></html>";
+                    closedir(dir);
+                    resp.setStatus(200);
+                    resp.setBodyResp(html.str());
+                    resp.setType("text/html");
+                }
+            }
+
+            else
+            {
+                setCodeStatus(resp, 403);
+                return 0;
+            }
         }
     }
-    
+    return 0;
 }

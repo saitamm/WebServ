@@ -12,11 +12,61 @@ void ConfigFile::initDefaultError(void)
     default_errors[405] = "srcs/Server/errors/405.html";
     default_errors[409] = "srcs/Server/errors/409.html";
     default_errors[500] = "srcs/Server/errors/500.html";
+    default_errors[502] = "srcs/Server/errors/502.html";
+    default_errors[504] = "srcs/Server/errors/504.html";
+    default_errors[413] = "srcs/Server/errors/413.html";
 }
 
 ConfigFile::ConfigFile() {}
 
 ConfigFile::~ConfigFile() {}
+
+Location::Location() {}
+
+Location::~Location() {}
+
+Location::Location(const Location &other)
+    : path(other.path), methods(other.methods), auto_idx(other.auto_idx),
+      up_store(other.up_store), cgi_pass(other.cgi_pass),
+      cgi_extensions(other.cgi_extensions), loc_idx(other.loc_idx), retur(other.retur) {}
+
+Location &Location::operator=(const Location &other)
+{
+    if (this != &other)
+    {
+        path = other.path;
+        methods = other.methods;
+        auto_idx = other.auto_idx;
+        up_store = other.up_store;
+        cgi_pass = other.cgi_pass;
+        cgi_extensions = other.cgi_extensions;
+        loc_idx = other.loc_idx;
+        retur = other.retur;
+    }
+    return *this;
+}
+
+ConfigFile::ConfigFile(const ConfigFile &other)
+    : name(other.name), host(other.host), port(other.port),
+      root(other.root), index(other.index),
+      error_page(other.error_page), max_size(other.max_size),
+      locations(other.locations) {}
+
+ConfigFile &ConfigFile::operator=(const ConfigFile &other)
+{
+    if (this != &other)
+    {
+        name = other.name;
+        host = other.host;
+        port = other.port;
+        root = other.root;
+        index = other.index;
+        error_page = other.error_page;
+        max_size = other.max_size;
+        locations = other.locations;
+    }
+    return *this;
+}
 
 const string &ConfigFile::getName() const
 {
@@ -89,6 +139,9 @@ const string &ConfigFile::getRoot() const
 
 void ConfigFile::setRoot(const string &r)
 {
+    size_t res = r.find(" ");
+    if (res != string::npos)
+        throw ErrorConfigFileException();
     root = r;
 }
 
@@ -99,9 +152,6 @@ const string &ConfigFile::getIndex() const
 
 void ConfigFile::setIndex(const string &idx)
 {
-    string file = idx.substr(idx.size() - 5, idx.size() - 1);
-    if (file != ".html")
-        throw ErrorConfigFileException();
     index = idx;
 }
 
@@ -149,9 +199,14 @@ void ConfigFile::add_error(int err, string path)
         throw InvalidErrorPageException();
     if (path.empty())
         throw ErrorConfigFileException();
-    string file = path.substr(path.size() - 5, path.size() - 1);
-    if (file != ".html")
+    size_t res = path.find(" ");
+    if (path.size() < 5)
         throw InvalidErrorPageException();
+    string file = path.substr(path.size() - 5);
+    if (file != ".html" || res != string::npos)
+    {
+        throw InvalidErrorPageException();
+    }
     error_page[err] = path;
 }
 
@@ -172,6 +227,8 @@ const set<string> &Location::getMethods() const
 
 void Location::add_method(const string &func)
 {
+    if (func != "GET" && func != "POST" && func != "DELETE")
+        throw InvalidMethodException();
     methods.insert(func);
 }
 
@@ -197,14 +254,36 @@ void Location::setUp_store(const string &path)
     up_store = path;
 }
 
-const string &Location::getCgi_pass() const
+const set<string> &Location::getCgi_pass() const
 {
     return cgi_pass;
 }
 
+void Location::setCgi_ext(const string &ext)
+{
+    if (ext == ".py" || ext == ".sh" || ext == ".php" || ext == ".pl")
+        cgi_extensions.insert(ext);
+    else
+    {
+        cout << "HELLOOOOO\n";
+        throw ErrorConfigFileException();
+    }
+}
+
+const set<string> &Location::getCgi_ext() const
+{
+    return cgi_extensions;
+}
+
 void Location::setCgi_pass(const string &path)
 {
-    cgi_pass = path;
+    if (path == "/usr/bin/python3" || path == "/usr/bin/bash" || path == "/usr/bin/php" || path == "/usr/bin/perl")
+        cgi_pass.insert(path);
+    else
+    {
+        cout << "HELLOOOOO\n";
+        throw ErrorConfigFileException();
+    }
 }
 
 const string &Location::getPath() const
@@ -224,8 +303,8 @@ const string &Location::getLoc_idx() const
 
 void Location::setLoc_idx(const string &idx)
 {
-    string file = idx.substr(idx.size() - 5, idx.size() - 1);
-    if (file != ".html")
+    size_t res = idx.find(" ");
+    if (res != string::npos)
         throw ErrorConfigFileException();
     loc_idx = idx;
 }

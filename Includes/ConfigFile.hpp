@@ -9,6 +9,7 @@
 #include <bits/stdc++.h>
 #include <sys/epoll.h>
 #include <fcntl.h>
+#include <memory>
 
 using namespace std;
 
@@ -26,11 +27,16 @@ private:
     set<string> methods;
     string auto_idx;
     string up_store;
-    string cgi_pass;
+    set<string> cgi_pass;
+    set<string> cgi_extensions;
     string loc_idx;
     map<int, string> retur;
 
 public:
+    Location();
+    ~Location();
+    Location(const Location& other);
+    Location& operator=(const Location& other);
     const string &getPath() const;
     void setPath(const string &p);
     const set<string> &getMethods() const;
@@ -39,8 +45,10 @@ public:
     void setAuto_idx(const string &index);
     const string &getUp_store() const;
     void setUp_store(const string &path);
-    const string &getCgi_pass() const;
+    const set<string> &getCgi_pass() const;
     void setCgi_pass(const string &path);
+    const set<string> &getCgi_ext() const;
+    void setCgi_ext(const string &ext);
     const string &getLoc_idx() const;
     void setLoc_idx(const string &idx);
     const map<int, string> &getRetur() const;
@@ -63,6 +71,8 @@ private:
 public:
     ConfigFile();
     ~ConfigFile();
+    ConfigFile(const ConfigFile& other);
+    ConfigFile& operator=(const ConfigFile& other);
     const string &getName() const;
     void setName(const string &n);
     const string &getHost() const;
@@ -79,10 +89,7 @@ public:
     void add_error(int err, string path);
     const vector<Location> &getLocations() const;
     void add_locations(const Location &loc);
-    vector<ConfigFile> *ParseConfigFile(string confFile);
-
-
-    /// i add this to get the default error pages
+    auto_ptr<vector<ConfigFile> > ParseConfigFile(string confFile);
     string &getDefaultErrorPage(int error) const;
     void initDefaultError(void);
 };
@@ -111,6 +118,15 @@ public:
     const char *what() const throw()
     {
         return "Error, Duplicate Methods";
+    }
+};
+
+class InvalidMethodException : public exception
+{
+public:
+    const char *what() const throw()
+    {
+        return "Error, Invalid Method!";
     }
 };
 
@@ -144,5 +160,5 @@ string trimLine(const string &line);
 void ParseServer(string &key, string &value, ConfigFile &curr_server, string &new_line, map<string, bool> &alreadySeen);
 void ParseLocation(string &key, string &value, string &new_line, Location &curr_loc, map<string, bool> &alreadySeen);
 void CheckDupLoc(ConfigFile &curr_server, Location &curr_loc);
-void CheckDupServ(vector<ConfigFile> *servers, ConfigFile &curr_server);
+void CheckDupServ(auto_ptr<vector<ConfigFile> > &servers, ConfigFile &curr_server);
 #endif

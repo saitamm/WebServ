@@ -1,16 +1,25 @@
 #include "../../Includes/Request.hpp"
 
-Request::Request()
+Request::Request() : _ContentLength(0), _locat(NULL)
 {
+    _redir = false;
 }
-Request::~Request() {}
+Request::~Request()
+{
+    delete _locat;
+}
 
 // getters && setters
 
 string &Request::getHost(void) { return (_host); }
 string &Request::getMethod(void) { return (_method); }
 string &Request::getUri(void) { return (_url[0]); }
-string &Request::getQuery(void) { return (_url[1]); }
+string Request::getQuery(void)
+{
+    if (_url.size() == 2)
+        return (_url[1]);
+    return "";
+}
 string &Request::getCtype(void) { return (_head["Content-Type"]); }
 Location *Request::getLocation(void) { return (_locat); }
 string &Request::getHeadvalue(string key) { return (_head[key]); }
@@ -18,6 +27,15 @@ unsigned long long &Request::getContentLength(void) { return (_ContentLength); }
 ConfigFile &Request::getConfigFile(void) { return (_serv); }
 bool Request::getRedirectionStatus(void) const { return _redir; }
 string &Request::getrestHeader(void) { return (restHeader); }
+int Request::getPort(void)
+{
+    stringstream ss(_port);
+    int port;
+    ss >> port;
+    return (port);
+}
+string &Request::getCookie(void) { return _cookie; }
+
 
 void Request::setMethod(const string &method) { _method = method; }
 void Request::setHost(const string &host) { _host = host; }
@@ -32,8 +50,12 @@ void Request::setRedirectionStatus(void) { _redir = true; }
 // Parse Request
 void Request::ParseHeader(string &Header)
 {
+
     string tmp1;
     stringstream line(Header);
+    int posH = Header.find("\r\n\r\n");
+    if (posH > 8000)
+        throw BadRequestException();
     line >> this->_method;
     if ((_method != "GET" && _method != "DELETE" && _method != "POST") || _method.empty())
         throw BadRequestException();
@@ -41,34 +63,52 @@ void Request::ParseHeader(string &Header)
     vector<string> res;
     line >> path;
     split(path, '?', this->_url);
+    if (this->_url[0].find("..") != string::npos)
+        throw BadRequestException();
     string Httpv;
     line >> Httpv;
     trim(Httpv, "\n\t\r ");
     if (Httpv != "HTTP/1.1")
         throw BadRequestException();
     string tmp;
-    while (line >> tmp && tmp.find("boundary") == string::npos)
+    _ContentLength = 0;
+    getline(line, tmp);
+    string input;
+    while (getline(line, input) && input != "\r")
     {
-        if (tmp != "Content-Length:" && tmp != "Host:")
+        tmp = input.substr(0, input.find(':'));
+        if (tmp != "Content-Length" && tmp != "Host" && tmp != "Cookie")
         {
-
-            trim(tmp, ":");
             string value;
-            line >> value;
+            value = input.substr(input.find(':') + 2);
             trim(value, "\n\t\r ");
             this->_head[tmp] = value;
         }
-        else if (tmp == "Content-Length:")
+        else if (tmp == "Content-Length")
         {
-            line >> tmp1;
+            tmp1 = input.substr(input.find(':') + 2);
         }
-        else if (tmp == "Host:")
+        else if (tmp == "Host")
         {
-            line >> this->_host;
-            if (tmp.find(':') == string::npos)
-                throw BadRequestException();
+            _host = input.substr(input.find(':') + 2);
             if (this->_host.find(':') != string::npos)
+            {
+                this->_port = this->_host.substr(this->_host.find(':') + 1);
                 this->_host = this->_host.substr(0, this->_host.find(':'));
+            }
+        }
+        else if (tmp == "Cookie")
+        {
+            int i = 0;
+            while (input[i] < 48 || input[i] > 57)
+            {
+                i++;
+            }
+            _cookie = input.substr(input.find("user") + 4);
+            if (_cookie[0] == '=')
+                _cookie = _cookie.substr(1);
+            _cookie = _cookie.substr(0, _cookie.find('P'));
+            trim(_cookie, "\n\t\r ;");
         }
     }
     if (this->_host.empty())
@@ -85,7 +125,7 @@ void RedirectionRequest(Request &req)
 {
     if (req.getLocation()->getRetur().empty())
         return;
-    std::map<int, string>::const_iterator it = req.getLocation()->getRetur().begin();
+    map<int, string>::const_iterator it = req.getLocation()->getRetur().begin();
     if ((it->first >= 300 && it->first <= 308))
     {
         req.setRedirectionStatus();
