@@ -108,9 +108,8 @@ void matchServer(Client &client, auto_ptr<vector<ConfigFile> > &serv)
     client.getRequest()->setConfigFile(serv->at(0));
     for (int i = 0; i < (int)serv->size(); i++)
     {
-        if (client.getRequest()->getHost() == "localhost")
-            client.getRequest()->setHost("127.0.0.1");
-        if (serv->at(i).getHost() == client.getRequest()->getHost() && serv->at(i).getPort() == client.getRequest()->getPort())
+        
+        if (serv->at(i).getName() == client.getRequest()->getHost() && serv->at(i).getPort() == client.getRequest()->getPort())
         {
             client.getRequest()->setConfigFile(serv->at(i));
             break;
@@ -127,7 +126,9 @@ void Client::ParseHttpRequest(Client &client, int clientSocket, auto_ptr<vector<
         if ((bytesRead = recv(clientSocket, buf, sizeof(buf), 0)) >= 0)
             _buffer.append(buf, bytesRead);
         else
+        {
             _status = Finished;
+        }
         if (_buffer.find("\r\n\r\n") != string::npos)
         {
             client.getRequest()->ParseHeader(_buffer);

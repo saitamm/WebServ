@@ -60,7 +60,6 @@ int openSocket(auto_ptr<vector<ConfigFile> > &servers, int epollFd, map<int, Con
 void connectClient(int fd, map<int, Client *> &clients, int epollFd)
 
 {
-     cout << "i am hereeeeeeee\n";
      int clientSocket = accept(fd, NULL, NULL);
      // std::cout << "Opening socket fd=" << clientSocket << std::endl;
      setNonBlocking(clientSocket);
@@ -176,16 +175,31 @@ int main(int ac, char **av)
                         (clients[fd]->getEvent().events & (EPOLLHUP | EPOLLRDHUP)))
                     {
                          std::cerr << "Client disconnected: fd=" << fd << std::endl;
-                         epoll_ctl(epollFd, EPOLL_CTL_DEL, fd, NULL);
-                         close(fd);
-                         delete clients[fd];
-                         clients.erase(fd);
+                         clients[fd]->setStatus(Finished);
                          continue;
                     }
                     handleClientRequest(clients, fd, servers, epollFd, cgis);
                }
                checkCgiTimeouts(epollFd, clients, cgis);
                timeout(clients, epollFd);
+               map<int, Client *>::iterator it;
+               for (it = clients.begin(); it != clients.end();)
+               {
+                    Client *client = it->second;
+                    int fd = it->first;
+
+                    if (client->getStatus() == Finished)
+                    {
+                         epoll_ctl(epollFd, EPOLL_CTL_DEL, fd, NULL);
+                         close(fd);
+                         delete client;
+                         clients.erase(it++);
+                    }
+                    else
+                    {
+                         ++it;
+                    }
+               }
           }
           cleaningAfterSignal(clients, epollFd, openedServers, cgis);
      }

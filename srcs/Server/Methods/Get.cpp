@@ -48,7 +48,7 @@ void generateResponse(Response &resp, string &real_path)
         if (!resp.getChunkFile().is_open())
         {
             cerr << "Failed to open chunk file: " << real_path << endl;
-            setCodeStatus(resp, 500);
+            setCodeStatus(resp, 403);
             resp.setResponseStatus(Nonchunked);
             return;
         }
@@ -65,7 +65,7 @@ void generateResponse(Response &resp, string &real_path)
         if (!resp.getChunkFile().is_open())
         {
             cerr << "Failed to open chunk file: " << real_path << endl;
-            setCodeStatus(resp, 500);
+            setCodeStatus(resp, 403);
             resp.setResponseStatus(Nonchunked);
             return;
         }

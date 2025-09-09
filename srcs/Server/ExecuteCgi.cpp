@@ -227,26 +227,21 @@ void sendCleanUp(Response &resp, int epollFd, CgiProcess *proc, std::map<int, Cl
 void sendTimeout(Response &resp, int epollFd, CgiProcess *proc, std::map<int, Client *> &clients, std::map<int, CgiProcess *> &cgis)
 {
     (void)cgis;
+
     if (epoll_ctl(epollFd, EPOLL_CTL_DEL, proc->pipeFd, NULL) == -1)
-    {
-        perror("epoll_ctl: add");
-        return;
-    }
+        perror("epoll_ctl: pipeFd");
+
     close(proc->pipeFd);
 
     std::map<int, Client *>::iterator it = clients.find(proc->clientFd);
     if (it != clients.end())
     {
         Client *client = it->second;
-        if (client->getEvent().events & EPOLLOUT)
-        {
-            SendResponse(resp, proc->clientFd);
-        }
-        client->setStatus(Finished);
-        close(proc->clientFd);
 
-        delete client;
-        clients.erase(proc->clientFd);
+        if (client->getEvent().events & EPOLLOUT)
+            SendResponse(resp, proc->clientFd);
+
+        client->setStatus(Finished);
     }
 }
 
@@ -263,12 +258,16 @@ void checkCgiTimeouts(int epollFd, std::map<int, Client *> &clients, std::map<in
             std::cerr << "[CGI] Timeout, killing pid=" << proc->pid << std::endl;
 
             kill(proc->pid, SIGKILL);
-            waitpid(proc->pid, NULL, 0);
+            waitpid(proc->pid, NULL, WNOHANG);
+
             Client *client = clients[proc->clientFd];
-            Response *resp = client->getResp();
-            setCodeStatus(*resp, 504);
-            sendTimeout(*resp, epollFd, proc, clients, cgis);
-            epoll_ctl(epollFd, EPOLL_CTL_DEL, proc->clientFd, NULL);
+            if (client)
+            {
+                Response *resp = client->getResp();
+                setCodeStatus(*resp, 504);
+                sendTimeout(*resp, epollFd, proc, clients, cgis);
+            }
+
             cgis.erase(it++);
             delete proc;
         }
