@@ -98,6 +98,7 @@ void checkCgiGet(Response &resp, string &real_path, int clientFd, int epollFd, m
             envp.push_back(strdup(entry.c_str()));
         }
         envp.push_back(NULL);
+        
         execve(arg.c_str(), argv, envp.data());
         perror("execve failed");
         exit(1);

@@ -112,7 +112,6 @@ void Request::ParseHeader(string &Header)
         }
     }
 
-    cout << "this is th eend  " << i << endl;
     if (this->_host.empty() || i > 1)
         throw BadRequestException();
     stringstream ss(tmp1);

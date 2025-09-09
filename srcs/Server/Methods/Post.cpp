@@ -64,8 +64,10 @@ unsigned int getSize(int clientSocket, Response &resp)
     char buffer[1024];
     int byteread;
     if ((byteread = recv(clientSocket, buffer, sizeof(buffer), 0)) <= 0)
-        throw BadRequestException();
-
+    {
+        throw ConnectionFailedException();
+        return (0);
+    }
     string line(buffer, byteread);
     line.erase(0, 2);
     stringstream ll(line);
@@ -81,7 +83,7 @@ unsigned int getSize(int clientSocket, Response &resp)
     {
         size = (BufferSize > line.size()) ? line.size() : BufferSize;
         if (resp.getFile().write(line.c_str(), size).fail())
-            throw BadRequestException();
+            throw ServerErrorException();
         resp.getFile().flush();
         resp.setReceived(size);
         line.erase(0, size);
@@ -120,12 +122,12 @@ void NonChunkedBody(Response &resp, int clientSocket)
             if (resp.getTotalReceived() < resp.getRequest()->getContentLength())
                 throw BadRequestException();
             if (bytesRead == -1)
-                resp.setResponseStatus(Finish);
+                throw ConnectionFailedException();
             return;
         }
 
         if (resp.getFile().write(buf, bytesRead).fail())
-            throw BadRequestException();
+            throw ServerErrorException();
         resp.getFile().flush();
         resp.setTotalReceived(bytesRead);
     }
@@ -153,7 +155,7 @@ int ChunkedBody(Response &resp, int clientSocket)
         {
             size = (BufferSize > line.size()) ? line.size() : BufferSize;
             if (resp.getFile().write(line.substr(0, size).c_str(), size).fail())
-                throw BadRequestException();
+                throw ServerErrorException();
             line.erase(0, size);
             if (line.empty())
                 break;
@@ -174,10 +176,10 @@ int ChunkedBody(Response &resp, int clientSocket)
             bytesRead = recv(clientSocket, buf, sizeof(buf), 0);
             if (bytesRead <= 0)
             {
-                throw BadRequestException();
+                throw ConnectionFailedException();
             }
             if (resp.getFile().write(buf, bytesRead).fail())
-                throw BadRequestException();
+                throw ServerErrorException();
             resp.getFile().flush();
         }
     }
@@ -191,7 +193,7 @@ int ChunkedBody(Response &resp, int clientSocket)
                 return (1);
             }
             if (resp.getFile().write(resp.getRestPost().c_str(), resp.getRestPost().size()).fail())
-                throw BadRequestException();
+                throw ServerErrorException();
         }
         else
         {
@@ -199,9 +201,9 @@ int ChunkedBody(Response &resp, int clientSocket)
             size_t read = min(resp.getBufferSize() - resp.getReceived(), (unsigned int)sizeof(buff));
             bytesRead = recv(clientSocket, buff, read, 0);
             if (bytesRead <= 0)
-                throw BadRequestException();
+                throw ConnectionFailedException();
             if (resp.getFile().write(buff, bytesRead).fail())
-                throw BadRequestException();
+                throw ServerErrorException();
             resp.getFile().flush();
             resp.setReceived(bytesRead);
             if (resp.getReceived() == resp.getBufferSize())

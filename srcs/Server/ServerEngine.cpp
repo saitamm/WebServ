@@ -1,5 +1,21 @@
 #include "../../Includes/Client.hpp"
 
+void ServerError(Response &resp)
+{
+    resp.setStatus(500);
+    resp.setType("text/html");
+    std::string body = "<!DOCTYPE html>\n"
+                       "<html>\n"
+                       "<head>\n"
+                       "  <meta charset=\"UTF-8\">\n"
+                       "  <title>500 Internal Server Error</title>\n"
+                       "</head>\n"
+                       "<body style=\"margin: 0; height: 100vh; display: flex; justify-content: center; align-items: center; background-color: white;\">\n"
+                       "  <h1 style=\"color: red; font-size: 2.5em;\">500 Internal Server Error</h1>\n"
+                       "</body>\n"
+                       "</html>\n";
+    resp.setBodyResp(body);
+}
 void setCodeStatus(Response &resp, int error)
 {
     if (resp.getRequest()->getRedirectionStatus())
@@ -16,7 +32,7 @@ void setCodeStatus(Response &resp, int error)
         ifstream file(defaultErrorPage.c_str());
         if (!file.is_open())
         {
-            cerr << "❌ Failed to open file: " << body[error] << endl;
+            ServerError(resp);
             return;
         }
         string buffer((istreambuf_iterator<char>(file)),
@@ -30,7 +46,7 @@ void setCodeStatus(Response &resp, int error)
         ifstream file(body[error].c_str());
         if (!file.is_open())
         {
-            cerr << "❌ Failed to open file: " << body[error] << endl;
+            ServerError(resp);
             return;
         }
         string buffer((istreambuf_iterator<char>(file)),
@@ -80,7 +96,7 @@ void NonchunkedResponse(Response &resp, int clientSocket)
         response << "Content-Type: " << resp.getType() << "\r\n";
     }
     generateUser(resp);
-    response << "Set-Cookie: user=" << resp.getSessionId() <<"; HttpOnly; Path=/" << "\r\n";
+    response << "Set-Cookie: user=" << resp.getSessionId() << "; HttpOnly; Path=/" << "\r\n";
     response << "Content-Length: " << resp.getBody().size() << "\r\n\r\n";
     response << resp.getBody();
     int bytesend;
@@ -180,7 +196,7 @@ void handleClientRequest(std::map<int, Client *> &clients, int clientSocket, std
         clients[clientSocket]->getResp()->initStatusCode();
         if (clients[clientSocket]->getEvent().events & EPOLLIN)
             clients[clientSocket]->ParseHttpRequest(*clients[clientSocket], clientSocket, servers);
-        if (clients[clientSocket]->getStatus() == Processing || clients[clientSocket]->getStatus() == Sending)
+        if ((clients[clientSocket]->getStatus() == Processing || clients[clientSocket]->getStatus() == Sending) && clients[clientSocket]->getResp()->getResponseStatus() != Finish)
         {
             clients[clientSocket]->buildResponse(clientSocket, epollFd, cgis);
             clients[clientSocket]->getEvent().events = EPOLLOUT;
@@ -203,7 +219,10 @@ void handleClientRequest(std::map<int, Client *> &clients, int clientSocket, std
         }
         clients[clientSocket]->getResp()->setRequest(*clients[clientSocket]->getRequest());
         clients[clientSocket]->setStatus(Sending);
-        setCodeStatus(*clients[clientSocket]->getResp(), atoi(e.what()));
+        if (atoi(e.what()) == -1)
+            clients[clientSocket]->getResp()->setResponseStatus(Finish);
+        else
+            setCodeStatus(*clients[clientSocket]->getResp(), atoi(e.what()));
     }
 
     if ((clients[clientSocket]->getEvent().events & EPOLLOUT) && (clients[clientSocket]->getStatus() == Sending))

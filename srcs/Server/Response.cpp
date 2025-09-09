@@ -29,7 +29,13 @@ Response::Response()
     _received = 0;
     _status = Nonchunked;
 }
-Response::~Response() {}
+Response::~Response()
+{
+    if (_file.is_open())
+        _file.close();
+    if (_chunkFile.is_open())
+        _chunkFile.close();
+}
 
 void Response::restartChunk(void) { _received = 0; }
 
@@ -73,5 +79,4 @@ void Response::setChunkFile(string &name)
     }
 }
 
-
-//function
+// function
