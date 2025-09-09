@@ -75,16 +75,13 @@ void NonchunkedResponse(Response &resp, int clientSocket)
             response << "Location: " << resp.getRequest()->getLocation().getRetur().begin()->second << "\r\n";
         }
     }
-    generateUser(resp);
-    response << "Set-Cookie: user=" << resp.getSessionId() << "\r\n";
     if (!resp.getRequest()->getRedirectionStatus())
     {
         response << "Content-Type: " << resp.getType() << "\r\n";
     }
     generateUser(resp);
-    response << "Set-Cookie: user=" << resp.getSessionId() << "\r\n";
+    response << "Set-Cookie: user=" << resp.getSessionId() <<"; HttpOnly; Path=/" << "\r\n";
     response << "Content-Length: " << resp.getBody().size() << "\r\n\r\n";
-
     response << resp.getBody();
     int bytesend;
     bytesend = send(clientSocket, response.str().c_str(), response.str().size(), MSG_NOSIGNAL);

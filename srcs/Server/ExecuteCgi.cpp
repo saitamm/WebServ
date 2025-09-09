@@ -71,7 +71,6 @@ map<string, string> CgiEnv(Response &resp)
 
 void checkCgiGet(Response &resp, string &real_path, int clientFd, int epollFd, map<int, CgiProcess *> &cgis, string &ext)
 {
-    cerr << "What abut here\n";
     string arg = checkCgiPath(resp, ext);
     map<string, string> env = CgiEnv(resp);
     int fd[2];

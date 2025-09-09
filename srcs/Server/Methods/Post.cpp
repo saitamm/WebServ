@@ -20,7 +20,7 @@ void CreatUploadFile(Response &resp)
     string Up = store + "/" + f;
     resp.getFile().open(Up.c_str(), ios::out | ios::trunc | ios::binary);
     resp.setFileName(Up);
-    cout << "This is the uploaded file  = " << Up << endl;
+    cout << "This is the upload file  = " << Up << endl;
     if (!resp.getFile().is_open())
     {
         struct stat st;
@@ -65,6 +65,7 @@ unsigned int getSize(int clientSocket, Response &resp)
     int byteread;
     if ((byteread = recv(clientSocket, buffer, sizeof(buffer), 0)) <= 0)
         throw BadRequestException();
+
     string line(buffer, byteread);
     line.erase(0, 2);
     stringstream ll(line);

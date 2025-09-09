@@ -19,6 +19,8 @@ void Response::initStatusCode(void)
     _StatusCode[408] = "Request Timeout";
     _StatusCode[411] = "Length Required";
     _StatusCode[501] = "Not Implemented";
+    _StatusCode[502] = "Bad Gateway";
+    _StatusCode[504] = "Gateway Timeout";
 }
 
 Response::Response()

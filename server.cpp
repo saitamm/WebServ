@@ -61,7 +61,7 @@ void connectClient(int fd, map<int, Client *> &clients, int epollFd)
 
 {
      int clientSocket = accept(fd, NULL, NULL);
-     std::cout << "Opening socket fd=" << clientSocket << std::endl;
+     // std::cout << "Opening socket fd=" << clientSocket << std::endl;
      setNonBlocking(clientSocket);
      if (clients.find(clientSocket) == clients.end())
           clients[clientSocket] = new Client();
@@ -181,7 +181,6 @@ int main(int ac, char **av)
                          clients.erase(fd);
                          continue;
                     }
-
                     handleClientRequest(clients, fd, servers, epollFd, cgis);
                }
                timeout(clients, epollFd);

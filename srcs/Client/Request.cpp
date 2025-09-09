@@ -54,7 +54,7 @@ void Request::ParseHeader(string &Header)
     int posH = Header.find("\r\n\r\n");
     if (posH > 8000)
         throw LargeHeaderException();
-    line >> this->_method;
+    line >> this->_method;  
     if ((_method != "GET" && _method != "DELETE" && _method != "POST") || _method.empty())
         throw NotImplementedException();
     string path;
@@ -62,7 +62,7 @@ void Request::ParseHeader(string &Header)
     line >> path;
     split(path, '?', this->_url);
     if (this->_url[0].find("..") != string::npos)
-        throw BadRequestException();
+    throw BadRequestException();
     string Httpv;
     line >> Httpv;
     trim(Httpv, "\n\t\r ");
@@ -111,6 +111,7 @@ void Request::ParseHeader(string &Header)
             trim(_cookie, "\n\t\r ;");
         }
     }
+
     if (this->_host.empty() || i > 1)
         throw BadRequestException();
     stringstream ss(tmp1);
