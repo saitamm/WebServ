@@ -120,6 +120,9 @@ void checkCgiGet(Response &resp, string &real_path, int clientFd, int epollFd, m
         proc->pid = pid;
         proc->pipeFd = fd[0];
         proc->start = time(NULL);
+        std::cerr << "[CGI] Started pid=" << pid
+                  << " for clientFd=" << clientFd
+                  << " at " << proc->start << std::endl;
         cgis[fd[0]] = proc;
     }
 }
@@ -262,17 +265,11 @@ void checkCgiTimeouts(int epollFd, std::map<int, Client *> &clients, std::map<in
 
             kill(proc->pid, SIGKILL);
             waitpid(proc->pid, NULL, 0);
-
-            if (clients.find(proc->clientFd) != clients.end())
-            {
-                Client *client = clients[proc->clientFd];
-                Response &resp = *client->getResp();
-                setCodeStatus(resp, 504);
-
-                sendTimeout(resp, epollFd, proc, clients, cgis);
-            }
-
-            // erase returns the next valid iterator (C++98 way)
+            Client *client = clients[proc->clientFd];
+            Response *resp = client->getResp();
+            setCodeStatus(*resp, 504);
+            sendTimeout(*resp, epollFd, proc, clients, cgis);
+            epoll_ctl(epollFd, EPOLL_CTL_DEL, proc->clientFd, NULL);
             cgis.erase(it++);
             delete proc;
         }
