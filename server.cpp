@@ -60,6 +60,7 @@ int openSocket(auto_ptr<vector<ConfigFile> > &servers, int epollFd, map<int, Con
 void connectClient(int fd, map<int, Client *> &clients, int epollFd)
 
 {
+     cout << "i am hereeeeeeee\n";
      int clientSocket = accept(fd, NULL, NULL);
      // std::cout << "Opening socket fd=" << clientSocket << std::endl;
      setNonBlocking(clientSocket);
@@ -183,8 +184,8 @@ int main(int ac, char **av)
                     }
                     handleClientRequest(clients, fd, servers, epollFd, cgis);
                }
-               timeout(clients, epollFd);
                checkCgiTimeouts(epollFd, clients, cgis);
+               timeout(clients, epollFd);
           }
           cleaningAfterSignal(clients, epollFd, openedServers, cgis);
      }
