@@ -280,7 +280,7 @@ const set<string> &Location::getCgi_ext() const
 
 void Location::setCgi_pass(const string &path)
 {
-    if (path == "/usr/bin/python3" || path == "/usr/bin/bash" || path == "/usr/bin/php" || path == "/usr/bin/perl")
+    if (path == "/usr/bin/python3" || path == "/usr/bin/php" || path == "/usr/bin/perl")
         cgi_pass.insert(path);
     else
     {
