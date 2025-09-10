@@ -97,6 +97,7 @@ void NonchunkedResponse(Response &resp, int clientSocket)
     }
     generateUser(resp);
     response << "Set-Cookie: user=" << resp.getSessionId() << "; HttpOnly; Path=/" << "\r\n";
+    response << "Connection: close\r\n";
     response << "Content-Length: " << resp.getBody().size() << "\r\n\r\n";
     response << resp.getBody();
     int bytesend;
@@ -118,7 +119,7 @@ void chunkedResponse(Response &resp, int clientSocket)
         response << "Content-type: " << resp.getType() << "\r\n";
         response << "Transfer-Encoding: chunked\r\n";
         generateUser(resp);
-        response << "Set-Cookie: user=" << resp.getSessionId() << "\r\n";
+        response << "Set-Cookie: user=" << resp.getSessionId() << "; HttpOnly; Path=/" << "\r\n";
         response << "Connection: close\r\n\r\n";
         int bytesend;
         bytesend = send(clientSocket, response.str().c_str(), response.str().size(), MSG_NOSIGNAL);
