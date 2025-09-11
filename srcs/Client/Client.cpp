@@ -109,8 +109,9 @@ void matchServer(Client &client, auto_ptr<vector<ConfigFile> > &serv)
     for (int i = 0; i < (int)serv->size(); i++)
     {
         
-        if (serv->at(i).getName() == client.getRequest()->getHost() && serv->at(i).getPort() == client.getRequest()->getPort())
+         if (serv->at(i).getHost() == client.getRequest()->getHost() && serv->at(i).getPort() == client.getRequest()->getPort())
         {
+            cout << serv->at(i).getHost() << " --------- " << client.getRequest()->getHost() << "---\n" << serv->at(i).getPort() << "-------------" << client.getRequest()->getPort() << "----\n";
             client.getRequest()->setConfigFile(serv->at(i));
             break;
         }

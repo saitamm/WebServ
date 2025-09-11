@@ -10,6 +10,11 @@
 #include <sys/epoll.h>
 #include <fcntl.h>
 #include <memory>
+#include<sys/types.h>
+#include<sys/socket.h>
+#include <arpa/inet.h>
+#include <netdb.h> 
+#include<set>
 
 using namespace std;
 

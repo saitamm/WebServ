@@ -17,47 +17,62 @@ void setNonBlocking(int fd)
 
 int openSocket(auto_ptr<vector<ConfigFile> > &servers, int epollFd, map<int, ConfigFile> &openedServers)
 {
+     typedef pair<string, int> AddrPort;
+     set<AddrPort> interfaces;
      for (size_t i = 0; i < servers->size(); i++)
      {
-          int serverSocket;
-          int port = servers->at(i).getPort();
-          bool dupPort = false;
-          for (map<int, ConfigFile>::iterator it = openedServers.begin(); it != openedServers.end(); it++)
-          {
-               if (it->second.getPort() == port)
-               {
-                    dupPort = true;
-                    break;
-               }
-          }
-          if (dupPort)
+          ConfigFile cfg = servers->at(i);
+          string host = cfg.getHost();
+          int port = cfg.getPort();
+          stringstream ss;
+          ss << port;
+          string portStr = ss.str();
+          pair<string, int> hp = make_pair(host, port);
+
+          if (interfaces.find(hp) != interfaces.end())
                continue;
-          serverSocket = socket(AF_INET, SOCK_STREAM, 0);
+          interfaces.insert(hp);
+          struct addrinfo hints, *res;
+          memset(&hints, 0, sizeof(hints));
+          hints.ai_family = AF_INET;
+          hints.ai_socktype = SOCK_STREAM;
+          hints.ai_flags = AI_PASSIVE;
+          int status = getaddrinfo(host.c_str(), portStr.c_str(), &hints, &res);
+          if (status != 0)
+          {
+               std::cerr << "getaddrinfo failed: " << std::endl;
+               continue;
+          }
+          int serverSocket = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+          cout << "the socket is opennn!\n";
           if (serverSocket == -1)
-               return (printErr("reation failed!"));
-          setNonBlocking(serverSocket);
+          {
+               perror("socket");
+               freeaddrinfo(res);
+               continue;
+          }
           int opt = 1;
           setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-          cout << "port is :" << servers->at(i).getPort() << endl;
-          sockaddr_in serverAddr;
-          memset(&serverAddr, 0, sizeof(serverAddr));
-          serverAddr.sin_family = AF_INET;
-          serverAddr.sin_addr.s_addr = INADDR_ANY;
-          serverAddr.sin_port = htons(port);
-          if (bind(serverSocket, (sockaddr *)&serverAddr, sizeof(serverAddr)) < 0)
-               return (printErr("bind failed, maybe port is busy!"));
+          setNonBlocking(serverSocket);
+          if (bind(serverSocket, res->ai_addr, res->ai_addrlen) < 0)
+          {
+               perror("bind");
+               close(serverSocket);
+               freeaddrinfo(res);
+               continue;
+          }
+
           listen(serverSocket, SOMAXCONN);
-          epoll_event event;
+          struct epoll_event event;
           memset(&event, 0, sizeof(event));
           event.data.fd = serverSocket;
-          event.events = EPOLLIN;
+          event.events = EPOLLIN; 
           epoll_ctl(epollFd, EPOLL_CTL_ADD, serverSocket, &event);
-          openedServers[serverSocket] = servers->at(i);
+          openedServers[serverSocket] = cfg; 
+          freeaddrinfo(res);
      }
-     return 0;
-}
-
-void connectClient(int fd, map<int, Client *> &clients, int epollFd)
+     return (0);
+}void connectClient(int fd, map<int, Client *> &clients, int epollFd)
 
 {
      int clientSocket = accept(fd, NULL, NULL);
