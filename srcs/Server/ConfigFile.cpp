@@ -322,6 +322,12 @@ const map<int, string> &Location::getRetur() const
     return retur;
 }
 
+string Location::getReturnTarget() const {
+    if (retur.empty())
+        return "";
+    return retur.begin()->second;
+}
+
 void Location::add_retur(int err, string path)
 {
     if (err < 200 || err >= 600)

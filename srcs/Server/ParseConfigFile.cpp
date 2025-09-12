@@ -15,14 +15,14 @@ void ParseServer(string &key, string &value, ConfigFile &curr_server, string &ne
     ss >> key;
     getline(ss, value);
     value = trimLine(value);
-    if(alreadySeen[key] == true)
+    if (alreadySeen[key] == true)
     {
         if (key == "error_page")
         {
             stringstream ss(value);
             int err;
             ss >> err;
-            if(curr_server.getError_page().find(err) != curr_server.getError_page().end())
+            if (curr_server.getError_page().find(err) != curr_server.getError_page().end())
                 throw DuplicateDirectionException();
         }
         else
@@ -72,11 +72,11 @@ void ParseLocation(string &key, string &value, string &new_line, Location &curr_
     {
         stringstream ss(value);
         string method;
-        while(ss >> method)
+        while (ss >> method)
         {
-            set<string>methods = curr_loc.getMethods();
+            set<string> methods = curr_loc.getMethods();
             if (methods.find(method) != methods.end())
-                throw DuplicateMethodsException();                
+                throw DuplicateMethodsException();
             curr_loc.add_method(method);
         }
     }
@@ -90,17 +90,17 @@ void ParseLocation(string &key, string &value, string &new_line, Location &curr_
     {
         stringstream ss(value);
         string ext;
-        while(ss >> ext)
+        while (ss >> ext)
         {
             set<string> pass = curr_loc.getCgi_ext();
             curr_loc.setCgi_ext(ext);
         }
-    }   
+    }
     else if (key == "cgi_pass")
-    {   
+    {
         stringstream ss(value);
         string cgi;
-        while(ss >> cgi)
+        while (ss >> cgi)
         {
             set<string> pass = curr_loc.getCgi_pass();
             curr_loc.setCgi_pass(cgi);
@@ -119,20 +119,37 @@ void ParseLocation(string &key, string &value, string &new_line, Location &curr_
     }
 }
 
-void CheckDupLoc(ConfigFile& curr_server, Location& curr_loc)
+void CheckDupLoc(ConfigFile &curr_server, Location &curr_loc)
 {
     for (size_t i = 0; i < curr_server.getLocations().size(); i++)
     {
         if (curr_server.getLocations()[i].getPath() == curr_loc.getPath())
-            throw DuplicateLocationException(); 
+            throw DuplicateLocationException();
     }
 }
-void CheckDupServ(auto_ptr<vector<ConfigFile> > &servers, ConfigFile& curr_server)
+void CheckDupServ(auto_ptr<vector<ConfigFile> > &servers, ConfigFile &curr_server)
 {
-    for(size_t i = 0; i < servers->size(); i++)
+    for (size_t i = 0; i < servers->size(); i++)
     {
         if (servers->at(i).getName() == curr_server.getName() && servers->at(i).getPort() == curr_server.getPort())
             throw DuplicateServerException();
+    }
+}
+
+void checkRedir(Location &curr_loc)
+{
+    std::map<std::string, std::string> redirects;
+    const Location &loc = curr_loc;
+    if (!loc.getRetur().empty())
+    {
+        string from = loc.getPath();
+        string to = loc.getReturnTarget();
+
+        // Case 1: Self-redirect
+        if (from == to)
+            throw ErrorConfigFileException();
+
+        redirects[from] = to;
     }
 }
 
@@ -188,6 +205,8 @@ auto_ptr<vector<ConfigFile> > ConfigFile::ParseConfigFile(string confFile)
             {
                 CheckDupLoc(curr_server, curr_loc);
                 curr_server.locations.push_back(curr_loc);
+                cout << "----> " << curr_loc.getPath() << endl;
+                checkRedir(curr_loc);
             }
             bloc = LOCATION;
             curr_loc = Location();
@@ -206,6 +225,8 @@ auto_ptr<vector<ConfigFile> > ConfigFile::ParseConfigFile(string confFile)
     {
         CheckDupLoc(curr_server, curr_loc);
         curr_server.locations.push_back(curr_loc);
+        cout << "----> " << curr_loc.getPath() << endl;
+        checkRedir(curr_loc);
     }
 
     if (!SeenInServer["listen"] || !SeenInServer["root"])
@@ -216,4 +237,3 @@ auto_ptr<vector<ConfigFile> > ConfigFile::ParseConfigFile(string confFile)
 
     return servers; // ownership moves to caller
 }
-

@@ -58,6 +58,7 @@ public:
     void setLoc_idx(const string &idx);
     const string &getLoc_root() const;
     const map<int, string> &getRetur() const;
+    string getReturnTarget() const ;
     void add_retur(int err, string path);
 };
 
