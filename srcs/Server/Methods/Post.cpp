@@ -16,7 +16,9 @@ void CreatUploadFile(Response &resp)
     string f = ll.str() + "." + type;
     if (type.empty())
         throw BadRequestException();
-    string store = resp.getRequest()->getConfigFile().getRoot() + "/" + resp.getRequest()->getLocation().getUp_store();
+    string root;
+    root = resp.getRequest()->getConfigFile().getRoot();
+    string store = root + "/" + resp.getRequest()->getLocation().getUp_store();
     string Up = store + "/" + f;
     resp.getFile().open(Up.c_str(), ios::out | ios::trunc | ios::binary);
     resp.setFileName(Up);

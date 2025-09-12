@@ -229,7 +229,7 @@ void sendTimeout(Response &resp, int epollFd, CgiProcess *proc,
         perror("epoll_ctl: pipeFd");
     close(proc->pipeFd);
 
-    std::map<int, Client *>::iterator it = clients.find(proc->clientFd); 
+    std::map<int, Client *>::iterator it = clients.find(proc->clientFd);
     if (it != clients.end())
     {
         Client *client = it->second;
@@ -238,7 +238,6 @@ void sendTimeout(Response &resp, int epollFd, CgiProcess *proc,
         client->setStatus(Finished);
     }
 }
-
 
 void checkCgiTimeouts(int epollFd, std::map<int, Client *> &clients, std::map<int, CgiProcess *> &cgis)
 {

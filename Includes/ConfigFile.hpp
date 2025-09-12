@@ -56,6 +56,7 @@ public:
     void setCgi_ext(const string &ext);
     const string &getLoc_idx() const;
     void setLoc_idx(const string &idx);
+    const string &getLoc_root() const;
     const map<int, string> &getRetur() const;
     void add_retur(int err, string path);
 };
@@ -161,6 +162,7 @@ public:
         return "Error, Duplicate Server !";
     }
 };
+
 string trimLine(const string &line);
 void ParseServer(string &key, string &value, ConfigFile &curr_server, string &new_line, map<string, bool> &alreadySeen);
 void ParseLocation(string &key, string &value, string &new_line, Location &curr_loc, map<string, bool> &alreadySeen);

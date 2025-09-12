@@ -91,10 +91,10 @@ void generateResponse(Response &resp, string &real_path)
 
 int handleGet(Response &resp, int clientFd, int epollFd, map<int, CgiProcess *> &cgis)
 {
-    string root = resp.getRequest()->getConfigFile().getRoot();
-    string uri = resp.getRequest()->getUri();
     string real_path;
- 
+    string root;
+    string uri = resp.getRequest()->getUri();
+    root = resp.getRequest()->getConfigFile().getRoot();
     real_path = root + uri;
     struct stat path;
     if (stat(real_path.c_str(), &path) == -1)
@@ -124,7 +124,7 @@ int handleGet(Response &resp, int clientFd, int epollFd, map<int, CgiProcess *> 
     {
         if (real_path[real_path.size() - 1] != '/')
             real_path += '/';
-        string index = resp.getRequest()->getConfigFile().getRoot() + "/" + resp.getRequest()->getLocation().getLoc_idx();
+        string index = root + "/" + resp.getRequest()->getLocation().getLoc_idx();
         if ((!resp.getRequest()->getLocation().getLoc_idx().empty()) && (stat(index.c_str(), &path) != -1))
         {
             size_t dotPos = index.find_last_of('.');

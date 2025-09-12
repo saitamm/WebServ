@@ -93,7 +93,7 @@ void Client::buildResponse(int clientFd, int epollFd, map<int, CgiProcess *> &cg
     {
         int retur = handlePost(*this->_resp, clientFd, epollFd, cgis);
         if (retur == 0)
-        {
+        {   
             _status = Sending;
         }
         else if (retur == 2)
@@ -109,9 +109,9 @@ void matchServer(Client &client, auto_ptr<vector<ConfigFile> > &serv)
     for (int i = 0; i < (int)serv->size(); i++)
     {
         
+        cout << serv->at(i).getHost() << " --------- " << client.getRequest()->getHost() << "---\n" << serv->at(i).getPort() << "-------------" << client.getRequest()->getPort() << "----\n";
          if (serv->at(i).getHost() == client.getRequest()->getHost() && serv->at(i).getPort() == client.getRequest()->getPort())
         {
-            cout << serv->at(i).getHost() << " --------- " << client.getRequest()->getHost() << "---\n" << serv->at(i).getPort() << "-------------" << client.getRequest()->getPort() << "----\n";
             client.getRequest()->setConfigFile(serv->at(i));
             break;
         }

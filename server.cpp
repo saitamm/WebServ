@@ -76,7 +76,6 @@ int openSocket(auto_ptr<vector<ConfigFile> > &servers, int epollFd, map<int, Con
 
 {
      int clientSocket = accept(fd, NULL, NULL);
-     // std::cout << "Opening socket fd=" << clientSocket << std::endl;
      setNonBlocking(clientSocket);
      if (clients.find(clientSocket) == clients.end())
           clients[clientSocket] = new Client();
@@ -151,7 +150,6 @@ int main(int ac, char **av)
      {
           map<int, ConfigFile> openedServers;
           servers = config.ParseConfigFile(av[1]);
-
           int epollFd = epoll_create1(0);
           if (epollFd == -1)
                return printErr("Failed to create epoll");
