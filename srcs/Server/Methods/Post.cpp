@@ -35,10 +35,7 @@ void CreatUploadFile(Response &resp)
 int ReadBody(Response &resp, int clientSocket)
 {
     if (SupportUpload(resp))
-    {
-        remove(resp.getFileName().c_str());
         throw ForbiddenException();
-    }
     if (resp.getRequest()->getHeadvalue("Transfer-Encoding").empty())
     {
         NonChunkedBody(resp, clientSocket);
@@ -85,8 +82,12 @@ unsigned int getSize(int clientSocket, Response &resp)
     while (1)
     {
         size = (BufferSize > line.size()) ? line.size() : BufferSize;
+        resp.setTotalReceived(size);
         if (resp.getFile().write(line.c_str(), size).fail())
+        {
+            remove(resp.getFileName().c_str());
             throw ServerErrorException();
+        }
         resp.getFile().flush();
         resp.setReceived(size);
         line.erase(0, size);
@@ -96,7 +97,7 @@ unsigned int getSize(int clientSocket, Response &resp)
         stringstream ss;
         ss << hex << l;
         ss >> BufferSize;
-        if (BufferSize == 0)
+        if (BufferSize == 0 || line.empty())
             break;
     }
     return (BufferSize);
@@ -236,14 +237,12 @@ int ChunkedBody(Response &resp, int clientSocket)
                 remove(resp.getFileName().c_str());
                 throw ServerErrorException();
             }
-            
             resp.getFile().flush();
             resp.setReceived(bytesRead);
             if (resp.getReceived() == resp.getBufferSize())
             {
                 resp.setTotalReceived(resp.getReceived());
-                cout << "----------------------\n";
-                if (resp.getTotalReceived() < resp.getRequest()->getConfigFile().getMax_size())
+                if (resp.getTotalReceived() > resp.getRequest()->getConfigFile().getMax_size())
                 {
                     remove(resp.getFileName().c_str());
                     throw PayloadTooLargeException();

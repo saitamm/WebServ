@@ -24,14 +24,6 @@ public:
         return ("-1");
     }
 };
-class PayloadTooLargeException : public exception
-{
-    public:
-    const char *what() const throw()
-    {
-        return ("413");
-    }
-};
 
 class NotFoundException : public exception
 {
@@ -104,7 +96,14 @@ public:
         return ("411");
     }
 };
-
+class PayloadTooLargeException : public exception
+{
+    public :
+    const char *what() const throw()
+    {
+        return ("413");
+    }
+};
 class RedirectionException : public exception
 {
 public:

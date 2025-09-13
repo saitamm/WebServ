@@ -33,11 +33,6 @@ string checkCgiPath(Response &resp, string &ext)
         if (cgi.count("/usr/bin/python3"))
             return "/usr/bin/python3";
     }
-    else if (ext == ".sh")
-    {
-        if (cgi.count("/usr/bin/bash"))
-            return "/usr/bin/bash";
-    }
     else if (ext == ".php")
     {
         if (cgi.count("/usr/bin/php"))
@@ -225,26 +220,26 @@ void sendCleanUp(Response &resp, int epollFd, CgiProcess *proc, std::map<int, Cl
     delete proc;
 }
 
-void sendTimeout(Response &resp, int epollFd, CgiProcess *proc, std::map<int, Client *> &clients, std::map<int, CgiProcess *> &cgis)
+void sendTimeout(Response &resp, int epollFd, CgiProcess *proc,
+                 std::map<int, Client *> &clients,
+                 std::map<int, CgiProcess *> &cgis)
 {
     (void)cgis;
 
     if (epoll_ctl(epollFd, EPOLL_CTL_DEL, proc->pipeFd, NULL) == -1)
         perror("epoll_ctl: pipeFd");
-
     close(proc->pipeFd);
 
-    std::map<int, Client *>::iterator it = clients.find(proc->clientFd);
+    std::map<int, Client *>::iterator it = clients.find(proc->clientFd); 
     if (it != clients.end())
     {
         Client *client = it->second;
-
-        if (client->getEvent().events & EPOLLOUT)
-            SendResponse(resp, proc->clientFd);
+        SendResponse(resp, proc->clientFd);
 
         client->setStatus(Finished);
     }
 }
+
 
 void checkCgiTimeouts(int epollFd, std::map<int, Client *> &clients, std::map<int, CgiProcess *> &cgis)
 {
@@ -256,7 +251,7 @@ void checkCgiTimeouts(int epollFd, std::map<int, Client *> &clients, std::map<in
 
         if (difftime(now, proc->start) > 3)
         {
-            std::cerr << "[CGI] Timeout, killing pid=" << proc->pid << std::endl;
+            std::cerr << "[CGI] Timeout (sleep), killing pid=" << proc->pid << std::endl;
 
             kill(proc->pid, SIGKILL);
             waitpid(proc->pid, NULL, WNOHANG);

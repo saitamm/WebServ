@@ -61,7 +61,6 @@ void connectClient(int fd, map<int, Client *> &clients, int epollFd)
 
 {
      int clientSocket = accept(fd, NULL, NULL);
-     // std::cout << "Opening socket fd=" << clientSocket << std::endl;
      setNonBlocking(clientSocket);
      if (clients.find(clientSocket) == clients.end())
           clients[clientSocket] = new Client();
@@ -81,7 +80,6 @@ void timeout(map<int, Client *> &clients, int epollFd)
           Client *client = it->second;
           if (difftime(now, client->getLastActivity()) > 5)
           {
-               std::cout << "Closing idle socket fd=" << it->first << std::endl;
                epoll_ctl(epollFd, EPOLL_CTL_DEL, it->first, NULL);
                close(it->first);
                delete client;
@@ -97,7 +95,6 @@ void cleaningAfterSignal(map<int, Client *> &clients, int epollFd, map<int, Conf
      std::map<int, Client *>::iterator it;
      for (it = clients.begin(); it != clients.end(); ++it)
      {
-          std::cout << "Closing socket fd=" << it->first << std::endl;
           epoll_ctl(epollFd, EPOLL_CTL_DEL, it->first, NULL);
           close(it->first);
           delete it->second;
@@ -181,18 +178,16 @@ int main(int ac, char **av)
                     handleClientRequest(clients, fd, servers, epollFd, cgis);
                }
                checkCgiTimeouts(epollFd, clients, cgis);
-               timeout(clients, epollFd);
                map<int, Client *>::iterator it;
                for (it = clients.begin(); it != clients.end();)
                {
                     Client *client = it->second;
                     int fd = it->first;
-
                     if (client->getStatus() == Finished)
                     {
                          epoll_ctl(epollFd, EPOLL_CTL_DEL, fd, NULL);
                          close(fd);
-                         delete client;
+                         delete clients[fd];
                          clients.erase(it++);
                     }
                     else
@@ -200,6 +195,7 @@ int main(int ac, char **av)
                          ++it;
                     }
                }
+               timeout(clients, epollFd);
           }
           cleaningAfterSignal(clients, epollFd, openedServers, cgis);
      }

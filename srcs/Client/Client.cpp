@@ -127,7 +127,6 @@ void Client::ParseHttpRequest(Client &client, int clientSocket, auto_ptr<vector<
             _buffer.append(buf, bytesRead);
         else
         {
-            cout << "recv error" << endl;
             _status = Finished;
         }
         if (_buffer.find("\r\n\r\n") != string::npos)
