@@ -164,6 +164,15 @@ public:
     }
 };
 
+class RedirectLoopException : public exception
+{
+public:
+    const char *what() const throw()
+    {
+        return "Error, Redirect loop detected !";
+    }
+};
+
 string trimLine(const string &line);
 void ParseServer(string &key, string &value, ConfigFile &curr_server, string &new_line, map<string, bool> &alreadySeen);
 void ParseLocation(string &key, string &value, string &new_line, Location &curr_loc, map<string, bool> &alreadySeen);

@@ -145,11 +145,51 @@ void checkRedir(Location &curr_loc)
         string from = loc.getPath();
         string to = loc.getReturnTarget();
 
-        // Case 1: Self-redirect
         if (from == to)
-            throw ErrorConfigFileException();
+            throw RedirectLoopException();
 
         redirects[from] = to;
+    }
+}
+
+void checkReturnLoop(ConfigFile &curr_server)
+{
+    vector<Location> locations = curr_server.getLocations();
+    for (size_t i = 0; i < locations.size(); i++)
+    {
+        if (locations[i].getRetur().empty())
+            continue;
+        string start = locations[i].getPath();          // /
+        string target = locations[i].getReturnTarget(); // /images
+        string current = target;
+        size_t depth = 0;
+        if (!current.empty() && current[0] == '/')
+        {
+            if (depth++ > locations.size())
+                throw RedirectLoopException();
+            bool found = false;
+            for (size_t j = 0; j < locations.size(); j++)
+            {
+                if (i != j)
+                {
+                    if (locations[j].getPath() == current)
+                    {
+                        if (locations[j].getReturnTarget().empty())
+                        {
+                            current = "";
+                            break;
+                        }
+                        current = locations[j].getReturnTarget();
+                        cout << current << endl;
+                        if (current == start)
+                            throw RedirectLoopException();
+                        found = true;
+                    }
+                }
+            }
+            if (!found)
+                break;
+        }
     }
 }
 
@@ -192,6 +232,7 @@ auto_ptr<vector<ConfigFile> > ConfigFile::ParseConfigFile(string confFile)
                 SeenInServer.clear();
                 CheckDupServ(servers, curr_server);
                 servers->push_back(curr_server);
+                checkReturnLoop(curr_server);
             }
             curr_server = ConfigFile();
             bloc = SERVER;
@@ -205,7 +246,6 @@ auto_ptr<vector<ConfigFile> > ConfigFile::ParseConfigFile(string confFile)
             {
                 CheckDupLoc(curr_server, curr_loc);
                 curr_server.locations.push_back(curr_loc);
-                cout << "----> " << curr_loc.getPath() << endl;
                 checkRedir(curr_loc);
             }
             bloc = LOCATION;
@@ -225,7 +265,6 @@ auto_ptr<vector<ConfigFile> > ConfigFile::ParseConfigFile(string confFile)
     {
         CheckDupLoc(curr_server, curr_loc);
         curr_server.locations.push_back(curr_loc);
-        cout << "----> " << curr_loc.getPath() << endl;
         checkRedir(curr_loc);
     }
 
@@ -234,6 +273,6 @@ auto_ptr<vector<ConfigFile> > ConfigFile::ParseConfigFile(string confFile)
 
     CheckDupServ(servers, curr_server);
     servers->push_back(curr_server);
-
-    return servers; // ownership moves to caller
+    checkReturnLoop(curr_server);
+    return servers;
 }
