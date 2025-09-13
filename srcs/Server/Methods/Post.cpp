@@ -35,7 +35,10 @@ void CreatUploadFile(Response &resp)
 int ReadBody(Response &resp, int clientSocket)
 {
     if (SupportUpload(resp))
+    {
+        remove(resp.getFileName().c_str());
         throw ForbiddenException();
+    }
     if (resp.getRequest()->getHeadvalue("Transfer-Encoding").empty())
     {
         NonChunkedBody(resp, clientSocket);
@@ -107,7 +110,10 @@ void NonChunkedBody(Response &resp, int clientSocket)
     {
         resp.setTotalReceived(resp.getRequest()->getrestHeader().size());
         if (resp.getFile().write(resp.getRequest()->getrestHeader().c_str(), resp.getTotalReceived()).fail())
+        {
+            remove(resp.getFileName().c_str());
             throw ServerErrorException();
+        }
         // return ;
     }
     if (resp.getRequest()->getContentLength() == 0)
@@ -120,14 +126,23 @@ void NonChunkedBody(Response &resp, int clientSocket)
         if (bytesRead <= 0)
         {
             if (resp.getTotalReceived() < resp.getRequest()->getContentLength())
+            {
+                remove(resp.getFileName().c_str());
                 throw BadRequestException();
+            }
             if (bytesRead == -1)
+            {
+                remove(resp.getFileName().c_str());
                 throw ConnectionFailedException();
+            }
             return;
         }
 
         if (resp.getFile().write(buf, bytesRead).fail())
+        {
+            remove(resp.getFileName().c_str());
             throw ServerErrorException();
+        }
         resp.getFile().flush();
         resp.setTotalReceived(bytesRead);
     }
@@ -149,13 +164,16 @@ int ChunkedBody(Response &resp, int clientSocket)
         line = ll.str();
         line.erase(0, l.size() + 2);
         int size;
-        resp.setTotalReceived(5);
         size = (BufferSize > line.size()) ? line.size() : BufferSize;
         while (1)
         {
             size = (BufferSize > line.size()) ? line.size() : BufferSize;
             if (resp.getFile().write(line.substr(0, size).c_str(), size).fail())
+            {
+                remove(resp.getFileName().c_str());
                 throw ServerErrorException();
+            }
+            resp.setTotalReceived(size);
             line.erase(0, size);
             if (line.empty())
                 break;
@@ -176,10 +194,15 @@ int ChunkedBody(Response &resp, int clientSocket)
             bytesRead = recv(clientSocket, buf, sizeof(buf), 0);
             if (bytesRead <= 0)
             {
+                remove(resp.getFileName().c_str());
                 throw ConnectionFailedException();
             }
+            resp.setTotalReceived(bytesRead);
             if (resp.getFile().write(buf, bytesRead).fail())
+            {
+                remove(resp.getFileName().c_str());
                 throw ServerErrorException();
+            }
             resp.getFile().flush();
         }
     }
@@ -193,7 +216,10 @@ int ChunkedBody(Response &resp, int clientSocket)
                 return (1);
             }
             if (resp.getFile().write(resp.getRestPost().c_str(), resp.getRestPost().size()).fail())
+            {
+                remove(resp.getFileName().c_str());
                 throw ServerErrorException();
+            }
         }
         else
         {
@@ -201,13 +227,27 @@ int ChunkedBody(Response &resp, int clientSocket)
             size_t read = min(resp.getBufferSize() - resp.getReceived(), (unsigned int)sizeof(buff));
             bytesRead = recv(clientSocket, buff, read, 0);
             if (bytesRead <= 0)
+            {
+                remove(resp.getFileName().c_str());
                 throw ConnectionFailedException();
+            }
             if (resp.getFile().write(buff, bytesRead).fail())
+            {
+                remove(resp.getFileName().c_str());
                 throw ServerErrorException();
+            }
+            
             resp.getFile().flush();
             resp.setReceived(bytesRead);
             if (resp.getReceived() == resp.getBufferSize())
             {
+                resp.setTotalReceived(resp.getReceived());
+                cout << "----------------------\n";
+                if (resp.getTotalReceived() < resp.getRequest()->getConfigFile().getMax_size())
+                {
+                    remove(resp.getFileName().c_str());
+                    throw PayloadTooLargeException();
+                }
                 resp.restartChunk();
             }
         }
