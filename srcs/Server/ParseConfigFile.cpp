@@ -117,6 +117,8 @@ void ParseLocation(string &key, string &value, string &new_line, Location &curr_
             path.erase(0, 1);
         curr_loc.add_retur(err, path);
     }
+    else if (key == "root")
+        curr_loc.setRoot_loc(value);
 }
 
 void CheckDupLoc(ConfigFile &curr_server, Location &curr_loc)

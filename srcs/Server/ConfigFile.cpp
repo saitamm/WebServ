@@ -31,7 +31,7 @@ Location::~Location() {}
 Location::Location(const Location &other)
     : path(other.path), methods(other.methods), auto_idx(other.auto_idx),
       up_store(other.up_store), cgi_pass(other.cgi_pass),
-      cgi_extensions(other.cgi_extensions), loc_idx(other.loc_idx), retur(other.retur) {}
+      cgi_extensions(other.cgi_extensions), loc_idx(other.loc_idx), retur(other.retur), root_loc(other.root_loc) {}
 
 Location &Location::operator=(const Location &other)
 {
@@ -45,6 +45,7 @@ Location &Location::operator=(const Location &other)
         cgi_extensions = other.cgi_extensions;
         loc_idx = other.loc_idx;
         retur = other.retur;
+        root_loc = other.root_loc;
     }
     return *this;
 }
@@ -264,7 +265,7 @@ const set<string> &Location::getCgi_pass() const
 
 void Location::setCgi_ext(const string &ext)
 {
-    if (ext == ".py" || ext == ".sh" || ext == ".php" || ext == ".pl")
+    if (ext == ".py" || ext == ".php" || ext == ".pl")
         cgi_extensions.insert(ext);
     else
     {
@@ -335,3 +336,17 @@ void Location::add_retur(int err, string path)
     if (!path.empty())
         retur[err] = path;
 }
+
+const string & Location::getRoot_loc() const
+{
+    return root_loc;
+}
+
+void Location::setRoot_loc(const string &r)
+{
+    size_t res = r.find(" ");
+    if (res != string::npos)
+        throw ErrorConfigFileException();
+    root_loc = r;
+}
+

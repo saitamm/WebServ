@@ -87,15 +87,17 @@ void generateResponse(Response &resp, string &real_path)
     }
 }
 
-
-
 int handleGet(Response &resp, int clientFd, int epollFd, map<int, CgiProcess *> &cgis)
 {
     string real_path;
     string root;
     string uri = resp.getRequest()->getUri();
-    root = resp.getRequest()->getConfigFile().getRoot();
+    if (resp.getRequest()->getLocation().getRoot_loc().empty())
+        root = resp.getRequest()->getConfigFile().getRoot();
+    else
+        root = resp.getRequest()->getLocation().getRoot_loc();
     real_path = root + uri;
+    cout << "........ " << real_path << endl;
     struct stat path;
     if (stat(real_path.c_str(), &path) == -1)
     {
@@ -105,12 +107,7 @@ int handleGet(Response &resp, int clientFd, int epollFd, map<int, CgiProcess *> 
     if (S_ISREG(path.st_mode))
     {
         string ext = getExt(resp);
-        if(isCgi(ext) && resp.getRequest()->getLocation().getCgi_pass().empty())
-        {
-            setCodeStatus(resp, 500);
-            return 0;
-        }
-        else if (!resp.getRequest()->getLocation().getCgi_pass().empty() && isCgiExtension(ext, resp))
+        if (!resp.getRequest()->getLocation().getCgi_pass().empty() && isCgiExtension(ext, resp))
         {
             checkCgiGet(resp, real_path, clientFd, epollFd, cgis, ext);
             return 1;
@@ -149,7 +146,25 @@ int handleGet(Response &resp, int clientFd, int epollFd, map<int, CgiProcess *> 
         }
         else
         {
-            if (resp.getRequest()->getLocation().getAuto_idx() == "on")
+            index = root + "/" + resp.getRequest()->getConfigFile().getIndex();  
+            cout << "``````````````````" << index << endl;
+            if ((!resp.getRequest()->getConfigFile().getIndex().empty()) && (stat(index.c_str(), &path) != -1))
+            {
+                cout << " i am hereeeeeeeeeeeee\n";
+                size_t dotPos = index.find_last_of('.');
+                string ext = index.substr(dotPos);
+                if (!resp.getRequest()->getLocation().getCgi_pass().empty() && isCgiExtension(ext, resp))
+                {
+                    checkCgiGet(resp, index, clientFd, epollFd, cgis, ext);
+                }
+                else
+                {
+                    string indx_path = resp.getRequest()->getConfigFile().getIndex();
+                    generateResponse(resp, indx_path);
+                    return (0);
+                }
+            }
+            else if (resp.getRequest()->getLocation().getAuto_idx() == "on")
             {
 
                 DIR *dir = opendir(real_path.c_str());

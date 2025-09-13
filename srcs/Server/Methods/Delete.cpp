@@ -38,7 +38,10 @@ void handleDelete(Response &resp)
 {
     struct stat path;
     string root;
-    root = resp.getRequest()->getConfigFile().getRoot();
+    if(resp.getRequest()->getLocation().getRoot_loc().empty())
+        root = resp.getRequest()->getConfigFile().getRoot();
+    else
+        root = resp.getRequest()->getLocation().getRoot_loc();
     string file = root + "/" + resp.getRequest()->getLocation().getUp_store() + resp.getRequest()->getUri();
     if (resp.getRequest()->getLocation().getUp_store().empty() || resp.getRequest()->getLocation().getUp_store() == "/")
         throw ForbiddenException();
