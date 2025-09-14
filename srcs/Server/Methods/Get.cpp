@@ -148,6 +148,7 @@ int handleGet(Response &resp, int clientFd, int epollFd, map<int, CgiProcess *> 
         {
             index = root + "/" + resp.getRequest()->getConfigFile().getIndex();  
             cout << "``````````````````" << index << endl;
+            
             if ((!resp.getRequest()->getConfigFile().getIndex().empty()) && (stat(index.c_str(), &path) != -1))
             {
                 cout << " i am hereeeeeeeeeeeee\n";
@@ -159,8 +160,7 @@ int handleGet(Response &resp, int clientFd, int epollFd, map<int, CgiProcess *> 
                 }
                 else
                 {
-                    string indx_path = resp.getRequest()->getConfigFile().getIndex();
-                    generateResponse(resp, indx_path);
+                    generateResponse(resp, index);
                     return (0);
                 }
             }

@@ -143,6 +143,7 @@ void Client::ParseHttpRequest(Client &client, int clientSocket, auto_ptr<vector<
         this->_resp->setRequest(*this->_req);
         if (client.getRequest()->getMethod() == "GET" || client.getRequest()->getMethod() == "DELETE")
         {
+            cout << " what about hereeeee\n";
             _status = Processing;
             return;
         }
