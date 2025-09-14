@@ -93,7 +93,7 @@ void Client::buildResponse(int clientFd, int epollFd, map<int, CgiProcess *> &cg
     {
         int retur = handlePost(*this->_resp, clientFd, epollFd, cgis);
         if (retur == 0)
-        {
+        {   
             _status = Sending;
         }
         else if (retur == 2)
@@ -108,8 +108,9 @@ void matchServer(Client &client, auto_ptr<vector<ConfigFile> > &serv)
     client.getRequest()->setConfigFile(serv->at(0));
     for (int i = 0; i < (int)serv->size(); i++)
     {
-
-        if (serv->at(i).getName() == client.getRequest()->getHost() && serv->at(i).getPort() == client.getRequest()->getPort())
+        if (client.getRequest()->getHost() == "localhost")
+            client.getRequest()->setHost("127.0.0.1");
+        if (serv->at(i).getHost() == client.getRequest()->getHost() && serv->at(i).getPort() == client.getRequest()->getPort())
         {
             client.getRequest()->setConfigFile(serv->at(i));
             break;
@@ -142,6 +143,7 @@ void Client::ParseHttpRequest(Client &client, int clientSocket, auto_ptr<vector<
         this->_resp->setRequest(*this->_req);
         if (client.getRequest()->getMethod() == "GET" || client.getRequest()->getMethod() == "DELETE")
         {
+            cout << " what about hereeeee\n";
             _status = Processing;
             return;
         }

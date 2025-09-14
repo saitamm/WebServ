@@ -10,6 +10,11 @@
 #include <sys/epoll.h>
 #include <fcntl.h>
 #include <memory>
+#include<sys/types.h>
+#include<sys/socket.h>
+#include <arpa/inet.h>
+#include <netdb.h> 
+#include<set>
 
 using namespace std;
 
@@ -31,6 +36,7 @@ private:
     set<string> cgi_extensions;
     string loc_idx;
     map<int, string> retur;
+    string root_loc;
 
 public:
     Location();
@@ -52,7 +58,10 @@ public:
     const string &getLoc_idx() const;
     void setLoc_idx(const string &idx);
     const map<int, string> &getRetur() const;
+    string getReturnTarget() const ;
     void add_retur(int err, string path);
+    const string &getRoot_loc() const;
+    void setRoot_loc(const string &r);
 };
 
 class ConfigFile
@@ -156,6 +165,16 @@ public:
         return "Error, Duplicate Server !";
     }
 };
+
+class RedirectLoopException : public exception
+{
+public:
+    const char *what() const throw()
+    {
+        return "Error, Redirect loop detected !";
+    }
+};
+
 string trimLine(const string &line);
 void ParseServer(string &key, string &value, ConfigFile &curr_server, string &new_line, map<string, bool> &alreadySeen);
 void ParseLocation(string &key, string &value, string &new_line, Location &curr_loc, map<string, bool> &alreadySeen);

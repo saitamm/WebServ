@@ -8,13 +8,6 @@ bool isCgiExtension(const string &ext, Response &resp)
     return 0;
 }
 
-bool isCgi(const string &ext)
-{
-    if (ext != ".py" && ext != ".php" && ext != ".sh" && ext != ".pl")
-        return 0;
-    return 1;
-}
-
 string getExt(Response &resp)
 {
     string path = resp.getRequest()->getUri();
@@ -49,9 +42,14 @@ string checkCgiPath(Response &resp, string &ext)
 map<string, string> CgiEnv(Response &resp)
 {
     map<string, string> env;
+    string root;
     env["GATEWAY_INTERFACE"] = "CGI/1.1";
-    env["REQUEST_METHOD"] = "POST";
-    env["SCRIPT_FILENAME"] = resp.getRequest()->getConfigFile().getRoot() + resp.getRequest()->getUri();
+    env["REQUEST_METHOD"] = resp.getRequest()->getMethod();
+    if(resp.getRequest()->getLocation().getRoot_loc().empty())
+        root = resp.getRequest()->getConfigFile().getRoot();
+    else
+        root = resp.getRequest()->getLocation().getRoot_loc();
+    env["SCRIPT_FILENAME"] = root + resp.getRequest()->getUri();
     env["QUERY_STRING"] = resp.getRequest()->getQuery();
     env["SERVER_NAME"] = resp.getRequest()->getConfigFile().getName();
     std::stringstream ss;

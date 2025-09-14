@@ -31,7 +31,7 @@ Location::~Location() {}
 Location::Location(const Location &other)
     : path(other.path), methods(other.methods), auto_idx(other.auto_idx),
       up_store(other.up_store), cgi_pass(other.cgi_pass),
-      cgi_extensions(other.cgi_extensions), loc_idx(other.loc_idx), retur(other.retur) {}
+      cgi_extensions(other.cgi_extensions), loc_idx(other.loc_idx), retur(other.retur), root_loc(other.root_loc) {}
 
 Location &Location::operator=(const Location &other)
 {
@@ -45,6 +45,7 @@ Location &Location::operator=(const Location &other)
         cgi_extensions = other.cgi_extensions;
         loc_idx = other.loc_idx;
         retur = other.retur;
+        root_loc = other.root_loc;
     }
     return *this;
 }
@@ -320,6 +321,12 @@ const map<int, string> &Location::getRetur() const
     return retur;
 }
 
+string Location::getReturnTarget() const {
+    if (retur.empty())
+        return "";
+    return retur.begin()->second;
+}
+
 void Location::add_retur(int err, string path)
 {
     if (err < 200 || err >= 600)
@@ -327,3 +334,17 @@ void Location::add_retur(int err, string path)
     if (!path.empty())
         retur[err] = path;
 }
+
+const string & Location::getRoot_loc() const
+{
+    return root_loc;
+}
+
+void Location::setRoot_loc(const string &r)
+{
+    size_t res = r.find(" ");
+    if (res != string::npos)
+        throw ErrorConfigFileException();
+    root_loc = r;
+}
+
