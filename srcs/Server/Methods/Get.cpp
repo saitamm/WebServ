@@ -101,7 +101,6 @@ int handleGet(Response &resp, int clientFd, int epollFd, map<int, CgiProcess *> 
     else
         root = resp.getRequest()->getLocation().getRoot_loc();
     real_path = root + uri;
-    cout << "........ " << real_path << endl;
     struct stat path;
     if (stat(real_path.c_str(), &path) == -1)
     {
@@ -137,8 +136,7 @@ int handleGet(Response &resp, int clientFd, int epollFd, map<int, CgiProcess *> 
             }
             if (resp.getRequest()->getCookie().empty())
             {
-                string indx_path = resp.getRequest()->getLocation().getLoc_idx();
-                generateResponse(resp, indx_path);
+                generateResponse(resp, index);
                 return (0);
             }
             else
@@ -151,11 +149,9 @@ int handleGet(Response &resp, int clientFd, int epollFd, map<int, CgiProcess *> 
         else
         {
             index = root + "/" + resp.getRequest()->getConfigFile().getIndex();  
-            cout << "``````````````````" << index << endl;
             
             if ((!resp.getRequest()->getConfigFile().getIndex().empty()) && (stat(index.c_str(), &path) != -1))
             {
-                cout << " i am hereeeeeeeeeeeee\n";
                 size_t dotPos = index.find_last_of('.');
                 string ext = index.substr(dotPos);
                 if (!resp.getRequest()->getLocation().getCgi_pass().empty() && isCgiExtension(ext, resp))
