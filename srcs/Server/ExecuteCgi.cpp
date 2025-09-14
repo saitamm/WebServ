@@ -45,7 +45,7 @@ map<string, string> CgiEnv(Response &resp)
     string root;
     env["GATEWAY_INTERFACE"] = "CGI/1.1";
     env["REQUEST_METHOD"] = resp.getRequest()->getMethod();
-    if(resp.getRequest()->getLocation().getRoot_loc().empty())
+    if (resp.getRequest()->getLocation().getRoot_loc().empty())
         root = resp.getRequest()->getConfigFile().getRoot();
     else
         root = resp.getRequest()->getLocation().getRoot_loc();
@@ -270,6 +270,72 @@ void checkCgiTimeouts(int epollFd, std::map<int, Client *> &clients, std::map<in
     }
 }
 
+void parseHeaders(string &outStr, Response &resp)
+{
+    std::string headers, body;
+    size_t pos = outStr.find("\r\n\r\n");
+    if (pos == std::string::npos)
+        pos = outStr.find("\n\n");
+    if (pos != std::string::npos)
+    {
+        headers = outStr.substr(0, pos);
+        body = outStr.substr(pos + 2);
+    }
+    else
+    {
+        headers = "Content-Type: text/plain";
+        body = outStr;
+    }
+    map<string, string> headerMap;
+    istringstream hs(headers);
+    string line;
+    while (getline(hs, line))
+    {
+        if (line.empty())
+            continue;
+        size_t colon = line.find(':');
+        if (colon != std::string::npos)
+        {
+            std::string key = line.substr(0, colon);
+            std::string value = line.substr(colon + 1);
+            if (!value.empty() && value[0] == ' ')
+                value.erase(0, 1);
+            headerMap[key] = value;
+        }
+    }
+    int status;
+    if (headerMap.find("Status") != headerMap.end())
+        status = (atoi(headerMap["Status"].c_str()));
+    else
+        status = 200;
+
+    if (resp.getRequest()->getMethod() == "POST")
+    {
+        resp.getFile().close();
+        resp.getFile().open(resp.getFileName().c_str(), ios::out | ios::trunc | ios::binary);
+        resp.getFile().write(body.data(), body.size());
+        resp.getFile().flush();
+        if (resp.getFile().is_open())
+            resp.getFile().close();
+        setCodeStatus(resp, status);
+    }
+    else
+    {
+        resp.setBodyResp(body);
+        if (status == 200)
+            resp.setStatus(status);
+        else
+        {
+            setCodeStatus(resp, status);
+            return;
+        }
+        if (headerMap.find("Content-Type") != headerMap.end())
+            resp.setType(headerMap["Content-Type"]);
+        else
+            resp.setType("text/plain");
+    }
+}
+
 void CgiEvent(int fd, int epollFd, map<int, Client *> &clients, map<int, CgiProcess *> &cgis)
 {
     CgiProcess *proc = cgis[fd];
@@ -286,7 +352,6 @@ void CgiEvent(int fd, int epollFd, map<int, Client *> &clients, map<int, CgiProc
         Client *client = clients[proc->clientFd];
         resp = client->getResp();
         resp->setRequest(*client->getRequest());
-
         if (result == proc->pid)
         {
             if (WIFEXITED(status))
@@ -294,23 +359,8 @@ void CgiEvent(int fd, int epollFd, map<int, Client *> &clients, map<int, CgiProc
                 int exitCode = WEXITSTATUS(status);
                 if (exitCode == 0)
                 {
-                    std::string outStr = proc->output.str();
-                    if (resp->getRequest()->getMethod() == "POST")
-                    {
-                        resp->getFile().close();
-                        resp->getFile().open(resp->getFileName().c_str(), ios::out | ios::trunc | ios::binary);
-                        resp->getFile().write(outStr.data(), outStr.size());
-                        resp->getFile().flush();
-                        if (resp->getFile().is_open())
-                            resp->getFile().close();
-                        setCodeStatus(*resp, 200);
-                    }
-                    else
-                    {
-                        resp->setBodyResp(outStr);
-                        resp->setStatus(200);
-                        resp->setType("text/html");
-                    }
+                    string outStr = proc->output.str();
+                    parseHeaders(outStr, *resp);
                 }
                 else
                 {

@@ -182,7 +182,6 @@ void handleClientRequest(std::map<int, Client *> &clients, int clientSocket, std
             clients[clientSocket]->ParseHttpRequest(*clients[clientSocket], clientSocket, servers);
         if (clients[clientSocket]->getStatus() == Processing || clients[clientSocket]->getStatus() == Sending)
         {
-            cout << "i am hereeeeeeeeeeeee waaaaaa3\n";
             clients[clientSocket]->buildResponse(clientSocket, epollFd, cgis);
             clients[clientSocket]->getEvent().events = EPOLLIN|EPOLLOUT;
             if (epoll_ctl(epollFd, EPOLL_CTL_MOD, clientSocket, &clients[clientSocket]->getEvent()) == -1)
