@@ -269,7 +269,6 @@ void Location::setCgi_ext(const string &ext)
         cgi_extensions.insert(ext);
     else
     {
-        cout << "HELLOOOOO\n";
         throw ErrorConfigFileException();
     }
 }
@@ -285,7 +284,6 @@ void Location::setCgi_pass(const string &path)
         cgi_pass.insert(path);
     else
     {
-        cout << "HELLOOOOO\n";
         throw ErrorConfigFileException();
     }
 }

@@ -15,6 +15,16 @@ public:
     }
 };
 
+
+class ConnectionFailedException : public exception
+{
+public:
+    const char *what() const throw()
+    {
+        return ("-1");
+    }
+};
+
 class NotFoundException : public exception
 {
 public:
@@ -86,7 +96,14 @@ public:
         return ("411");
     }
 };
-
+class PayloadTooLargeException : public exception
+{
+    public :
+    const char *what() const throw()
+    {
+        return ("413");
+    }
+};
 class RedirectionException : public exception
 {
 public:

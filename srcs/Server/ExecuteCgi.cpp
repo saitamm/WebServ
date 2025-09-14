@@ -91,6 +91,7 @@ void checkCgiGet(Response &resp, string &real_path, int clientFd, int epollFd, m
             envp.push_back(strdup(entry.c_str()));
         }
         envp.push_back(NULL);
+        
         execve(arg.c_str(), argv, envp.data());
         perror("execve failed");
         exit(1);
@@ -227,7 +228,7 @@ void sendTimeout(Response &resp, int epollFd, CgiProcess *proc,
         perror("epoll_ctl: pipeFd");
     close(proc->pipeFd);
 
-    std::map<int, Client *>::iterator it = clients.find(proc->clientFd);
+    std::map<int, Client *>::iterator it = clients.find(proc->clientFd); 
     if (it != clients.end())
     {
         Client *client = it->second;
@@ -236,6 +237,7 @@ void sendTimeout(Response &resp, int epollFd, CgiProcess *proc,
         client->setStatus(Finished);
     }
 }
+
 
 void checkCgiTimeouts(int epollFd, std::map<int, Client *> &clients, std::map<int, CgiProcess *> &cgis)
 {

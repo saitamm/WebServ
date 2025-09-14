@@ -95,7 +95,6 @@ void timeout(map<int, Client *> &clients, int epollFd)
           Client *client = it->second;
           if (difftime(now, client->getLastActivity()) > 5)
           {
-               std::cout << "Closing idle socket fd=" << it->first << std::endl;
                epoll_ctl(epollFd, EPOLL_CTL_DEL, it->first, NULL);
                close(it->first);
                delete client;
@@ -111,7 +110,6 @@ void cleaningAfterSignal(map<int, Client *> &clients, int epollFd, map<int, Conf
      std::map<int, Client *>::iterator it;
      for (it = clients.begin(); it != clients.end(); ++it)
      {
-          std::cout << "Closing socket fd=" << it->first << std::endl;
           epoll_ctl(epollFd, EPOLL_CTL_DEL, it->first, NULL);
           close(it->first);
           delete it->second;

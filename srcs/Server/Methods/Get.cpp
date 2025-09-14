@@ -47,7 +47,6 @@ void generateResponse(Response &resp, string &real_path)
         resp.setChunkFile(real_path);
         if (!resp.getChunkFile().is_open())
         {
-            cerr << "Failed to open chunk file: " << real_path << endl;
             setCodeStatus(resp, 403);
             resp.setResponseStatus(Nonchunked);
             return;
@@ -64,7 +63,6 @@ void generateResponse(Response &resp, string &real_path)
         resp.setChunkFile(real_path);
         if (!resp.getChunkFile().is_open())
         {
-            cerr << "Failed to open chunk file: " << real_path << endl;
             setCodeStatus(resp, 403);
             resp.setResponseStatus(Nonchunked);
             return;
@@ -75,14 +73,20 @@ void generateResponse(Response &resp, string &real_path)
     }
     resp.setStatus(200);
     char buffer[8192];
-    resp.getChunkFile().read(buffer, sizeof(buffer));
+    if (resp.getChunkFile().read(buffer, sizeof(buffer)).fail())
+    {
+        if (resp.getChunkFile().is_open())
+            resp.getChunkFile().close();
+        throw ServerErrorException();
+    }
     string line(buffer, resp.getChunkFile().gcount());
     resp.setBodyResp(resp.getRestSend() + line);
     resp.setResponseStatus(chunked);
     if (line.size() == 0 && resp.getRestSend().empty())
     {
         resp.setResponseStatus(Last);
-        resp.getChunkFile().close();
+        if (resp.getChunkFile().is_open())
+            resp.getChunkFile().close();
         return;
     }
 }
