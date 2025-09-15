@@ -21,6 +21,7 @@ void Response::initStatusCode(void)
     _StatusCode[501] = "Not Implemented";
     _StatusCode[502] = "Bad Gateway";
     _StatusCode[504] = "Gateway Timeout";
+    _StatusCode[201] = "Created";
 }
 
 Response::Response()

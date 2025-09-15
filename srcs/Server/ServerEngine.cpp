@@ -110,6 +110,15 @@ void NonchunkedResponse(Response &resp, int clientSocket)
     resp.setResponseStatus(Finish);
 }
 
+size_t getsizeFile(const string &path)
+{
+    struct stat st;
+    if (stat(path.c_str(), &st) == 0)
+    {
+        return st.st_size;
+    }
+    return 0;
+}
 void chunkedResponse(Response &resp, int clientSocket)
 {
     if (resp.getResponseStatus() == First)
@@ -117,7 +126,7 @@ void chunkedResponse(Response &resp, int clientSocket)
         stringstream response;
         response << "HTTP/1.1 " << resp.getStatus() << " " << resp.getStatusValue(resp.getStatus()) << "\r\n";
         response << "Content-type: " << resp.getType() << "\r\n";
-        response << "Transfer-Encoding: chunked\r\n";
+        response << "Content Length : " << getsizeFile(resp.getFileName()) << "\r\n";
         generateUser(resp);
         response << "Set-Cookie: user=" << resp.getSessionId() << "; HttpOnly; Path=/" << "\r\n";
         response << "Connection: close\r\n\r\n";
@@ -132,8 +141,7 @@ void chunkedResponse(Response &resp, int clientSocket)
     else if (resp.getResponseStatus() == chunked)
     {
         stringstream response;
-        response << hex << resp.getBody().size() << "\r\n";
-        response << resp.getBody() << "\r\n";
+        response << resp.getBody();
         string responseStr = response.str();
         int bytesend;
         bytesend = send(clientSocket, responseStr.c_str(), responseStr.size(), MSG_NOSIGNAL);
@@ -145,7 +153,7 @@ void chunkedResponse(Response &resp, int clientSocket)
     else if (resp.getResponseStatus() == Last)
     {
         stringstream response;
-        response << "0\r\n\r\n";
+        response << "";
         int bytesend;
         bytesend = send(clientSocket, response.str().c_str(), response.str().size(), MSG_NOSIGNAL);
         if (bytesend <= 0)
@@ -200,7 +208,7 @@ void handleClientRequest(std::map<int, Client *> &clients, int clientSocket, std
         if ((clients[clientSocket]->getStatus() == Processing || clients[clientSocket]->getStatus() == Sending) && clients[clientSocket]->getResp()->getResponseStatus() != Finish)
         {
             clients[clientSocket]->buildResponse(clientSocket, epollFd, cgis);
-            clients[clientSocket]->getEvent().events = EPOLLIN|EPOLLOUT;
+            clients[clientSocket]->getEvent().events = EPOLLIN | EPOLLOUT;
             if (epoll_ctl(epollFd, EPOLL_CTL_MOD, clientSocket, &clients[clientSocket]->getEvent()) == -1)
             {
                 perror("epoll_ctl: add");

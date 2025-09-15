@@ -59,19 +59,6 @@ void Client::buildResponse(int clientFd, int epollFd, map<int, CgiProcess *> &cg
 {
 
     this->_resp->setRequest(*this->_req);
-    if (!allowMethod(this->_req->getLocation(), this->_req->getMethod()))
-    {
-        setCodeStatus(*this->getResp(), 405);
-        _status = Sending;
-        return;
-    }
-    if (checkSize(this->_resp->getTotalReceived(), this->_req->getConfigFile().getMax_size()))
-    {
-        remove(this->getResp()->getFileName().c_str());
-        setCodeStatus(*this->getResp(), 413);
-        _status = Sending;
-        return;
-    }
     if (this->_req->getMethod() == "DELETE")
     {
         handleDelete(*this->_resp);
@@ -94,7 +81,7 @@ void Client::buildResponse(int clientFd, int epollFd, map<int, CgiProcess *> &cg
     {
         int retur = handlePost(*this->_resp, clientFd, epollFd, cgis);
         if (retur == 0)
-        {   
+        {
             _status = Sending;
         }
         else if (retur == 2)
@@ -142,6 +129,10 @@ void Client::ParseHttpRequest(Client &client, int clientSocket, auto_ptr<vector<
     if (_status == Body || _status == Reading)
     {
         this->_resp->setRequest(*this->_req);
+        if (!allowMethod(this->_req->getLocation(), this->_req->getMethod()))
+        {
+           throw NotAllowedException();
+        }
         if (client.getRequest()->getMethod() == "GET" || client.getRequest()->getMethod() == "DELETE")
         {
             _status = Processing;

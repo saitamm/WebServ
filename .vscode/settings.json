@@ -60,6 +60,9 @@
     "string": "cpp",
     "format": "cpp",
     "iostream": "cpp",
-    "source_location": "cpp"
+    "source_location": "cpp",
+    "ostream": "cpp",
+    "iosfwd": "cpp",
+    "new": "cpp"
   }
 }

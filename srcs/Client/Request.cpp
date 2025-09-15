@@ -66,7 +66,7 @@ void Request::ParseHeader(string &Header)
     string Httpv;
     line >> Httpv;
     trim(Httpv, "\n\t\r ");
-    if (Httpv != "HTTP/1.1")
+    if (Httpv != "HTTP/1.1" && Httpv != "HTTP/1.0")
         throw BadRequestException();
     string tmp;
     _ContentLength = 0;
@@ -116,10 +116,12 @@ void Request::ParseHeader(string &Header)
         throw BadRequestException();
     stringstream ss(tmp1);
     ss >> this->_ContentLength;
-    if (((tmp1.empty() && _head["Transfer-Encoding"].empty()) || tmp1[0] == '-') && _method == "POST")
+    if ((tmp1.empty() || tmp1[0] == '-') && _method == "POST")
         throw ContentLengthException();
     int pos = Header.find("\r\n\r\n");
     this->restHeader = Header.substr(pos + 4);
+    if (this->_ContentLength > this->_serv.getMax_size() && _method == "POST")
+        throw PayloadTooLargeException();
 }
 
 void RedirectionRequest(Request &req)

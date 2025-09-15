@@ -96,6 +96,19 @@ void timeout(map<int, Client *> &clients, int epollFd)
           if (difftime(now, client->getLastActivity()) > 5)
           {
                epoll_ctl(epollFd, EPOLL_CTL_DEL, it->first, NULL);
+               client->getResp()->setRequest(*client->getRequest());
+               client->getResp()->setStatus(408);
+               client->getResp()->setContentType("text/html");
+               string buffer;
+               fstream file("srcs/Server/errors/408.html");
+               if (!file)
+                    throw runtime_error("Failed to open 408 error page");
+               buffer.assign((istreambuf_iterator<char>(file)),
+                             istreambuf_iterator<char>());  
+               client->getResp()->setBodyResp(buffer);
+               SendResponse(*client->getResp(), it->first);
+               if (!client->getResp()->getFileName().empty())
+                    remove(client->getResp()->getFileName().c_str());
                close(it->first);
                delete client;
                clients.erase(it++);

@@ -15,6 +15,15 @@ public:
     }
 };
 
+class NotAllowedException : public exception
+{
+public:
+    const char *what() const throw()
+    {
+        return ("405");
+    }
+};
+
 
 class ConnectionFailedException : public exception
 {
