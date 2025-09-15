@@ -30,7 +30,7 @@ int openSocket(auto_ptr<vector<ConfigFile> > &servers, int epollFd, map<int, Con
           pair<string, int> hp = make_pair(host, port);
 
           if (interfaces.find(hp) != interfaces.end())
-               continue;
+               throw runtime_error("Duplicate listen directive");
           interfaces.insert(hp);
           struct addrinfo hints, *res;
           memset(&hints, 0, sizeof(hints));
@@ -40,16 +40,19 @@ int openSocket(auto_ptr<vector<ConfigFile> > &servers, int epollFd, map<int, Con
           int status = getaddrinfo(host.c_str(), portStr.c_str(), &hints, &res);
           if (status != 0)
           {
-               std::cerr << "getaddrinfo failed: " << std::endl;
-               continue;
+               for (map<int, ConfigFile>::iterator it = openedServers.begin(); it != openedServers.end(); ++it)
+                    close(it->first);
+               throw runtime_error("getaddrinfo failed for " + host);
           }
           int serverSocket = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
           cout << "the socket is opennn!\n";
           if (serverSocket == -1)
           {
                perror("socket");
+               for (map<int, ConfigFile>::iterator it = openedServers.begin(); it != openedServers.end(); ++it)
+                    close(it->first);
                freeaddrinfo(res);
-               continue;
+               throw runtime_error("socket creation failed");
           }
           int opt = 1;
           setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
@@ -58,21 +61,24 @@ int openSocket(auto_ptr<vector<ConfigFile> > &servers, int epollFd, map<int, Con
           {
                perror("bind");
                close(serverSocket);
+               for (map<int, ConfigFile>::iterator it = openedServers.begin(); it != openedServers.end(); ++it)
+                    close(it->first);
                freeaddrinfo(res);
-               continue;
+               throw runtime_error("bind failed for " + host);
           }
 
           listen(serverSocket, SOMAXCONN);
           struct epoll_event event;
           memset(&event, 0, sizeof(event));
           event.data.fd = serverSocket;
-          event.events = EPOLLIN; 
+          event.events = EPOLLIN;
           epoll_ctl(epollFd, EPOLL_CTL_ADD, serverSocket, &event);
-          openedServers[serverSocket] = cfg; 
+          openedServers[serverSocket] = cfg;
           freeaddrinfo(res);
      }
      return (0);
-}void connectClient(int fd, map<int, Client *> &clients, int epollFd)
+}
+void connectClient(int fd, map<int, Client *> &clients, int epollFd)
 
 {
      int clientSocket = accept(fd, NULL, NULL);
