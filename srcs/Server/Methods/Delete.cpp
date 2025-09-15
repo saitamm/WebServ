@@ -38,7 +38,7 @@ void handleDelete(Response &resp)
 {
     struct stat path;
     string root;
-    if(resp.getRequest()->getLocation().getRoot_loc().empty())
+    if (resp.getRequest()->getLocation().getRoot_loc().empty())
         root = resp.getRequest()->getConfigFile().getRoot();
     else
         root = resp.getRequest()->getLocation().getRoot_loc();
@@ -61,11 +61,11 @@ void handleDelete(Response &resp)
     // directory
     else if (S_ISDIR(path.st_mode))
     {
+        
         if (file[file.size() - 1] == '/')
         {
             if (file == root + "/" + resp.getRequest()->getLocation().getUp_store() + "/" || access(file.c_str(), W_OK) == -1)
                 throw ForbiddenException();
-
             deleteRecursively(file);
             setCodeStatus(resp, 200);
             return;

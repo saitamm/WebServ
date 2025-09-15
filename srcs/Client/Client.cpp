@@ -65,8 +65,9 @@ void Client::buildResponse(int clientFd, int epollFd, map<int, CgiProcess *> &cg
         _status = Sending;
         return;
     }
-    if (checkSize(this->_req->getContentLength(), this->_req->getConfigFile().getMax_size()))
+    if (checkSize(this->_resp->getTotalReceived(), this->_req->getConfigFile().getMax_size()))
     {
+        remove(this->getResp()->getFileName().c_str());
         setCodeStatus(*this->getResp(), 413);
         _status = Sending;
         return;

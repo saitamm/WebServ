@@ -17,7 +17,7 @@ void CreatUploadFile(Response &resp)
     if (type.empty())
         throw BadRequestException();
     string root;
-    if(resp.getRequest()->getLocation().getRoot_loc().empty())
+    if (resp.getRequest()->getLocation().getRoot_loc().empty())
         root = resp.getRequest()->getConfigFile().getRoot();
     else
         root = resp.getRequest()->getLocation().getRoot_loc();
@@ -25,7 +25,7 @@ void CreatUploadFile(Response &resp)
     string Up = store + "/" + f;
     resp.getFile().open(Up.c_str(), ios::out | ios::trunc | ios::binary);
     resp.setFileName(Up);
-    cout << "This is the upload file  = " << Up << endl;
+    // cout << "This is the upload file  = " << Up << endl;
     if (!resp.getFile().is_open())
     {
         struct stat st;
@@ -156,10 +156,9 @@ void NonChunkedBody(Response &resp, int clientSocket)
 
 int ChunkedBody(Response &resp, int clientSocket)
 {
-    int bytesRead = 0;
-    unsigned int BufferSize;
     if (!resp.getTotalReceived())
     {
+        unsigned int BufferSize;
         stringstream ll(resp.getRequest()->getrestHeader());
         string l;
         ll >> l;
@@ -169,92 +168,133 @@ int ChunkedBody(Response &resp, int clientSocket)
         string line;
         line = ll.str();
         line.erase(0, l.size() + 2);
-        int size;
+        unsigned int size;
         size = (BufferSize > line.size()) ? line.size() : BufferSize;
-        while (1)
+        if (resp.getFile().write(line.substr(0, size).c_str(), size).fail())
         {
-            size = (BufferSize > line.size()) ? line.size() : BufferSize;
-            if (resp.getFile().write(line.substr(0, size).c_str(), size).fail())
-            {
-                remove(resp.getFileName().c_str());
-                throw ServerErrorException();
-            }
-            resp.setTotalReceived(size);
-            line.erase(0, size);
-            if (line.empty())
-                break;
-            line.erase(0, 2);
-            stringstream kk(line);
-            string k;
-            kk >> k;
-            stringstream jj;
-            jj << hex << k;
-            jj >> BufferSize;
-            if (BufferSize == 0)
-                return (1);
-            line.erase(0, k.size() + 2);
+            remove(resp.getFileName().c_str());
+            throw ServerErrorException();
         }
-        if (size < (int)BufferSize)
+        resp.setTotalReceived(size);
+        resp.setBufferSize(BufferSize);
+        cout << "when total receive is 0 ="<<BufferSize << endl;
+        line.erase(0, size);
+        line.erase(0, 2);
+        resp.getRequest()->setRestHeader(line);
+        if (BufferSize == size)
         {
-            char buf[BufferSize - size];
+            resp.restartChunk();
+        }
+        else
+            resp.setReceived(size);
+        cout << "after first =" << resp.getReceived() << endl;
+    }
+    if (!resp.getReceived())
+    {
+        if (resp.getRequest()->getrestHeader().empty())
+        {
+            cout << "header rest is empty \n";
+            char buf[1024];
+            int bytesRead = 0;
             bytesRead = recv(clientSocket, buf, sizeof(buf), 0);
             if (bytesRead <= 0)
             {
                 remove(resp.getFileName().c_str());
                 throw ConnectionFailedException();
             }
-            resp.setTotalReceived(bytesRead);
-            if (resp.getFile().write(buf, bytesRead).fail())
-            {
-                remove(resp.getFileName().c_str());
-                throw ServerErrorException();
-            }
-            resp.getFile().flush();
-        }
-    }
-    else
-    {
-        if (resp.getReceived() == 0)
-        {
-            resp.setBufferSize(getSize(clientSocket, resp));
-            if (resp.getBufferSize() == 0)
+            string line(buf);
+            // line.erase(0, 2);
+            unsigned int BufferSize;
+            stringstream kk(line);
+            string k;
+            kk >> k;
+            stringstream jj;
+            jj << hex << k;
+            jj >> BufferSize;
+            cout << "buffer chunk i read heeeeeere = "<<BufferSize << endl;
+            if (BufferSize == 0)
             {
                 return (1);
             }
-            if (resp.getFile().write(resp.getRestPost().c_str(), resp.getRestPost().size()).fail())
+            line.erase(0, k.size() + 2);
+            unsigned int size;
+            size = (BufferSize > line.size()) ? line.size() : BufferSize;
+            cout << "i am what first read =" << size <<endl;
+            if (resp.getFile().write(line.substr(0, size).c_str(), size).fail())
             {
                 remove(resp.getFileName().c_str());
                 throw ServerErrorException();
+            }
+            resp.setBufferSize(BufferSize);
+            if (BufferSize == size)
+            {
+                line.erase(0, size);
+                line.erase(0, 2);
+                resp.setTotalReceived(size);
+                resp.getRequest()->setRestHeader(line);
+                resp.restartChunk();
+            }
+            else
+            {
+                resp.setReceived(size);
             }
         }
         else
         {
-            char buff[1024];
-            size_t read = min(resp.getBufferSize() - resp.getReceived(), (unsigned int)sizeof(buff));
-            bytesRead = recv(clientSocket, buff, read, 0);
-            if (bytesRead <= 0)
+            unsigned int BufferSize;
+            stringstream ll(resp.getRequest()->getrestHeader());
+            string l;
+            ll >> l;
+            stringstream ss;
+            ss << hex << l;
+            ss >> BufferSize;
+            string line;
+            line = ll.str();
+            line.erase(0, l.size() + 2);
+            unsigned int size;
+            cout << "---------" << resp.getRequest()->getrestHeader()  << "-----"<<endl;
+            cout << BufferSize << endl;
+            if (BufferSize == 0)
             {
-                remove(resp.getFileName().c_str());
-                throw ConnectionFailedException();
+                return (1);
             }
-            if (resp.getFile().write(buff, bytesRead).fail())
+            size = (BufferSize > line.size()) ? line.size() : BufferSize;
+            if (resp.getFile().write(line.substr(0, size).c_str(), size).fail())
             {
                 remove(resp.getFileName().c_str());
                 throw ServerErrorException();
             }
-            resp.getFile().flush();
-            resp.setReceived(bytesRead);
-            if (resp.getReceived() == resp.getBufferSize())
-            {
-                resp.setTotalReceived(resp.getReceived());
-                if (resp.getTotalReceived() > resp.getRequest()->getConfigFile().getMax_size())
-                {
-                    remove(resp.getFileName().c_str());
-                    throw PayloadTooLargeException();
-                }
+            line.erase(0, size);
+            line.erase(0, 2);
+            resp.setTotalReceived(size);
+            resp.getRequest()->setRestHeader(line);
+            resp.setBufferSize(BufferSize);
+            if (BufferSize == size)
                 resp.restartChunk();
-            }
+            else
+                resp.setReceived(size);
         }
+    }
+    else
+    {
+        cout << "----\n";
+        char buf[resp.getBufferSize() - resp.getReceived()];
+        int bytesRead = 0;
+        bytesRead = recv(clientSocket, buf, sizeof(buf), 0);
+        if (bytesRead <= 0)
+        {
+            remove(resp.getFileName().c_str());
+            throw ConnectionFailedException();
+        }
+        cout << "last read from chunk " << bytesRead <<endl;
+        string line(buf);
+        if (resp.getFile().write(line.c_str(), line.size()).fail())
+        {
+            remove(resp.getFileName().c_str());
+            throw ServerErrorException();
+        }
+        resp.setTotalReceived(bytesRead);
+        resp.restartChunk();
     }
     return (0);
 }

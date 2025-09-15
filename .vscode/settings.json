@@ -59,6 +59,7 @@
   "files.associations": {
     "string": "cpp",
     "format": "cpp",
-    "iostream": "cpp"
+    "iostream": "cpp",
+    "source_location": "cpp"
   }
 }
