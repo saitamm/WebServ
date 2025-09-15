@@ -143,6 +143,8 @@ const string &ConfigFile::getRoot() const
 
 void ConfigFile::setRoot(const string &r)
 {
+    if (r.empty())
+        throw ErrorConfigFileException();
     size_t res = r.find(" ");
     if (res != string::npos)
         throw ErrorConfigFileException();
@@ -342,6 +344,8 @@ const string & Location::getRoot_loc() const
 
 void Location::setRoot_loc(const string &r)
 {
+    if (r.empty())
+        throw ErrorConfigFileException();
     size_t res = r.find(" ");
     if (res != string::npos)
         throw ErrorConfigFileException();

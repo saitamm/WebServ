@@ -113,9 +113,6 @@ void checkCgiGet(Response &resp, string &real_path, int clientFd, int epollFd, m
         proc->pid = pid;
         proc->pipeFd = fd[0];
         proc->start = time(NULL);
-        std::cerr << "[CGI] Started pid=" << pid
-                  << " for clientFd=" << clientFd
-                  << " at " << proc->start << std::endl;
         cgis[fd[0]] = proc;
     }
 }
