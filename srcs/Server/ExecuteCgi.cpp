@@ -164,11 +164,6 @@ void checkCgiPost(Response &resp, int clientFd, int epollFd, map<int, CgiProcess
         close(fd_in[0]);
         close(fd_out[1]);
         resp.getFile().seekg(0, std::ios::beg);
-        char buf[1024];
-        while (resp.getFile().read(buf, sizeof(buf)) || resp.getFile().gcount() > 0)
-        {
-            write(fd_in[1], buf, resp.getFile().gcount());
-        }
         close(fd_in[1]);
         setNonBlocking(fd_out[0]);
         epoll_event ev;
