@@ -204,7 +204,10 @@ void handleClientRequest(std::map<int, Client *> &clients, int clientSocket, std
     {
         clients[clientSocket]->getResp()->initStatusCode();
         if (clients[clientSocket]->getEvent().events & EPOLLIN)
+        {
+            
             clients[clientSocket]->ParseHttpRequest(*clients[clientSocket], clientSocket, servers);
+        }
         if ((clients[clientSocket]->getStatus() == Processing || clients[clientSocket]->getStatus() == Sending) && clients[clientSocket]->getResp()->getResponseStatus() != Finish)
         {
             clients[clientSocket]->buildResponse(clientSocket, epollFd, cgis);

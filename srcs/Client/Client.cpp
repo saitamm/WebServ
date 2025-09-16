@@ -115,9 +115,7 @@ void Client::ParseHttpRequest(Client &client, int clientSocket, auto_ptr<vector<
         if ((bytesRead = recv(clientSocket, buf, sizeof(buf), 0)) >= 0)
             _buffer.append(buf, bytesRead);
         else
-        {
             _status = Finished;
-        }
         if (_buffer.find("\r\n\r\n") != string::npos)
         {
             client.getRequest()->ParseHeader(_buffer);
@@ -131,7 +129,7 @@ void Client::ParseHttpRequest(Client &client, int clientSocket, auto_ptr<vector<
         this->_resp->setRequest(*this->_req);
         if (!allowMethod(this->_req->getLocation(), this->_req->getMethod()))
         {
-           throw NotAllowedException();
+            throw NotAllowedException();
         }
         if (client.getRequest()->getMethod() == "GET" || client.getRequest()->getMethod() == "DELETE")
         {

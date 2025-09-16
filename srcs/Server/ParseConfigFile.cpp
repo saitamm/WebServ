@@ -185,7 +185,6 @@ void checkReturnLoop(ConfigFile &curr_server)
                             break;
                         }
                         current = locations[j].getReturnTarget();
-                        cout << current << endl;
                         if (current == start)
                             throw RedirectLoopException();
                         found = true;
