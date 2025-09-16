@@ -302,6 +302,12 @@ void parseHeaders(string &outStr, Response &resp)
             headerMap[key] = value;
         }
     }
+    if (headerMap.find("Content-Length") != headerMap.end())
+    {
+        size_t contentLength = atoi(headerMap["Content-Length"].c_str());
+        if (body.size() > contentLength)
+            body = body.substr(0, contentLength);
+    }
     int status;
     if (headerMap.find("Status") != headerMap.end())
         status = (atoi(headerMap["Status"].c_str()));
