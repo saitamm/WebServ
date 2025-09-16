@@ -57,6 +57,7 @@ void ParseServer(string &key, string &value, ConfigFile &curr_server, string &ne
         if (!curr_server.setMax_size(value))
             throw ErrorConfigFileException();
     }
+    value = "";
 }
 
 void ParseLocation(string &key, string &value, string &new_line, Location &curr_loc, map<string, bool> &alreadySeen)
@@ -133,7 +134,9 @@ void CheckDupServ(auto_ptr<vector<ConfigFile> > &servers, ConfigFile &curr_serve
 {
     for (size_t i = 0; i < servers->size(); i++)
     {
-        if (servers->at(i).getName() == curr_server.getName() && servers->at(i).getPort() == curr_server.getPort())
+        if (servers->at(i).getHost() == curr_server.getHost() && servers->at(i).getPort() == curr_server.getPort())
+            throw DuplicateServerException();
+        if (servers->at(i).getName() == curr_server.getName() && servers->at(i).getPort() == curr_server.getPort() && servers->at(i).getHost() == curr_server.getHost())
             throw DuplicateServerException();
     }
 }

@@ -113,9 +113,6 @@ void checkCgiGet(Response &resp, string &real_path, int clientFd, int epollFd, m
         proc->pid = pid;
         proc->pipeFd = fd[0];
         proc->start = time(NULL);
-        std::cerr << "[CGI] Started pid=" << pid
-                  << " for clientFd=" << clientFd
-                  << " at " << proc->start << std::endl;
         cgis[fd[0]] = proc;
     }
 }
@@ -167,11 +164,6 @@ void checkCgiPost(Response &resp, int clientFd, int epollFd, map<int, CgiProcess
         close(fd_in[0]);
         close(fd_out[1]);
         resp.getFile().seekg(0, std::ios::beg);
-        char buf[1024];
-        while (resp.getFile().read(buf, sizeof(buf)) || resp.getFile().gcount() > 0)
-        {
-            write(fd_in[1], buf, resp.getFile().gcount());
-        }
         close(fd_in[1]);
         setNonBlocking(fd_out[0]);
         epoll_event ev;
@@ -304,6 +296,12 @@ void parseHeaders(string &outStr, Response &resp)
                 value.erase(0, 1);
             headerMap[key] = value;
         }
+    }
+    if (headerMap.find("Content-Length") != headerMap.end())
+    {
+        size_t contentLength = atoi(headerMap["Content-Length"].c_str());
+        if (body.size() > contentLength)
+            body = body.substr(0, contentLength);
     }
     int status;
     if (headerMap.find("Status") != headerMap.end())
